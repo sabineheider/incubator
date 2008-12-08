@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="package" name="eclipselink.incubation.dynamic">
+	<property environment="env" />
+	<property name="ORACLE_JDBC_LIB" value="../../../../../oracle/DB/11/jdbc/lib/ojdbc5_g.jar" />
+	<property name="ECLIPSE_HOME" value="../../../../ganymede/eclipse" />
+	<property name="javax.persistence 1.0.0.location" value="../../plugins/javax.persistence" />
+	<property name="org.eclipse.persistence.jpa.location" value="../../jpa/org.eclipse.persistence.jpa" />
+	<property name="org.eclipse.persistence.oracle.location" value="../../foundation/org.eclipse.persistence.oracle" />
+	<property name="debuglevel" value="source,lines,vars" />
+	<property name="target" value="1.5" />
+	<property name="source" value="1.5" />
+
+	<path id="Plug-in Dependencies.libraryclasspath" />
+	<path id="javax.persistence 1.0.0.classpath">
+		<pathelement location="${javax.persistence 1.0.0.location}/." />
+		<path refid="Plug-in Dependencies.libraryclasspath" />
+	</path>
+	<path id="org.eclipse.persistence.jpa.classpath">
+		<pathelement location="${org.eclipse.persistence.jpa.location}/classes" />
+		<path refid="Plug-in Dependencies.libraryclasspath" />
+	</path>
+	<path id="org.eclipse.persistence.oracle.classpath">
+		<pathelement location="${org.eclipse.persistence.oracle.location}/classes" />
+		<pathelement location="${ORACLE_JDBC_LIB}" />
+		<path refid="Plug-in Dependencies.libraryclasspath" />
+	</path>
+	<path id="JUnit 4.libraryclasspath">
+		<pathelement location="${ECLIPSE_HOME}/plugins/org.junit4_4.3.1/junit.jar" />
+	</path>
+	<path id="eclipselink.incubation.dynamic.classpath">
+		<pathelement location="classes" />
+		<path refid="javax.persistence 1.0.0.classpath" />
+		<path refid="org.eclipse.persistence.jpa.classpath" />
+		<path refid="org.eclipse.persistence.oracle.classpath" />
+		<path refid="JUnit 4.libraryclasspath" />
+	</path>
+
+	<target name="init">
+		<mkdir dir="classes" />
+		<copy includeemptydirs="false" todir="classes">
+			<fileset dir="src" excludes="**/*.launch, **/*.java" />
+		</copy>
+		<copy includeemptydirs="false" todir="classes">
+			<fileset dir="test-src" excludes="**/*.launch, **/*.java" />
+		</copy>
+	</target>
+
+	<target name="clean">
+		<delete dir="classes" />
+	</target>
+
+	<target depends="init" name="build">
+		<echo message="${ant.project.name}: ${ant.file}" />
+		<javac debug="true" debuglevel="${debuglevel}" destdir="classes" source="${source}" target="${target}">
+			<src path="src" />
+			<exclude name="**/.svn/**" />
+			<classpath refid="eclipselink.incubation.dynamic.classpath" />
+		</javac>
+		<javac debug="true" debuglevel="${debuglevel}" destdir="classes" source="${source}" target="${target}">
+			<src path="test-src" />
+			<classpath refid="eclipselink.incubation.dynamic.classpath" />
+		</javac>
+	</target>
+
+	<target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
+		<copy todir="${ant.library.dir}">
+			<fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar" />
+		</copy>
+		<unzip dest="${ant.library.dir}">
+			<patternset includes="jdtCompilerAdapter.jar" />
+			<fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar" />
+		</unzip>
+	</target>
+
+	<target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
+		<property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter" />
+		<antcall target="build" />
+	</target>
+
+	<target depends="build" name="package">
+		<jar destfile="eclipselink-incubation-dynamic.jar">
+			<manifest>
+				<attribute name="Specification-Title" value="EclipseLink Dynamic Persistence" />
+				<attribute name="Specification-Vendor" value="EclipseLink (INCUBATION)" />
+				<attribute name="Implementation-Title" value="EclipseLink Dynamic Persistence" />
+				<attribute name="Implementation-Vendor" value="EclipseLink (INCUBATION)" />
+				<attribute name="Release-Designation" value="INCUBATION" />
+			</manifest>
+            <fileset dir="classes">
+                <include name="org/eclipse/persistence/**/*.class"/>
+            	<include name="xsd/*.xsd" />
+            </fileset>
+            <fileset dir="src">
+                <include name="org/eclipse/persistence/**/*.java"/>
+            </fileset>
+		</jar>
+	</target>
+	
+    <!-- Generic target for running tests. -->
+    <target name="test" depends="build">
+        <junit printsummary="yes" haltonfailure="yes" fork="yes" showoutput="true" maxmemory="512m" dir=".">
+            <jvmarg value="-Declipselink.logging.level=ALL"/>
+            <jvmarg value="-Ddb.driver=${db.driver}"/>
+            <jvmarg value="-Ddb.url=${db.url}"/>
+            <jvmarg value="-Ddb.user=${db.user}"/>
+            <jvmarg value="-Ddb.pwd=${db.pwd}"/>
+            <classpath>
+                <path refid="eclipselink.incubation.dynamic.classpath"/>
+            </classpath>
+            <formatter type="xml"/>
+            <test name="org.eclipse.persistence.testing.tests.dynamic.AllTests" haltonfailure="no" outfile="junit/test-results">
+            </test>
+        </junit>
+    </target>
+
+
+</project>

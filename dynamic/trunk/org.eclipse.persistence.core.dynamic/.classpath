@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="**/.svn/**" kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/1.6.0_10"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.jpa"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.oracle"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.asm"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/javax.persistence 1.99"/>
+	<classpathentry kind="output" path="classes"/>
+</classpath>
