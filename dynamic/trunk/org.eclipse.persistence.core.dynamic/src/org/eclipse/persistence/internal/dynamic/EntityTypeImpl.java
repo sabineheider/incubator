@@ -96,10 +96,9 @@ public class EntityTypeImpl implements EntityType {
 	 * @param className
 	 * @param tableName
 	 */
-	public EntityTypeImpl(Class dynamicClass, String className, String tableName) {
+	public EntityTypeImpl(Class dynamicClass, String tableName) {
 		this.descriptor = new RelationalDescriptor();
 
-		getDescriptor().setJavaClassName(className);
 		getDescriptor().setJavaClass(dynamicClass);
 		getDescriptor().setTableName(tableName);
 		getDescriptor().setObjectChangePolicy(new AttributeChangeTrackingPolicy());

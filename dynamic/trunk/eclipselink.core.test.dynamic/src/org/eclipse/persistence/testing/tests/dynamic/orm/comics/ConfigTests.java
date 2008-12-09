@@ -16,20 +16,32 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package org.eclipse.persistence.testing.tests.dynamic;
+package org.eclipse.persistence.testing.tests.dynamic.orm.comics;
 
+import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.sessions.server.Server;
 import org.junit.Test;
-import static org.junit.Assert.*;
-
+import static junit.framework.Assert.*;
 public class ConfigTests {
-
-	@Test
-	public void verifyCreateNewEntityType() throws Exception {
-		fail("Not yet implemented");
-	}
 	
 	@Test
-	public void verifyCreateEntityTypeFromDescriptor() throws Exception {
-		fail("Not yet implemented");
+	public void verifyDescriptorClasses() {
+		Server server = SessionHelper.getComicsSession();
+		
+		assertNotNull(server);
+		
+		ClassDescriptor descriptor = server.getClassDescriptorForAlias("Issue");
+		assertNotNull(descriptor);
+		assertTrue(DynamicEntity.class.isAssignableFrom(descriptor.getJavaClass()));
+		
+		descriptor = server.getClassDescriptorForAlias("Publisher");
+		assertNotNull(descriptor);
+		assertTrue(DynamicEntity.class.isAssignableFrom(descriptor.getJavaClass()));
+
+		descriptor = server.getClassDescriptorForAlias("Title");
+		assertNotNull(descriptor);
+		assertTrue(DynamicEntity.class.isAssignableFrom(descriptor.getJavaClass()));
 	}
+
 }

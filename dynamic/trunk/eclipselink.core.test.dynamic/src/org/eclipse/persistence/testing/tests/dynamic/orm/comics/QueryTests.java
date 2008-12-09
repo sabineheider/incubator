@@ -18,10 +18,20 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.tests.dynamic.orm.comics;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.eclipse.persistence.sessions.Session;
+import org.junit.Test;
 
-@RunWith(Suite.class)
-@Suite.SuiteClasses( { ConfigTests.class, CreateAndInitDatabase.class, QueryTests.class })
-public class AllTests {
+public class QueryTests {
+	
+	@Test
+	public void readAll() {
+		Session session = SessionHelper.getComicsSession().acquireClientSession();
+		
+		session.readAllObjects(session.getDescriptorForAlias("Issue").getJavaClass());
+		session.readAllObjects(session.getDescriptorForAlias("Publisher").getJavaClass());
+		session.readAllObjects(session.getDescriptorForAlias("Title").getJavaClass());
+		
+		session.release();
+	}
+
 }

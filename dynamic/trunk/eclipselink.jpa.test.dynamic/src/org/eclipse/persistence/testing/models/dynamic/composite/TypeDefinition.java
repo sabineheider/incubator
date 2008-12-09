@@ -155,7 +155,7 @@ public class TypeDefinition {
 
 		Class dynamicClass = DynamicClassLoader.getLoader(session).createDynamicClass(getClassName());
 
-		this.entityType = new EntityTypeImpl(dynamicClass, getClassName(), getTableName());
+		this.entityType = new EntityTypeImpl(dynamicClass, getTableName());
 		for (FieldDefinition fieldDef : getFields()) {
 			fieldDef.createProperty(this.entityType);
 		}

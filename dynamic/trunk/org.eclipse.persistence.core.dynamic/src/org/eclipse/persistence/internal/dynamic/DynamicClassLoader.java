@@ -61,7 +61,7 @@ public class DynamicClassLoader extends ClassLoader {
 		this(delegate, DynamicEntityImpl.class);
 	}
 
-	protected ClassLoader getDelegateLoader() {
+	public ClassLoader getDelegateLoader() {
 		return this.delegateLoader;
 	}
 
@@ -227,4 +227,6 @@ public class DynamicClassLoader extends ClassLoader {
 		}
 		return (DynamicClassLoader) platformLoader;
 	}
+	
+	
 }

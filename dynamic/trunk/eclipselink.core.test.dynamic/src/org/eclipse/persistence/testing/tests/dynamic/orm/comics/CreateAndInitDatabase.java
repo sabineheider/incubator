@@ -25,16 +25,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.persistence.dynamic.*;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.sessions.UnitOfWork;
-import org.eclipse.persistence.sessions.factories.*;
 import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 import org.junit.Test;
 
 public class CreateAndInitDatabase {
-	
+
 	private static final String DATA_HOME = "org/eclipse/persistence/testing/tests/dynamic/orm/comics/";
 
 	@Test
@@ -44,29 +42,20 @@ public class CreateAndInitDatabase {
 		UnitOfWork uow = null;
 
 		try {
-			DynamicClassLoader classLoader = new DynamicClassLoader(null);
-			
-			classLoader.createDynamicClass("model.Issue");
-			classLoader.createDynamicClass("model.Publisher");
-			classLoader.createDynamicClass("model.Title");
-			
-			XMLSessionConfigLoader loader = new XMLSessionConfigLoader();
-			loader.setClassLoader(classLoader);
-			loader.setSessionName("dynamic-comics");
-			server = (Server) SessionManager.getManager().getSession(loader);
+			server = SessionHelper.getComicsSession();
 			session = server.acquireClientSession();
 
 			uow = session.acquireUnitOfWork();
 
-			URL publisherFileURL = classLoader.getResource(DATA_HOME + "publisher.tab");
+			URL publisherFileURL = getClass().getClassLoader().getResource(DATA_HOME + "publisher.tab");
 			Map<Integer, DynamicEntity> publishers = loadPublishers(server, publisherFileURL);
 			persist(uow, publishers);
 
-			URL titleFileURL = classLoader.getResource(DATA_HOME + "title.tab");
+			URL titleFileURL = getClass().getClassLoader().getResource(DATA_HOME + "title.tab");
 			Map<Integer, DynamicEntity> titles = loadTitles(server, titleFileURL, publishers);
 			persist(uow, titles);
 
-			URL issueFileURL = classLoader.getResource(DATA_HOME + "issue.tab");
+			URL issueFileURL = getClass().getClassLoader().getResource(DATA_HOME + "issue.tab");
 			Map<Integer, DynamicEntity> issues = loadIssues(server, issueFileURL, titles);
 			persist(uow, issues);
 
