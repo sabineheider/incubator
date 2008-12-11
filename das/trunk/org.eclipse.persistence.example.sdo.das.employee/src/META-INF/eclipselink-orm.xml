@@ -26,6 +26,9 @@
 		<conversion-value object-value="Female" data-value="F" />
 	</object-type-converter>
 	
+	<sequence-generator name="EMP_SEQ"  sequence-name="EMP_SEQ" allocation-size="13" />
+	<sequence-generator name="ADDR_SEQ"  sequence-name="ADDR_SEQ" allocation-size="13" />
+
 	<named-query name="Employee.findAll">
 		<query>SELECT e FROM Employee e</query>
 	</named-query>
@@ -35,7 +38,7 @@
 		<attributes>
 			<id name="id">
 				<column name="ADDRESS_ID" />
-				<generated-value strategy="SEQUENCE" />
+				<generated-value strategy="SEQUENCE" generator="ADDR_SEQ" />
 			</id>
 			<basic name="city" />
 			<basic name="country" />
@@ -57,11 +60,8 @@
 			<id name="type">
 				<column updatable="false" />
 			</id>
-			<basic name="areaCode">
-				<column name="AREA_CODE" />
-			</basic>
 			<basic name="number">
-				<column name="P_NUMBER" />
+				<column name="P_NUMBER" column-definition="VARCHAR2(20)"/>
 			</basic>
 			<many-to-one name="owner">
 				<join-column name="EMP_ID" />
@@ -75,7 +75,7 @@
 		<attributes>
 			<id name="id">
 				<column name="EMP_ID" />
-				<generated-value strategy="SEQUENCE" />
+				<generated-value strategy="SEQUENCE" generator="EMP_SEQ" />
 			</id>
 			<basic name="firstName">
 				<column name="F_NAME" />

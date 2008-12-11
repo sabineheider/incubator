@@ -22,6 +22,14 @@
          <xml-field>city/text()</xml-field>
       </mapping>
       <mapping type="xml-direct">
+         <name>country</name>
+         <attribute-handle>
+            <attribute-declaring-type-name>model.Address</attribute-declaring-type-name>
+            <attribute-name>country</attribute-name>
+         </attribute-handle>
+         <xml-field>country/text()</xml-field>
+      </mapping>
+      <mapping type="xml-direct">
          <name>id</name>
          <attribute-handle>
             <attribute-declaring-type-name>model.Address</attribute-declaring-type-name>

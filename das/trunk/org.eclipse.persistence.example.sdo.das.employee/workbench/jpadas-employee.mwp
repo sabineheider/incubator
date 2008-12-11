@@ -11,6 +11,8 @@
          <name>model.Address</name>
          <name>model.Employee</name>
          <name>model.EmploymentPeriod</name>
+         <name>model.Gender</name>
+         <name>model.persistence.MOXyDescriptorCustomizers</name>
          <name>model.PhoneNumber</name>
       </user-type-names>
    </class-repository>

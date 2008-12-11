@@ -34,7 +34,7 @@ public class Employee {
 	private String lastName;
 	private Time startTime;
 	private Time endTime;
-	private Long version;
+	private long version;
 	private Employee manager;
 	private List<Employee> managedEmployees = new ArrayList<Employee>();
 	private List<PhoneNumber> phoneNumbers = new ArrayList<PhoneNumber>();
@@ -94,11 +94,11 @@ public class Employee {
 		this.startTime = startTime;
 	}
 
-	public Long getVersion() {
+	public long getVersion() {
 		return version;
 	}
 
-	public void setVersion(Long version) {
+	public void setVersion(long version) {
 		this.version = version;
 	}
 
@@ -144,8 +144,8 @@ public class Employee {
 		return phoneNumber;
 	}
 
-	public PhoneNumber addPhoneNumber(String type, String areaCode, String number) {
-		PhoneNumber phoneNumber = new PhoneNumber(type, areaCode, number);
+	public PhoneNumber addPhoneNumber(String type, String number) {
+		PhoneNumber phoneNumber = new PhoneNumber(type, number);
 		return addPhoneNumber(phoneNumber);
 	}
 

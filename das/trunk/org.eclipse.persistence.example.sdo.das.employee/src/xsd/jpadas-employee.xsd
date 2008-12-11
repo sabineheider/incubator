@@ -17,25 +17,25 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
 -->
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:emp="http://www.example.org/jpadas-employee"
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.example.org/jpadas-employee"
 	xmlns:sdo="commonj.sdo" targetNamespace="http://www.example.org/jpadas-employee"
-	elementFormDefault="unqualified" attributeFormDefault="unqualified">
+	elementFormDefault="qualified" attributeFormDefault="unqualified">
 	
 	<xs:import namespace="commonj.sdo" />
-	<xs:element name="employee" type="emp:employee-type" />
+	<xs:element name="employee" type="employee-type" />
 	<xs:complexType name="employee-type">
 		<xs:sequence>
 			<xs:element name="first-name" type="xs:string" />
 			<xs:element name="last-name" type="xs:string" />
-			<xs:element name="gender" type="emp:gender" />
-			<xs:element name="version" type="xs:long" minOccurs="1" />
+			<xs:element name="gender" type="gender" />
 			<xs:element name="salary" type="xs:double" />
-			<xs:element name="address" type="emp:address-type" />
-			<xs:element name="phone-number" type="emp:phone-type" maxOccurs="unbounded" />
+			<xs:element name="address" type="address-type" />
+			<xs:element name="phone-number" type="phone-type" maxOccurs="unbounded" />
 			<xs:element name="sdo-change-summary" type="sdo:ChangeSummaryType"
 				minOccurs="0" />
 		</xs:sequence>
 		<xs:attribute name="id" type="xs:integer" />
+		<xs:attribute name="version" type="xs:long" use="required"/>
 	</xs:complexType>
 	<xs:simpleType name="gender">
 		<xs:restriction base="xs:token">
@@ -49,14 +49,12 @@
 			<xs:element name="city" type="xs:string" />
 			<xs:element name="state" type="xs:string" />
 			<xs:element name="zip-code" type="xs:string" />
+			<xs:element name="country" type="xs:string" />
 		</xs:sequence>
 		<xs:attribute name="id" type="xs:integer" />
 	</xs:complexType>
 	<xs:complexType name="phone-type">
-		<xs:sequence>
-			<xs:element name="area-code" type="xs:string" />
-			<xs:element name="number" type="xs:string" />
-		</xs:sequence>
 		<xs:attribute name="type" type="xs:string" />
+		<attribute name="number" type="xs:string" />
 	</xs:complexType>
 </xs:schema>

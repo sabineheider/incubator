@@ -5,22 +5,13 @@
    <superclass-handle>
       <type-name>java.lang.Object</type-name>
    </superclass-handle>
-   <last-refresh-timestamp>2008-12-11T10:18:32.343</last-refresh-timestamp>
+   <last-refresh-timestamp>2008-12-11T14:13:29.531</last-refresh-timestamp>
    <interface-handles>
       <class-handle>
          <type-name>java.io.Serializable</type-name>
       </class-handle>
    </interface-handles>
    <attributes>
-      <class-attribute>
-         <name>areaCode</name>
-         <modifier>2</modifier>
-         <type-declaration>
-            <type-handle>
-               <type-name>java.lang.String</type-name>
-            </type-handle>
-         </type-declaration>
-      </class-attribute>
       <class-attribute>
          <name>id</name>
          <modifier>2</modifier>
@@ -83,23 +74,7 @@
                   </type-handle>
                </type-declaration>
             </method-parameter>
-            <method-parameter>
-               <type-declaration>
-                  <type-handle>
-                     <type-name>java.lang.String</type-name>
-                  </type-handle>
-               </type-declaration>
-            </method-parameter>
          </method-parameters>
-      </method>
-      <method>
-         <name>getAreaCode</name>
-         <modifier>1</modifier>
-         <return-type-declaration>
-            <type-handle>
-               <type-name>java.lang.String</type-name>
-            </type-handle>
-         </return-type-declaration>
       </method>
       <method>
          <name>getId</name>
@@ -136,24 +111,6 @@
                <type-name>java.lang.String</type-name>
             </type-handle>
          </return-type-declaration>
-      </method>
-      <method>
-         <name>setAreaCode</name>
-         <modifier>1</modifier>
-         <return-type-declaration>
-            <type-handle>
-               <type-name>void</type-name>
-            </type-handle>
-         </return-type-declaration>
-         <method-parameters>
-            <method-parameter>
-               <type-declaration>
-                  <type-handle>
-                     <type-name>java.lang.String</type-name>
-                  </type-handle>
-               </type-declaration>
-            </method-parameter>
-         </method-parameters>
       </method>
       <method>
          <name>setId</name>

@@ -53,6 +53,7 @@
                      <particles>
                         <particle type="element">
                            <name>street</name>
+                           <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
                            <type type="simple-type-ref">
                               <name>string</name>
                               <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
@@ -60,6 +61,7 @@
                         </particle>
                         <particle type="element">
                            <name>city</name>
+                           <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
                            <type type="simple-type-ref">
                               <name>string</name>
                               <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
@@ -67,6 +69,7 @@
                         </particle>
                         <particle type="element">
                            <name>state</name>
+                           <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
                            <type type="simple-type-ref">
                               <name>string</name>
                               <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
@@ -74,6 +77,15 @@
                         </particle>
                         <particle type="element">
                            <name>zip-code</name>
+                           <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
+                           <type type="simple-type-ref">
+                              <name>string</name>
+                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                           </type>
+                        </particle>
+                        <particle type="element">
+                           <name>country</name>
+                           <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
                            <type type="simple-type-ref">
                               <name>string</name>
                               <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
@@ -101,6 +113,14 @@
                         <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
                      </type>
                   </attribute>
+                  <attribute type="attribute">
+                     <name>version</name>
+                     <use>required</use>
+                     <type type="simple-type-ref">
+                        <name>long</name>
+                        <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                     </type>
+                  </attribute>
                </attributes>
                <content type="complex">
                   <mixed-flag>false</mixed-flag>
@@ -108,6 +128,7 @@
                      <particles>
                         <particle type="element">
                            <name>first-name</name>
+                           <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
                            <type type="simple-type-ref">
                               <name>string</name>
                               <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
@@ -115,6 +136,7 @@
                         </particle>
                         <particle type="element">
                            <name>last-name</name>
+                           <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
                            <type type="simple-type-ref">
                               <name>string</name>
                               <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
@@ -122,20 +144,15 @@
                         </particle>
                         <particle type="element">
                            <name>gender</name>
+                           <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
                            <type type="simple-type-ref">
                               <name>gender</name>
                               <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
                            </type>
                         </particle>
                         <particle type="element">
-                           <name>version</name>
-                           <type type="simple-type-ref">
-                              <name>long</name>
-                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
-                           </type>
-                        </particle>
-                        <particle type="element">
                            <name>salary</name>
+                           <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
                            <type type="simple-type-ref">
                               <name>double</name>
                               <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
@@ -143,6 +160,7 @@
                         </particle>
                         <particle type="element">
                            <name>address</name>
+                           <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
                            <type type="complex-type-ref">
                               <name>address-type</name>
                               <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
@@ -150,6 +168,7 @@
                         </particle>
                         <particle type="element">
                            <name>phone-number</name>
+                           <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
                            <type type="complex-type-ref">
                               <name>phone-type</name>
                               <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
@@ -158,6 +177,7 @@
                         </particle>
                         <particle type="element">
                            <name>sdo-change-summary</name>
+                           <namespace-url>http://www.example.org/jpadas-employee</namespace-url>
                            <type type="complex-type-ref">
                               <name>anyType</name>
                               <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
@@ -188,6 +208,14 @@
                </base-type>
                <attributes>
                   <attribute type="attribute">
+                     <name>number</name>
+                     <use>optional</use>
+                     <type type="simple-type-ref">
+                        <name>string</name>
+                        <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                     </type>
+                  </attribute>
+                  <attribute type="attribute">
                      <name>type</name>
                      <use>optional</use>
                      <type type="simple-type-ref">
@@ -196,27 +224,7 @@
                      </type>
                   </attribute>
                </attributes>
-               <content type="complex">
-                  <mixed-flag>false</mixed-flag>
-                  <particle compositor="sequence" type="model-group">
-                     <particles>
-                        <particle type="element">
-                           <name>area-code</name>
-                           <type type="simple-type-ref">
-                              <name>string</name>
-                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
-                           </type>
-                        </particle>
-                        <particle type="element">
-                           <name>number</name>
-                           <type type="simple-type-ref">
-                              <name>string</name>
-                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
-                           </type>
-                        </particle>
-                     </particles>
-                  </particle>
-               </content>
+               <content type="empty"/>
             </type-definition>
          </type-definitions>
       </namespace>

@@ -43,7 +43,7 @@ public class CreateDatabase extends EclipseLinkJPATest {
 	public void createDatabase() {
 		EntityManager em = getEntityManager();
 
-		new SchemaManager(JpaHelper.getEntityManager(em).getServerSession()).createSequences();
+		new SchemaManager(JpaHelper.getEntityManager(em).getServerSession()).replaceSequences();
 
 		em.getTransaction().begin();
 

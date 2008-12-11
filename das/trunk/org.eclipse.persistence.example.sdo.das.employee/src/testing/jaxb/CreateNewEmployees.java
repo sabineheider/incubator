@@ -41,12 +41,14 @@ public class CreateNewEmployees {
 		Address address = new Address();
 		address.setId(1);
 		address.setCity("Ottawa");
+		address.setStreet("123 Somewhere Lane");
 		address.setProvince("ON");
 		address.setPostalCode("K1A1A1");
+		address.setCountry("Canada");
 		employee.setAddress(address);
 		
-		employee.addPhoneNumber("Home", "613", "5551212");
-		employee.addPhoneNumber("Mobile", "613", "5552121");
+		employee.addPhoneNumber("Home", "6135551212");
+		employee.addPhoneNumber("Mobile", "6135552121");
 
 		Marshaller marshaller = jaxbContext.createMarshaller();
 		marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);

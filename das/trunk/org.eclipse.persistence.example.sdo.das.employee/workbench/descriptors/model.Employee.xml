@@ -19,6 +19,9 @@
             <attribute-declaring-type-name>model.Employee</attribute-declaring-type-name>
             <attribute-name>address</attribute-name>
          </attribute-handle>
+         <reference-descriptor-handle>
+            <descriptor-name>model.Address</descriptor-name>
+         </reference-descriptor-handle>
          <xpath>address</xpath>
       </mapping>
       <mapping type="xml-direct">
@@ -59,6 +62,9 @@
             <attribute-declaring-type-name>model.Employee</attribute-declaring-type-name>
             <attribute-name>phoneNumbers</attribute-name>
          </attribute-handle>
+         <reference-descriptor-handle>
+            <descriptor-name>model.PhoneNumber</descriptor-name>
+         </reference-descriptor-handle>
          <xpath>phone-number</xpath>
          <container-policy type="list">
             <container-class>
@@ -80,9 +86,18 @@
             <attribute-declaring-type-name>model.Employee</attribute-declaring-type-name>
             <attribute-name>version</attribute-name>
          </attribute-handle>
-         <xml-field>version/text()</xml-field>
+         <xml-field>@version</xml-field>
       </mapping>
    </mappings>
+   <after-loading-policy>
+      <post-load-class-handle>
+         <type-name>model.persistence.MOXyDescriptorCustomizers</type-name>
+      </post-load-class-handle>
+      <post-load-method-handle>
+         <method-declaring-type-name>model.persistence.MOXyDescriptorCustomizers</method-declaring-type-name>
+         <method-signature>afterLoadEmployee(org.eclipse.persistence.descriptors.ClassDescriptor)</method-signature>
+      </post-load-method-handle>
+   </after-loading-policy>
    <schema-context-handle>
       <schema>employee</schema>
       <qname-path>

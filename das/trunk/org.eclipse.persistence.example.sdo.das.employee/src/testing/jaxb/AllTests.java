@@ -22,6 +22,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { CreateNewEmployees.class,  ReadEmployeesFromDB.class })
+@Suite.SuiteClasses( { CreateNewEmployees.class,  ReadEmployeesFromDB.class, UpdateDBFromFiles.class })
 public class AllTests {
 }

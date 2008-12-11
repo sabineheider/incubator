@@ -16,12 +16,29 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package testing;
+package testing.jaxb;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import javax.persistence.PersistenceContext;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
 
-@RunWith(Suite.class)
-@Suite.SuiteClasses( { testing.jpa.AllTests.class, testing.jaxb.AllTests.class, testing.sdo.AllTests.class, testing.das.AllTests.class })
-public class AllTests {
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import testing.jpa.EclipseLinkJPATest;
+
+@PersistenceContext(unitName = "employee")
+public class UpdateDBFromFiles extends EclipseLinkJPATest {
+
+	private static JAXBContext jaxbContext;
+
+	@Test
+	public void test() throws Exception {
+		jaxbContext.toString();
+	}
+
+	@BeforeClass
+	public static void initializeContext() throws JAXBException {
+		jaxbContext = JAXBContext.newInstance("model");
+	}
 }

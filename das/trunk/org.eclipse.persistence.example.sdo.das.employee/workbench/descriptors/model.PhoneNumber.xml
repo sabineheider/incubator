@@ -14,20 +14,12 @@
    </transactional-policy>
    <mappings>
       <mapping type="xml-direct">
-         <name>areaCode</name>
-         <attribute-handle>
-            <attribute-declaring-type-name>model.PhoneNumber</attribute-declaring-type-name>
-            <attribute-name>areaCode</attribute-name>
-         </attribute-handle>
-         <xml-field>area-code/text()</xml-field>
-      </mapping>
-      <mapping type="xml-direct">
          <name>number</name>
          <attribute-handle>
             <attribute-declaring-type-name>model.PhoneNumber</attribute-declaring-type-name>
             <attribute-name>number</attribute-name>
          </attribute-handle>
-         <xml-field>number/text()</xml-field>
+         <xml-field>@number</xml-field>
       </mapping>
       <mapping type="xml-direct">
          <name>type</name>

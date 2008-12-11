@@ -78,7 +78,7 @@ public class TransactionExamples extends EclipseLinkJPATest {
 		Address address = new Address();
 		emp.setAddress(address);
 
-		emp.addPhoneNumber("Mobile", "613", "555-1212");
+		emp.addPhoneNumber("Mobile", "6135551212");
 
 		em.getTransaction().begin();
 		em.persist(emp);
@@ -109,7 +109,7 @@ public class TransactionExamples extends EclipseLinkJPATest {
 		Address address = new Address();
 		emp.setAddress(address);
 
-		emp.addPhoneNumber("Mobile", "613", "555-1212");
+		emp.addPhoneNumber("Mobile", "6135551212");
 
 		em.getTransaction().begin();
 		// When merging the managed instance is returned from the call.

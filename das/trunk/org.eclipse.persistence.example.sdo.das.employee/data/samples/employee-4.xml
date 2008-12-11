@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<emp:employee id="4" version="1" xmlns="http://www.example.org/jpadas-employee" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:emp="http://www.example.org/jpadas-employee">
+   <first-name>Emanual</first-name>
+   <last-name>Smith</last-name>
+   <gender>Male</gender>
+   <salary>49631.0</salary>
+   <address id="4">
+      <street>20 Mountain Blvd., Floor 53, Suite 6</street>
+      <city>Vancouver</city>
+      <state>BC</state>
+      <zip-code>N5J2N5</zip-code>
+      <country>Canada</country>
+   </address>
+   <phone-number number="9055553691" type="ISDN"/>
+   <phone-number number="9765556666" type="Pager"/>
+   <phone-number number="6135555943" type="Work Fax"/>
+   <phone-number number="4165551111" type="Cellular"/>
+</emp:employee>

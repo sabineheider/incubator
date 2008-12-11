@@ -18,13 +18,15 @@
  ******************************************************************************/
 package testing.jaxb;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.List;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.xml.bind.*;
 
-import model.*;
+import model.Employee;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,15 +39,20 @@ public class ReadEmployeesFromDB extends EclipseLinkJPATest {
 	private static JAXBContext jaxbContext;
 
 	@Test
-	public void simple() throws JAXBException {
+	public void simple() throws Exception {
 		Marshaller marshaller = jaxbContext.createMarshaller();
 		marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 		EntityManager em = getEntityManager();
 
 		List<Employee> emps = em.createNamedQuery("Employee.findAll").getResultList();
 
+		new File("./data/temp/").mkdirs();
+
 		for (Employee employee : emps) {
+			FileOutputStream out = new FileOutputStream("./data/temp/employee-" + employee.getId() + ".xml");
 			marshaller.marshal(employee, System.out);
+			marshaller.marshal(employee, out);
+			out.close();
 		}
 	}
 

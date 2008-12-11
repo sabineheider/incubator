@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<emp:employee id="2" version="1" xmlns="http://www.example.org/jpadas-employee" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:emp="http://www.example.org/jpadas-employee">
+   <first-name>John</first-name>
+   <last-name>Way</last-name>
+   <gender>Male</gender>
+   <salary>53000.0</salary>
+   <address id="2">
+      <street>12 Merivale Rd., Suite 5</street>
+      <city>Ottawa</city>
+      <state>ONT</state>
+      <zip-code>K5J2B5</zip-code>
+      <country>Canada</country>
+   </address>
+   <phone-number number="9055553691" type="ISDN"/>
+   <phone-number number="6135558812" type="Work"/>
+</emp:employee>

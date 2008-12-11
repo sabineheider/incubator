@@ -77,7 +77,7 @@ public class SamplePopulation {
 
 		employee.addResponsibility("Water the office plants.");
 		employee.addResponsibility("Maintain the kitchen facilities.");
-		employee.addPhoneNumber("Work", "613", "5558812");
+		employee.addPhoneNumber("Work", "6135558812");
 
 		return employee;
 	}
@@ -102,8 +102,8 @@ public class SamplePopulation {
 		employee.setAddress(address);
 
 		employee.setSalary(56232);
-		employee.addPhoneNumber("Work", "613", "5558812");
-		employee.addPhoneNumber("Work Fax", "613", "5555943");
+		employee.addPhoneNumber("Work", "6135558812");
+		employee.addPhoneNumber("Work Fax", "6135555943");
 
 		return employee;
 	}
@@ -129,9 +129,9 @@ public class SamplePopulation {
 		employee.setAddress(address);
 
 		employee.setSalary(75000);
-		employee.addPhoneNumber("Work Fax", "613", "5555943");
-		employee.addPhoneNumber("Home", "613", "5551234");
-		employee.addPhoneNumber("Cellular", "416", "5551111");
+		employee.addPhoneNumber("Work Fax", "6135555943");
+		employee.addPhoneNumber("Home", "6135551234");
+		employee.addPhoneNumber("Cellular", "4165551111");
 
 		return employee;
 	}
@@ -157,8 +157,8 @@ public class SamplePopulation {
 		employee.setAddress(address);
 
 		employee.setSalary(50000);
-		employee.addPhoneNumber("Home", "613", "5551234");
-		employee.addPhoneNumber("Cellular", "416", "5551111");
+		employee.addPhoneNumber("Home", "6135551234");
+		employee.addPhoneNumber("Cellular", "4165551111");
 
 		return employee;
 	}
@@ -185,8 +185,8 @@ public class SamplePopulation {
 
 		employee.addResponsibility("Hire people when more people are required.");
 		employee.addResponsibility("Lay off employees when less people are required.");
-		employee.addPhoneNumber("Work", "613", "5558812");
-		employee.addPhoneNumber("ISDN", "905", "5553691");
+		employee.addPhoneNumber("Work", "6135558812");
+		employee.addPhoneNumber("ISDN", "9055553691");
 
 		return employee;
 	}
@@ -213,8 +213,8 @@ public class SamplePopulation {
 		employee.setAddress(address);
 
 		employee.addResponsibility("Perform code reviews as required.");
-		employee.addPhoneNumber("Pager", "976", "5556666");
-		employee.addPhoneNumber("ISDN", "905", "5553691");
+		employee.addPhoneNumber("Pager", "9765556666");
+		employee.addPhoneNumber("ISDN", "9055553691");
 
 		return employee;
 	}
@@ -241,10 +241,10 @@ public class SamplePopulation {
 		employee.setAddress(address);
 
 		employee.addResponsibility("Have to fix the Database problem.");
-		employee.addPhoneNumber("Work Fax", "613", "5555943");
-		employee.addPhoneNumber("Cellular", "416", "5551111");
-		employee.addPhoneNumber("Pager", "976", "5556666");
-		employee.addPhoneNumber("ISDN", "905", "5553691");
+		employee.addPhoneNumber("Work Fax", "6135555943");
+		employee.addPhoneNumber("Cellular", "4165551111");
+		employee.addPhoneNumber("Pager", "9765556666");
+		employee.addPhoneNumber("ISDN", "9055553691");
 
 		return employee;
 	}
@@ -271,9 +271,9 @@ public class SamplePopulation {
 		employee.setAddress(address);
 
 		employee.addResponsibility("Write code documentation.");
-		employee.addPhoneNumber("Work", "613", "5558812");
-		employee.addPhoneNumber("ISDN", "905", "5553691");
-		employee.addPhoneNumber("Home", "613", "5551234");
+		employee.addPhoneNumber("Work", "6135558812");
+		employee.addPhoneNumber("ISDN", "9055553691");
+		employee.addPhoneNumber("Home", "6135551234");
 
 		return employee;
 	}
@@ -300,8 +300,8 @@ public class SamplePopulation {
 		employee.setAddress(address);
 
 		employee.addResponsibility("Write user specifications.");
-		employee.addPhoneNumber("ISDN", "905", "5553691");
-		employee.addPhoneNumber("Work", "613", "5558812");
+		employee.addPhoneNumber("ISDN", "9055553691");
+		employee.addPhoneNumber("Work", "6135558812");
 
 		return employee;
 	}
@@ -327,7 +327,7 @@ public class SamplePopulation {
 		address.setCountry("Canada");
 		employee.setAddress(address);
 
-		employee.addPhoneNumber("Home", "613", "5551234");
+		employee.addPhoneNumber("Home", "6135551234");
 
 		return employee;
 	}
@@ -353,8 +353,8 @@ public class SamplePopulation {
 		address.setCountry("Canada");
 		employee.setAddress(address);
 
-		employee.addPhoneNumber("Cellular", "416", "5551111");
-		employee.addPhoneNumber("ISDN", "905", "5553691");
+		employee.addPhoneNumber("Cellular", "4165551111");
+		employee.addPhoneNumber("ISDN", "9055553691");
 
 		return employee;
 	}
@@ -380,8 +380,8 @@ public class SamplePopulation {
 		address.setCountry("Canada");
 		employee.setAddress(address);
 
-		employee.addPhoneNumber("Work", "613", "5558812");
-		employee.addPhoneNumber("ISDN", "905", "5553691");
+		employee.addPhoneNumber("Work", "6135558812");
+		employee.addPhoneNumber("ISDN", "9055553691");
 
 		return employee;
 	}

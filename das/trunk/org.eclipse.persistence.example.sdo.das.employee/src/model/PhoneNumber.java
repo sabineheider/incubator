@@ -22,7 +22,6 @@ import java.io.Serializable;
 
 public class PhoneNumber implements Serializable {
 	private int id;
-	private String areaCode;
 	private String number;
 	private String type;
 	private Employee owner;
@@ -30,19 +29,10 @@ public class PhoneNumber implements Serializable {
 	public PhoneNumber() {
 	}
 
-	public PhoneNumber(String type, String areaCode, String number) {
+	public PhoneNumber(String type, String number) {
 		this();
 		setType(type);
-		setAreaCode(areaCode);
 		setNumber(number);
-	}
-
-	public String getAreaCode() { 
-		return areaCode;
-	}
-
-	public void setAreaCode(String areaCode) {
-		this.areaCode = areaCode;
 	}
 
 	public int getId() {
@@ -73,7 +63,7 @@ public class PhoneNumber implements Serializable {
 		return this.owner;
 	}
 
-	protected void setOwner(Employee employee) {
+	public void setOwner(Employee employee) {
 		this.owner = employee;
 		this.id = employee.getId();
 	}

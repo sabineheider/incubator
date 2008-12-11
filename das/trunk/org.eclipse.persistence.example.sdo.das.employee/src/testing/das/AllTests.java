@@ -16,12 +16,12 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package testing;
+package testing.das;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { testing.jpa.AllTests.class, testing.jaxb.AllTests.class, testing.sdo.AllTests.class, testing.das.AllTests.class })
+@Suite.SuiteClasses( { ReadDataObjectsFromDB.class, PopulateDatabaseFromXML.class })
 public class AllTests {
 }
