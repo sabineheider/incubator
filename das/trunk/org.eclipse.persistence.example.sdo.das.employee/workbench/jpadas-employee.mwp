@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project type="o-x">
+   <name>jpadas-employee</name>
+   <product-version>1.0</product-version>
+   <schema-version>7.0</schema-version>
+   <class-repository>
+      <classpath-entries>
+         <entry>../classes</entry>
+      </classpath-entries>
+      <user-type-names>
+         <name>model.Address</name>
+         <name>model.Employee</name>
+         <name>model.EmploymentPeriod</name>
+         <name>model.PhoneNumber</name>
+      </user-type-names>
+   </class-repository>
+   <descriptor-names>
+      <descriptor-name>model.Address</descriptor-name>
+      <descriptor-name>model.Employee</descriptor-name>
+      <descriptor-name>model.PhoneNumber</descriptor-name>
+   </descriptor-names>
+   <defaults-policy type="o-x">
+      <use-method-accessing>false</use-method-accessing>
+   </defaults-policy>
+   <deployment-xml-file>../src/META-INF/employee-oxm.xml</deployment-xml-file>
+   <xml-schema-repository>
+      <schema-names>
+         <name>employee</name>
+      </schema-names>
+   </xml-schema-repository>
+</project>

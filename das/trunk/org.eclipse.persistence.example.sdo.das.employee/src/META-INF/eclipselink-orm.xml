@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="windows-1252" ?>
+<!--
+ * Copyright (c) 1998, 2008 Oracle. All rights reserved.
+ * This program and the accompanying materials are made available under the 
+ * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0 
+ * which accompanies this distribution. 
+ * The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+ * and the Eclipse Distribution License is available at 
+ * http://www.eclipse.org/org/documents/edl-v10.php.
+ *
+ * Contributors:
+ *     dclarke - JPA DAS INCUBATOR - Enhancement 258057
+ *     			 http://wiki.eclipse.org/EclipseLink/Development/SDO-JPA
+ *     
+ * This code is being developed under INCUBATION and is not currently included 
+ * in the automated EclipseLink build. The API in this code may change, or 
+ * may never be included in the product. Please provide feedback through mailing 
+ * lists or the bug database.
+-->
+<entity-mappings xmlns="http://www.eclipse.org/eclipselink/xsds/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0">
+	
+	<object-type-converter name="gender-converter"
+		object-type="model.Gender" data-type="java.lang.String">
+		<conversion-value object-value="Male" data-value="M" />
+		<conversion-value object-value="Female" data-value="F" />
+	</object-type-converter>
+	
+	<named-query name="Employee.findAll">
+		<query>SELECT e FROM Employee e</query>
+	</named-query>
+	
+	<entity class="model.Address">
+		<table name="JPADAS_ADDRESS" />
+		<attributes>
+			<id name="id">
+				<column name="ADDRESS_ID" />
+				<generated-value strategy="SEQUENCE" />
+			</id>
+			<basic name="city" />
+			<basic name="country" />
+			<basic name="province" />
+			<basic name="postalCode">
+				<column name="P_CODE" />
+			</basic>
+			<basic name="street" />
+		</attributes>
+	</entity>
+	
+	<entity class="model.PhoneNumber">
+		<table name="JPADAS_PHONE" />
+		<id-class class="model.PhoneNumber$ID" />
+		<attributes>
+			<id name="id">
+				<column name="EMP_ID" updatable="false" insertable="false" />
+			</id>
+			<id name="type">
+				<column updatable="false" />
+			</id>
+			<basic name="areaCode">
+				<column name="AREA_CODE" />
+			</basic>
+			<basic name="number">
+				<column name="P_NUMBER" />
+			</basic>
+			<many-to-one name="owner">
+				<join-column name="EMP_ID" />
+			</many-to-one>
+		</attributes>
+	</entity>
+
+	<entity class="model.Employee">
+		<table name="JPADAS_EMPLOYEE" />
+		<secondary-table name="JPADAS_SALARY" />
+		<attributes>
+			<id name="id">
+				<column name="EMP_ID" />
+				<generated-value strategy="SEQUENCE" />
+			</id>
+			<basic name="firstName">
+				<column name="F_NAME" />
+			</basic>
+			<basic name="lastName">
+				<column name="L_NAME" />
+			</basic>
+			<basic name="startTime">
+				<column name="START_TIME" />
+			</basic>
+			<basic name="endTime">
+				<column name="END_TIME" />
+			</basic>
+			<basic name="gender">
+				<column name="GENDER" />
+				<convert>gender-converter</convert>
+			</basic>
+			<basic name="salary">
+				<column table="JPADAS_SALARY" />
+			</basic>
+			<basic-collection name="responsibilities">
+				<value-column name="JPADAS_RESPON_DESC" />
+				<collection-table name="RESPONS" />
+			</basic-collection>
+			<version name="version" />
+			<many-to-one name="manager" fetch="LAZY" optional="true">
+				<join-column name="MANAGER_ID" />
+			</many-to-one>
+			<one-to-many name="managedEmployees" mapped-by="manager" />
+			<one-to-many name="phoneNumbers" mapped-by="owner">
+				<cascade>
+					<cascade-all />
+				</cascade>
+				<private-owned />
+			</one-to-many>
+			<one-to-one name="address" fetch="LAZY">
+				<join-column name="ADDR_ID" />
+				<cascade>
+					<cascade-all />
+				</cascade>
+				<private-owned />
+			</one-to-one>
+			<embedded name="period">
+				<attribute-override name="startDate">
+					<column name="START_DATE" />
+				</attribute-override>
+				<attribute-override name="endDate">
+					<column name="END_DATE" />
+				</attribute-override>
+			</embedded>
+		</attributes>
+	</entity>
+
+	<embeddable class="model.EmploymentPeriod">
+		<attributes>
+			<basic name="startDate">
+				<temporal>DATE</temporal>
+			</basic>
+			<basic name="endDate">
+				<temporal>DATE</temporal>
+			</basic>
+		</attributes>
+	</embeddable>
+</entity-mappings>
