@@ -3,12 +3,13 @@
    <name>employee</name>
    <target-namespace-url>http://www.example.org/jpadas-employee</target-namespace-url>
    <default-namespace-url>http://www.example.org/jpadas-employee</default-namespace-url>
+   <should-default-namespace-url>true</should-default-namespace-url>
    <schema-source type="file">
       <location>../src/xsd/jpadas-employee.xsd</location>
    </schema-source>
    <built-in-namespaces>
-      <namespace url="http://www.w3.org/2001/XMLSchema" prefix="xs"/>
-      <namespace url="http://www.w3.org/2001/XMLSchema-instance" prefix="xsi"/>
+      <namespace url="http://www.w3.org/2001/XMLSchema" prefix="xs" declared="true"/>
+      <namespace url="http://www.w3.org/2001/XMLSchema-instance" prefix="xsi" declared="true"/>
    </built-in-namespaces>
    <declared-namespaces>
       <namespace>

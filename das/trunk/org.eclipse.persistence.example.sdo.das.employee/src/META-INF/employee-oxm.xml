@@ -35,10 +35,19 @@
          <namespace-resolver>
             <namespaces>
                <namespace>
+                  <prefix>xs</prefix>
+                  <namespace-uri>http://www.w3.org/2001/XMLSchema</namespace-uri>
+               </namespace>
+               <namespace>
+                  <prefix>xsi</prefix>
+                  <namespace-uri>http://www.w3.org/2001/XMLSchema-instance</namespace-uri>
+               </namespace>
+               <namespace>
                   <prefix>emp</prefix>
                   <namespace-uri>http://www.example.org/jpadas-employee</namespace-uri>
                </namespace>
             </namespaces>
+            <default-namespace-uri>http://www.example.org/jpadas-employee</default-namespace-uri>
          </namespace-resolver>
          <schema xsi:type="schema-file-reference">
             <resource>../src/xsd/jpadas-employee.xsd</resource>
@@ -98,10 +107,19 @@
          <namespace-resolver>
             <namespaces>
                <namespace>
+                  <prefix>xs</prefix>
+                  <namespace-uri>http://www.w3.org/2001/XMLSchema</namespace-uri>
+               </namespace>
+               <namespace>
+                  <prefix>xsi</prefix>
+                  <namespace-uri>http://www.w3.org/2001/XMLSchema-instance</namespace-uri>
+               </namespace>
+               <namespace>
                   <prefix>emp</prefix>
                   <namespace-uri>http://www.example.org/jpadas-employee</namespace-uri>
                </namespace>
             </namespaces>
+            <default-namespace-uri>http://www.example.org/jpadas-employee</default-namespace-uri>
          </namespace-resolver>
          <schema xsi:type="schema-file-reference">
             <resource>../src/xsd/jpadas-employee.xsd</resource>
@@ -134,10 +152,19 @@
          <namespace-resolver>
             <namespaces>
                <namespace>
+                  <prefix>xs</prefix>
+                  <namespace-uri>http://www.w3.org/2001/XMLSchema</namespace-uri>
+               </namespace>
+               <namespace>
+                  <prefix>xsi</prefix>
+                  <namespace-uri>http://www.w3.org/2001/XMLSchema-instance</namespace-uri>
+               </namespace>
+               <namespace>
                   <prefix>emp</prefix>
                   <namespace-uri>http://www.example.org/jpadas-employee</namespace-uri>
                </namespace>
             </namespaces>
+            <default-namespace-uri>http://www.example.org/jpadas-employee</default-namespace-uri>
          </namespace-resolver>
          <schema xsi:type="schema-file-reference">
             <resource>../src/xsd/jpadas-employee.xsd</resource>
