@@ -18,9 +18,22 @@
  ******************************************************************************/
 package org.eclipse.persistence.sdo.helper.jpa;
 
-import org.eclipse.persistence.sdo.helper.delegates.SDOXMLHelperDelegate;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
 
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.transform.Source;
+
+import org.eclipse.persistence.sdo.helper.delegates.SDOXMLHelperDelegate;
+import org.xml.sax.InputSource;
+
+import commonj.sdo.DataObject;
 import commonj.sdo.helper.HelperContext;
+import commonj.sdo.helper.XMLDocument;
 
 /**
  * This implementation of commonj.sdo.helper.XMLHelper is responsible for 
@@ -39,6 +52,70 @@ public class JPAXMLHelper extends SDOXMLHelperDelegate {
 
     public JPAHelperContext getHelperContext() {
         return (JPAHelperContext) super.getHelperContext();
+    }
+
+    @Override
+    public XMLDocument load(InputSource inputSource, String locationURI, Object options) throws IOException {
+        try {
+            Unmarshaller unmarshaller = getHelperContext().getJAXBContext().createUnmarshaller();
+            unmarshaller.unmarshal(inputSource);
+            throw new UnsupportedOperationException();
+        } catch(JAXBException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public XMLDocument load(InputStream inputStream, String locationURI, Object options) throws IOException {
+        return load(inputStream);
+    }
+
+    @Override
+    public XMLDocument load(InputStream inputStream) throws IOException {
+        try {
+            Unmarshaller unmarshaller = getHelperContext().getJAXBContext().createUnmarshaller();
+            JAXBElement jaxbElement = (JAXBElement) unmarshaller.unmarshal(inputStream);
+            return wrap(jaxbElement);
+        } catch(JAXBException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public XMLDocument load(Reader inputReader, String locationURI, Object options) throws IOException {
+        try {
+            Unmarshaller unmarshaller = getHelperContext().getJAXBContext().createUnmarshaller();
+            JAXBElement jaxbElement = (JAXBElement) unmarshaller.unmarshal(inputReader);
+            return wrap(jaxbElement);
+        } catch(JAXBException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public XMLDocument load(Source source, String locationURI, Object options) throws IOException {
+        try {
+            Unmarshaller unmarshaller = getHelperContext().getJAXBContext().createUnmarshaller();
+            JAXBElement jaxbElement = (JAXBElement) unmarshaller.unmarshal(source);
+            return wrap(jaxbElement);
+        } catch(JAXBException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public XMLDocument load(String inputString) {
+        try {
+            StringReader reader = new StringReader(inputString);
+            return load(reader, null, null);
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private XMLDocument wrap(JAXBElement jaxbElement) {
+        DataObject dataObject = getHelperContext().wrap(jaxbElement.getValue());
+        return getHelperContext().getXMLHelper().createDocument(dataObject, jaxbElement.getName().getNamespaceURI(), jaxbElement.getName().getLocalPart());
     }
 
 }
