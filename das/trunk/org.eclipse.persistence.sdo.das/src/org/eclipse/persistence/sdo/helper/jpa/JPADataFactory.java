@@ -34,16 +34,16 @@ public class JPADataFactory extends SDODataFactoryDelegate {
         super(helperContext);
     }
  
+    public JPAHelperContext getHelperContext() {
+        return (JPAHelperContext) super.getHelperContext();
+    }
+
     public DataObject create(Type type) {
         SDODataObject dataObject = (SDODataObject) super.create(type);
         JPAValueStore jpaValueStore = new JPAValueStore(getHelperContext(),type.getInstanceClass());
         jpaValueStore.initialize(dataObject);
         dataObject._setCurrentValueStore(jpaValueStore);
         return dataObject;
-    }
-
-    public JPAHelperContext getHelperContext() {
-        return (JPAHelperContext) super.getHelperContext();
     }
 
 }
