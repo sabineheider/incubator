@@ -23,7 +23,12 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import javax.persistence.*;
 import org.eclipse.persistence.sdo.SDODataObject;
+import org.eclipse.persistence.sdo.helper.SDOCopyHelper;
+import org.eclipse.persistence.sdo.helper.SDODataHelper;
+import org.eclipse.persistence.sdo.helper.SDOEqualityHelper;
 import org.eclipse.persistence.sdo.helper.SDOHelperContext;
+import org.eclipse.persistence.sdo.helper.delegates.SDOTypeHelperDelegate;
+import org.eclipse.persistence.sdo.helper.delegates.SDOXSDHelperDelegate;
 
 /**
  * This helper is responsible for converting between JPA entities and SDO
@@ -33,17 +38,25 @@ public class JPAHelperContext extends SDOHelperContext {
 
     private EntityManager jpaContext;
     private Map<Object, SDODataObject> wrapperDataObjects;
-    private JPADataFactory dataFactory;
 
     public JPAHelperContext(EntityManager anEntityManager) {
-        super();
-        jpaContext = anEntityManager;
-        wrapperDataObjects = new WeakHashMap<Object, SDODataObject>();
-        dataFactory = new JPADataFactory(this);
+        this(anEntityManager, Thread.currentThread().getContextClassLoader());
     }
 
-    public JPADataFactory getDataFactory() {
-        return dataFactory;
+    public JPAHelperContext(EntityManager anEntityManager, ClassLoader aClassLoader) {
+        super(aClassLoader);
+        wrapperDataObjects = new WeakHashMap<Object, SDODataObject>();
+        jpaContext = anEntityManager;
+    }
+
+    protected void initialize(ClassLoader aClassLoader)  {
+        copyHelper = new SDOCopyHelper(this);
+        dataFactory = new JPADataFactory(this);
+        dataHelper = new SDODataHelper(this);
+        equalityHelper = new SDOEqualityHelper(this);
+        xmlHelper = new JPAXMLHelper(this, aClassLoader);
+        typeHelper = new SDOTypeHelperDelegate(this);
+        xsdHelper = new SDOXSDHelperDelegate(this);        
     }
 
     public EntityManager getEntityManager() {
@@ -85,4 +98,5 @@ public class JPAHelperContext extends SDOHelperContext {
         JPAValueStore jpaValueStore = (JPAValueStore) sdoDataObject._getCurrentValueStore();
         return jpaValueStore.getEntity();
     }
+
 }
