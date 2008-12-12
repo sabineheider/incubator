@@ -19,9 +19,21 @@
 package org.eclipse.persistence.sdo.helper.jpa;
 
 import commonj.sdo.*;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.WeakHashMap;
 import javax.persistence.*;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.SchemaOutputResolver;
+import javax.xml.transform.Result;
+import javax.xml.transform.stream.StreamResult;
+
+import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.internal.jpa.EntityManagerImpl;
 import org.eclipse.persistence.sdo.SDODataObject;
 import org.eclipse.persistence.sdo.helper.SDOCopyHelper;
 import org.eclipse.persistence.sdo.helper.SDODataHelper;
@@ -36,17 +48,32 @@ import org.eclipse.persistence.sdo.helper.delegates.SDOXSDHelperDelegate;
  */
 public class JPAHelperContext extends SDOHelperContext {
 
-    private EntityManager jpaContext;
+    private JAXBContext jaxbContext;
+    private EntityManagerImpl jpaContext;
     private Map<Object, SDODataObject> wrapperDataObjects;
 
-    public JPAHelperContext(EntityManager anEntityManager) {
+    public JPAHelperContext(EntityManager anEntityManager) throws Exception {
         this(anEntityManager, Thread.currentThread().getContextClassLoader());
     }
 
-    public JPAHelperContext(EntityManager anEntityManager, ClassLoader aClassLoader) {
+    public JPAHelperContext(EntityManager anEntityManager, ClassLoader aClassLoader) throws Exception {
         super(aClassLoader);
         wrapperDataObjects = new WeakHashMap<Object, SDODataObject>();
-        jpaContext = anEntityManager;
+        jpaContext = (EntityManagerImpl) anEntityManager;
+        
+        Collection descriptors = jpaContext.getSession().getDescriptors().values();
+        Class[] classes = new Class[descriptors.size()]; 
+        Iterator descriptorIterator = descriptors.iterator();
+        int index = 0;
+        while(descriptorIterator.hasNext()) {
+            ClassDescriptor descriptor = (ClassDescriptor) descriptorIterator.next();
+            classes[index++] = descriptor.getJavaClass();
+        }
+        jaxbContext = JAXBContext.newInstance(classes);
+        JAXBSchemaOutputResolver schemaOutputResolver = new JAXBSchemaOutputResolver();
+        jaxbContext.generateSchema(schemaOutputResolver);
+        String xsd = schemaOutputResolver.getXMLSchema();
+        getXSDHelper().define(xsd);
     }
 
     protected void initialize(ClassLoader aClassLoader)  {
@@ -57,6 +84,10 @@ public class JPAHelperContext extends SDOHelperContext {
         xmlHelper = new JPAXMLHelper(this, aClassLoader);
         typeHelper = new SDOTypeHelperDelegate(this);
         xsdHelper = new SDOXSDHelperDelegate(this);        
+    }
+
+    public JAXBContext getJAXBContext() {
+        return jaxbContext;
     }
 
     public EntityManager getEntityManager() {
@@ -99,4 +130,24 @@ public class JPAHelperContext extends SDOHelperContext {
         return jpaValueStore.getEntity();
     }
 
+    private static class JAXBSchemaOutputResolver extends SchemaOutputResolver {
+
+        private StringWriter stringWriter;
+        
+        public Result createOutput(String namespaceURI, String suggestedFileName) throws IOException {
+            stringWriter = new StringWriter();
+            StreamResult result = new StreamResult(stringWriter);
+            result.setSystemId(suggestedFileName);
+            return result;
+        }
+        
+        public String getXMLSchema() {
+            if(null == stringWriter) {
+                return null;
+            }
+            return stringWriter.toString();
+        }
+        
+    }
+    
 }
