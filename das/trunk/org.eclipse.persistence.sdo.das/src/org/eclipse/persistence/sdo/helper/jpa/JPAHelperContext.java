@@ -19,27 +19,31 @@
 package org.eclipse.persistence.sdo.helper.jpa;
 
 import commonj.sdo.*;
-import commonj.sdo.helper.*;
 import java.util.Map;
 import java.util.WeakHashMap;
 import javax.persistence.*;
 import org.eclipse.persistence.sdo.SDODataObject;
+import org.eclipse.persistence.sdo.helper.SDOHelperContext;
 
 /**
  * This helper is responsible for converting between JPA entities and SDO
  * DataObjects.  The DataObject wraps the JPA entity.
  */
-public class SDOJPAHelper {
+public class JPAHelperContext extends SDOHelperContext {
 
-    private HelperContext sdoContext;
     private EntityManager jpaContext;
     private Map<Object, SDODataObject> wrapperDataObjects;
+    private JPADataFactory dataFactory;
 
-    public SDOJPAHelper(HelperContext aHelperContext, EntityManager anEntityManager) {
+    public JPAHelperContext(EntityManager anEntityManager) {
         super();
-        sdoContext = aHelperContext;
         jpaContext = anEntityManager;
         wrapperDataObjects = new WeakHashMap<Object, SDODataObject>();
+        dataFactory = new JPADataFactory(this);
+    }
+
+    public JPADataFactory getDataFactory() {
+        return dataFactory;
     }
 
     public EntityManager getEntityManager() {
@@ -58,8 +62,8 @@ public class SDOJPAHelper {
         if(null != wrapperDO) {
             return wrapperDO;
         }
-        Type wrapperType = sdoContext.getTypeHelper().getType(entity.getClass());
-        wrapperDO = (SDODataObject) sdoContext.getDataFactory().create(wrapperType);
+        Type wrapperType = getTypeHelper().getType(entity.getClass());
+        wrapperDO = (SDODataObject) getDataFactory().create(wrapperType);
 
         JPAValueStore jpaValueStore = new JPAValueStore(this, entity);
         jpaValueStore.initialize(wrapperDO);

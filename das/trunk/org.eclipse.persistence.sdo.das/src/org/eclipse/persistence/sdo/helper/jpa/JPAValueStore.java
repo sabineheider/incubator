@@ -37,21 +37,29 @@ import commonj.sdo.Property;
 
 public class JPAValueStore implements ValueStore {
 
-    private SDOJPAHelper sdoJPAHelper;
+    private JPAHelperContext jpaHelperContext;
     private Object entity;
     private ClassDescriptor descriptor;
     private SDODataObject dataObject;
     private Map<Property, ListWrapper> listWrappers;
 
-    public JPAValueStore(SDOJPAHelper aSDOJPAHelper, Object anEntity) {
-        this.sdoJPAHelper = aSDOJPAHelper;
-        this.entity = anEntity;
-        EntityManagerImpl entityManager = (EntityManagerImpl) sdoJPAHelper.getEntityManager();
-        descriptor = entityManager.getSession().getClassDescriptor(entity);
-        listWrappers = new WeakHashMap<Property, ListWrapper>();
+    public JPAValueStore(JPAHelperContext aJPAHelperContext, Class anEntityClass) {
+        this.jpaHelperContext = aJPAHelperContext;
+        EntityManagerImpl entityManager = (EntityManagerImpl) jpaHelperContext.getEntityManager();
+        listWrappers = new WeakHashMap<Property, ListWrapper>();        
+        descriptor = entityManager.getSession().getClassDescriptor(anEntityClass);
+        this.entity = descriptor.getInstantiationPolicy().buildNewInstance();
     }
 
-	public Object getEntity() {
+    public JPAValueStore(JPAHelperContext aJPAHelperContext, Object anEntity) {
+        this.jpaHelperContext = aJPAHelperContext;
+        EntityManagerImpl entityManager = (EntityManagerImpl) jpaHelperContext.getEntityManager();
+        listWrappers = new WeakHashMap<Property, ListWrapper>();
+        this.entity = anEntity;
+        descriptor = entityManager.getSession().getClassDescriptor(entity);
+    }
+
+    public Object getEntity() {
         return entity;
     }
 
@@ -78,16 +86,16 @@ public class JPAValueStore implements ValueStore {
             ContainerMapping containerMapping = (ContainerMapping) mapping;
             ContainerPolicy containerPolicy = containerMapping.getContainerPolicy();
             Object containerIterator = containerPolicy.iteratorFor(value);
-            EntityManagerImpl entityManager = (EntityManagerImpl) sdoJPAHelper.getEntityManager();
+            EntityManagerImpl entityManager = (EntityManagerImpl) jpaHelperContext.getEntityManager();
             while(containerPolicy.hasNext(containerIterator)) {
                 Object item = containerPolicy.next(containerIterator, (AbstractSession) entityManager.getSession());
-                DataObject valueDO = sdoJPAHelper.wrap(item);
+                DataObject valueDO = jpaHelperContext.wrap(item);
                 listWrapper.add(valueDO);
             }
             listWrappers.put(declaredProperty, listWrapper);
             return listWrapper;
         } else {
-            return sdoJPAHelper.wrap(value);
+            return jpaHelperContext.wrap(value);
         }
     }
 
@@ -102,7 +110,7 @@ public class JPAValueStore implements ValueStore {
         } else if(declaredProperty.isMany()) {
             throw new UnsupportedOperationException();
         } else {
-            value = sdoJPAHelper.unwrap((DataObject) value);
+            value = jpaHelperContext.unwrap((DataObject) value);
             mapping.getAttributeAccessor().setAttributeValueInObject(entity, value);
         }
     }
