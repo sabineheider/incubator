@@ -22,8 +22,10 @@ import commonj.sdo.*;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 import javax.persistence.*;
@@ -116,6 +118,17 @@ public class JPAHelperContext extends SDOHelperContext {
         return wrapperDO;
     }
 
+    public List<DataObject> wrap(List entities) {
+        if(null == entities) {
+            return null;
+        }
+        List<DataObject> dataObjects = new ArrayList<DataObject>(entities.size());
+        for(Object entity: entities) {
+            dataObjects.add(wrap(entity));
+        }
+        return dataObjects;
+    }
+
     /**
      * Return the JPA entity that is wrapped by the DataObject.
      * Multiple calls to unwrap for the same entity instance must return the 
@@ -130,24 +143,35 @@ public class JPAHelperContext extends SDOHelperContext {
         return jpaValueStore.getEntity();
     }
 
+    public List<Object> unwrap(List<DataObject> dataObjects) {
+        if(null == dataObjects) {
+            return null;
+        }
+        List<Object> entities = new ArrayList<Object>(dataObjects.size());
+        for(DataObject dataObject: dataObjects) {
+            entities.add(unwrap(dataObject));
+        }
+        return entities;
+    }
+
     private static class JAXBSchemaOutputResolver extends SchemaOutputResolver {
 
         private StringWriter stringWriter;
-        
+
         public Result createOutput(String namespaceURI, String suggestedFileName) throws IOException {
             stringWriter = new StringWriter();
             StreamResult result = new StreamResult(stringWriter);
             result.setSystemId(suggestedFileName);
             return result;
         }
-        
+
         public String getXMLSchema() {
             if(null == stringWriter) {
                 return null;
             }
             return stringWriter.toString();
         }
-        
+
     }
-    
+
 }
