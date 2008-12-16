@@ -28,6 +28,7 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.Source;
 
+import org.eclipse.persistence.oxm.XMLRoot;
 import org.eclipse.persistence.sdo.helper.delegates.SDOXMLHelperDelegate;
 import org.xml.sax.InputSource;
 
@@ -58,8 +59,8 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
     public XMLDocument load(InputSource inputSource, String locationURI, Object options) throws IOException {
         try {
             Unmarshaller unmarshaller = getHelperContext().getJAXBContext().createUnmarshaller();
-            unmarshaller.unmarshal(inputSource);
-            throw new UnsupportedOperationException();
+            Object jaxbElement = unmarshaller.unmarshal(inputSource);
+            return wrap(jaxbElement);
         } catch(JAXBException e) {
             throw new RuntimeException(e);
         }
@@ -74,7 +75,7 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
     public XMLDocument load(InputStream inputStream) throws IOException {
         try {
             Unmarshaller unmarshaller = getHelperContext().getJAXBContext().createUnmarshaller();
-            JAXBElement jaxbElement = (JAXBElement) unmarshaller.unmarshal(inputStream);
+            Object jaxbElement = unmarshaller.unmarshal(inputStream);
             return wrap(jaxbElement);
         } catch(JAXBException e) {
             throw new RuntimeException(e);
@@ -85,7 +86,7 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
     public XMLDocument load(Reader inputReader, String locationURI, Object options) throws IOException {
         try {
             Unmarshaller unmarshaller = getHelperContext().getJAXBContext().createUnmarshaller();
-            JAXBElement jaxbElement = (JAXBElement) unmarshaller.unmarshal(inputReader);
+            Object jaxbElement = unmarshaller.unmarshal(inputReader);
             return wrap(jaxbElement);
         } catch(JAXBException e) {
             throw new RuntimeException(e);
@@ -96,7 +97,7 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
     public XMLDocument load(Source source, String locationURI, Object options) throws IOException {
         try {
             Unmarshaller unmarshaller = getHelperContext().getJAXBContext().createUnmarshaller();
-            JAXBElement jaxbElement = (JAXBElement) unmarshaller.unmarshal(source);
+            Object jaxbElement = unmarshaller.unmarshal(source);
             return wrap(jaxbElement);
         } catch(JAXBException e) {
             throw new RuntimeException(e);
@@ -113,9 +114,16 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
         }
     }
 
-    private XMLDocument wrap(JAXBElement jaxbElement) {
-        DataObject dataObject = getHelperContext().wrap(jaxbElement.getValue());
-        return getHelperContext().getXMLHelper().createDocument(dataObject, jaxbElement.getName().getNamespaceURI(), jaxbElement.getName().getLocalPart());
+    private XMLDocument wrap(Object object) {
+        if(object instanceof JAXBElement) {
+            JAXBElement jaxbElement = (JAXBElement) object;
+            DataObject dataObject = getHelperContext().wrap(jaxbElement.getValue());
+            return getHelperContext().getXMLHelper().createDocument(dataObject, jaxbElement.getName().getNamespaceURI(), jaxbElement.getName().getLocalPart());
+        } else {
+            XMLRoot xmlRoot = (XMLRoot) object;
+            DataObject dataObject = getHelperContext().wrap(xmlRoot.getObject());
+            return getHelperContext().getXMLHelper().createDocument(dataObject, xmlRoot.getNamespaceURI(), xmlRoot.getLocalName());
+        }
     }
 
 }
