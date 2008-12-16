@@ -131,15 +131,15 @@ public class JAXBValueStore implements ValueStore {
      */
     public boolean isSetDeclaredProperty(int propertyIndex) {
         SDOProperty declaredProperty = (SDOProperty) dataObject.getType().getDeclaredProperties().get(propertyIndex);
+        DatabaseMapping mapping = this.getMappignForField((XMLField) declaredProperty.getXmlMapping().getField());
         if(declaredProperty.isMany()) {
-            DatabaseMapping mapping = this.getMappignForField((XMLField) declaredProperty.getXmlMapping().getField());
             Collection collection = (Collection) mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
             if(null == collection) {
                 return false;
             }
             return !collection.isEmpty();
         } else {
-            return true;
+            return null != mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
         }
     }
 
