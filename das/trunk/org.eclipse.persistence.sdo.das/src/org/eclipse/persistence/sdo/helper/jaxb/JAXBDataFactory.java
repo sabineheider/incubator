@@ -18,15 +18,17 @@
  ******************************************************************************/
 package org.eclipse.persistence.sdo.helper.jaxb;
 
+import org.eclipse.persistence.sdo.SDODataObject;
+import org.eclipse.persistence.sdo.SDOType;
+import org.eclipse.persistence.sdo.helper.delegates.SDODataFactoryDelegate;
+
 import commonj.sdo.DataObject;
 import commonj.sdo.Type;
 import commonj.sdo.helper.HelperContext;
-import org.eclipse.persistence.sdo.SDODataObject;
-import org.eclipse.persistence.sdo.helper.delegates.SDODataFactoryDelegate;
 
 /**
  * This implementation of commonj.sdo.helper.DataFactory is responsible for 
- * ensuring that newly created DataObjects are assigned a JPA aware value store. 
+ * ensuring that newly created DataObjects are assigned a JAXB aware value store. 
  */
 public class JAXBDataFactory extends SDODataFactoryDelegate {
 
@@ -40,7 +42,7 @@ public class JAXBDataFactory extends SDODataFactoryDelegate {
 
     public DataObject create(Type type) {
         SDODataObject dataObject = (SDODataObject) super.create(type);
-        JAXBValueStore jpaValueStore = new JAXBValueStore(getHelperContext(),type.getInstanceClass());
+        JAXBValueStore jpaValueStore = new JAXBValueStore(getHelperContext(),((SDOType)type).getQName());
         jpaValueStore.initialize(dataObject);
         dataObject._setCurrentValueStore(jpaValueStore);
         return dataObject;

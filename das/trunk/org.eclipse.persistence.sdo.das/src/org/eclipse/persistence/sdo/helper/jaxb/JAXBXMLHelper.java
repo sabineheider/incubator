@@ -37,7 +37,7 @@ import commonj.sdo.helper.XMLDocument;
 
 /**
  * This implementation of commonj.sdo.helper.XMLHelper is responsible for 
- * ensuring that newly unmarshalled DataObjects are assigned a JPA aware 
+ * ensuring that newly unmarshalled DataObjects are assigned a JAXB aware 
  * value store. 
  */
 public class JAXBXMLHelper extends SDOXMLHelperDelegate {

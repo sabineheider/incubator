@@ -18,25 +18,15 @@
  ******************************************************************************/
 package org.eclipse.persistence.sdo.helper.jaxb;
 
-import commonj.sdo.*;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
-import javax.persistence.*;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.SchemaOutputResolver;
-import javax.xml.transform.Result;
-import javax.xml.transform.stream.StreamResult;
 
-import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.internal.jpa.EntityManagerImpl;
+import javax.xml.bind.JAXBContext;
+import javax.xml.namespace.QName;
+
+import org.eclipse.persistence.oxm.XMLDescriptor;
 import org.eclipse.persistence.sdo.SDODataObject;
 import org.eclipse.persistence.sdo.helper.SDOCopyHelper;
 import org.eclipse.persistence.sdo.helper.SDODataHelper;
@@ -45,23 +35,26 @@ import org.eclipse.persistence.sdo.helper.SDOHelperContext;
 import org.eclipse.persistence.sdo.helper.delegates.SDOTypeHelperDelegate;
 import org.eclipse.persistence.sdo.helper.delegates.SDOXSDHelperDelegate;
 
+import commonj.sdo.DataObject;
+import commonj.sdo.Type;
+
 /**
- * This helper is responsible for converting between JPA entities and SDO
- * DataObjects.  The DataObject wraps the JPA entity.
+ * This helper is responsible for converting between JAXB objects and SDO
+ * DataObjects.  The DataObject wraps the JAXB object.
  */
 public class JAXBHelperContext extends SDOHelperContext {
 
-    private JAXBContext jaxbContext;
+    private org.eclipse.persistence.jaxb.JAXBContext jaxbContext;
     private Map<Object, SDODataObject> wrapperDataObjects;
 
     public JAXBHelperContext(JAXBContext aJAXBContext) throws Exception {
         this(aJAXBContext, Thread.currentThread().getContextClassLoader());
     }
-    
+
     public JAXBHelperContext(JAXBContext aJAXBContext, ClassLoader aClassLoader) throws Exception {
         super(aClassLoader);
         wrapperDataObjects = new WeakHashMap<Object, SDODataObject>();
-        jaxbContext = aJAXBContext;
+        jaxbContext = (org.eclipse.persistence.jaxb.JAXBContext) aJAXBContext;
     }
 
     protected void initialize(ClassLoader aClassLoader)  {
@@ -71,7 +64,7 @@ public class JAXBHelperContext extends SDOHelperContext {
         equalityHelper = new SDOEqualityHelper(this);
         xmlHelper = new JAXBXMLHelper(this, aClassLoader);
         typeHelper = new SDOTypeHelperDelegate(this);
-        xsdHelper = new SDOXSDHelperDelegate(this);        
+        xsdHelper = new SDOXSDHelperDelegate(this);
     }
 
     public JAXBContext getJAXBContext() {
@@ -90,17 +83,21 @@ public class JAXBHelperContext extends SDOHelperContext {
         if(null != wrapperDO) {
             return wrapperDO;
         }
-        Type wrapperType = getTypeHelper().getType(entity.getClass());
+
+        XMLDescriptor entityDescriptor = (XMLDescriptor) jaxbContext.getXMLContext().getSession(entity).getDescriptor(entity);
+        QName qName = entityDescriptor.getSchemaReference().getSchemaContextAsQName(entityDescriptor.getNamespaceResolver());
+        Type wrapperType = getTypeHelper().getType(qName.getNamespaceURI(), qName.getLocalPart());
         wrapperDO = (SDODataObject) getDataFactory().create(wrapperType);
 
-        JAXBValueStore jpaValueStore = new JAXBValueStore(this, entity);
-        jpaValueStore.initialize(wrapperDO);
-        wrapperDO._setCurrentValueStore(jpaValueStore);
+        JAXBValueStore jaxbValueStore = new JAXBValueStore(this, entity); 
+        wrapperDO._setCurrentValueStore(jaxbValueStore);
+        jaxbValueStore.initialize(wrapperDO);
+
         wrapperDataObjects.put(entity, wrapperDO);
         return wrapperDO;
     }
 
-    public List<DataObject> wrap(List entities) {
+    public List<DataObject> wrap(List<Object> entities) {
         if(null == entities) {
             return null;
         }

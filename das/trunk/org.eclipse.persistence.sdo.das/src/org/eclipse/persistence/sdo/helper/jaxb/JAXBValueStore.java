@@ -21,10 +21,10 @@ package org.eclipse.persistence.sdo.helper.jaxb;
 import java.util.Collection;
 import java.util.Map;
 import java.util.WeakHashMap;
+
 import javax.xml.namespace.QName;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.internal.jpa.EntityManagerImpl;
 import org.eclipse.persistence.internal.oxm.MappingNodeValue;
 import org.eclipse.persistence.internal.oxm.TreeObjectBuilder;
 import org.eclipse.persistence.internal.oxm.XPathFragment;
@@ -51,24 +51,22 @@ public class JAXBValueStore implements ValueStore {
     private SDODataObject dataObject;
     private Map<Property, ListWrapper> listWrappers;
 
-    public JAXBValueStore(JAXBHelperContext aJAXBHelperContext, Class anEntityClass) {
+    public JAXBValueStore(JAXBHelperContext aJAXBHelperContext, QName qName) {
         this.jaxbHelperContext = aJAXBHelperContext;
-        /*
+        listWrappers = new WeakHashMap<Property, ListWrapper>();
+        XPathFragment xPathFragment = new XPathFragment(qName.getLocalPart());
+        xPathFragment.setNamespaceURI(qName.getNamespaceURI());
         JAXBContext jaxbContext = (JAXBContext) jaxbHelperContext.getJAXBContext();
-        listWrappers = new WeakHashMap<Property, ListWrapper>();    
-        descriptor = jaxbContext.getXMLContext().getSession(anEntityClass).getDescriptor(anEntityClass);
+        this.descriptor = jaxbContext.getXMLContext().getDescriptorByGlobalType(xPathFragment);
         this.entity = descriptor.getInstantiationPolicy().buildNewInstance();
-        */
     }
 
     public JAXBValueStore(JAXBHelperContext aJAXBHelperContext, Object anEntity) {
         this.jaxbHelperContext = aJAXBHelperContext;
-        /*
+        this.listWrappers = new WeakHashMap<Property, ListWrapper>();
         JAXBContext jaxbContext = (JAXBContext) jaxbHelperContext.getJAXBContext();
-        listWrappers = new WeakHashMap<Property, ListWrapper>();    
-        descriptor = jaxbContext.getXMLContext().getSession(anEntity).getDescriptor(anEntity);
-        this.entity = descriptor.getInstantiationPolicy().buildNewInstance();
-        */
+        this.descriptor = jaxbContext.getXMLContext().getSession(anEntity).getDescriptor(anEntity);
+        this.entity = anEntity;
     }
 
     public Object getEntity() {
@@ -77,12 +75,6 @@ public class JAXBValueStore implements ValueStore {
 
     public void initialize(DataObject aDataObject) {
         this.dataObject = (SDODataObject) aDataObject;
-        QName qName = dataObject.getType().getXmlDescriptor().getSchemaReference().getSchemaContextAsQName(dataObject.getType().getXmlDescriptor().getNamespaceResolver());
-        XPathFragment xPathFragment = new XPathFragment(qName.getLocalPart());
-        xPathFragment.setNamespaceURI(qName.getNamespaceURI());
-        JAXBContext jaxbContext = (JAXBContext) jaxbHelperContext.getJAXBContext();
-        descriptor = jaxbContext.getXMLContext().getDescriptorByGlobalType(xPathFragment);
-        this.entity = descriptor.getInstantiationPolicy().buildNewInstance();
     }
 
     /**
@@ -202,12 +194,13 @@ public class JAXBValueStore implements ValueStore {
             } else {
                 xPathNode = (XPathNode) xPathNode.getNonAttributeChildrenMap().get(xPathFragment);
             }
+            xPathFragment = xPathFragment.getNextFragment();
         }
-        if(xPathFragment.equals(field.getLastXPathFragment()) && xPathNode != null) {
+        if(null == xPathFragment && xPathNode != null) {
             MappingNodeValue mappingNodeValue = (MappingNodeValue) xPathNode.getNodeValue();
             return mappingNodeValue.getMapping();
         }
         return null;
     }
-    
+
 }
