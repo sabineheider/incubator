@@ -19,6 +19,7 @@
 package org.eclipse.persistence.sdo.helper.jaxb;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -97,7 +98,7 @@ public class JAXBHelperContext extends SDOHelperContext {
         return wrapperDO;
     }
 
-    public List<DataObject> wrap(List<Object> entities) {
+    public List<DataObject> wrap(Collection<Object> entities) {
         if(null == entities) {
             return null;
         }
@@ -122,7 +123,7 @@ public class JAXBHelperContext extends SDOHelperContext {
         return jpaValueStore.getEntity();
     }
 
-    public List<Object> unwrap(List<DataObject> dataObjects) {
+    public List<Object> unwrap(Collection<DataObject> dataObjects) {
         if(null == dataObjects) {
             return null;
         }

@@ -19,12 +19,12 @@
 package org.eclipse.persistence.sdo.helper.jaxb;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
 import javax.xml.namespace.QName;
 
-import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.internal.oxm.MappingNodeValue;
 import org.eclipse.persistence.internal.oxm.TreeObjectBuilder;
 import org.eclipse.persistence.internal.oxm.XPathFragment;
@@ -34,6 +34,7 @@ import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.jaxb.JAXBContext;
 import org.eclipse.persistence.mappings.ContainerMapping;
 import org.eclipse.persistence.mappings.DatabaseMapping;
+import org.eclipse.persistence.oxm.XMLDescriptor;
 import org.eclipse.persistence.oxm.XMLField;
 import org.eclipse.persistence.oxm.mappings.XMLObjectReferenceMapping;
 import org.eclipse.persistence.sdo.SDODataObject;
@@ -48,7 +49,7 @@ public class JAXBValueStore implements ValueStore {
 
     private JAXBHelperContext jaxbHelperContext;
     private Object entity;
-    private ClassDescriptor descriptor;
+    private XMLDescriptor descriptor;
     private SDODataObject dataObject;
     private Map<Property, ListWrapper> listWrappers;
 
@@ -66,12 +67,24 @@ public class JAXBValueStore implements ValueStore {
         this.jaxbHelperContext = aJAXBHelperContext;
         this.listWrappers = new WeakHashMap<Property, ListWrapper>();
         JAXBContext jaxbContext = (JAXBContext) jaxbHelperContext.getJAXBContext();
-        this.descriptor = jaxbContext.getXMLContext().getSession(anEntity).getDescriptor(anEntity);
+        this.descriptor = (XMLDescriptor) jaxbContext.getXMLContext().getSession(anEntity).getDescriptor(anEntity);
         this.entity = anEntity;
     }
 
-    public Object getEntity() {
+    SDODataObject getDataObject() {
+        return dataObject;
+    }
+
+    Object getEntity() {
         return entity;
+    }
+
+    XMLDescriptor getEntityDescriptor() {
+        return descriptor;
+    }
+
+    JAXBHelperContext getJAXBHelperContext() {
+        return jaxbHelperContext;
     }
 
     public void initialize(DataObject aDataObject) {
@@ -84,7 +97,7 @@ public class JAXBValueStore implements ValueStore {
      */
     public Object getDeclaredProperty(int propertyIndex) {
         SDOProperty declaredProperty = (SDOProperty) dataObject.getType().getDeclaredProperties().get(propertyIndex);
-        DatabaseMapping mapping = this.getJAXBMappignForSDOMapping(declaredProperty.getXmlMapping());
+        DatabaseMapping mapping = this.getJAXBMappingForProperty(declaredProperty);
         Object value = mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
         if(null == value || declaredProperty.getType().isDataType()) {
             return value;
@@ -93,16 +106,7 @@ public class JAXBValueStore implements ValueStore {
             if(null != listWrapper) {
                 return listWrapper;
             }
-            listWrapper = new ListWrapper(dataObject, declaredProperty);
-            ContainerMapping containerMapping = (ContainerMapping) mapping;
-            ContainerPolicy containerPolicy = containerMapping.getContainerPolicy();
-            Object containerIterator = containerPolicy.iteratorFor(value);
-            AbstractSession session = ((JAXBContext) jaxbHelperContext.getJAXBContext()).getXMLContext().getSession(entity);
-            while(containerPolicy.hasNext(containerIterator)) {
-                Object item = containerPolicy.next(containerIterator, session);
-                DataObject valueDO = jaxbHelperContext.wrap(item);
-                listWrapper.add(valueDO);
-            }
+            listWrapper = new JAXBListWrapper(this, declaredProperty);
             listWrappers.put(declaredProperty, listWrapper);
             return listWrapper;
         } else {
@@ -115,11 +119,13 @@ public class JAXBValueStore implements ValueStore {
      */
     public void setDeclaredProperty(int propertyIndex, Object value) {
         SDOProperty declaredProperty = (SDOProperty) dataObject.getType().getDeclaredProperties().get(propertyIndex);
-        DatabaseMapping mapping = this.getJAXBMappignForSDOMapping(declaredProperty.getXmlMapping());
+        DatabaseMapping mapping = this.getJAXBMappingForProperty(declaredProperty);
         if(declaredProperty.getType().isDataType()) {
             mapping.getAttributeAccessor().setAttributeValueInObject(entity, value);
         } else if(declaredProperty.isMany()) {
-            throw new UnsupportedOperationException();
+            //Get a ListWrapper and set it's current elements
+            ListWrapper listWrapper = (ListWrapper)getDeclaredProperty(propertyIndex);
+            listWrapper.setCurrentElements((List)value);
         } else {
             value = jaxbHelperContext.unwrap((DataObject) value);
             mapping.getAttributeAccessor().setAttributeValueInObject(entity, value);
@@ -132,7 +138,7 @@ public class JAXBValueStore implements ValueStore {
      */
     public boolean isSetDeclaredProperty(int propertyIndex) {
         SDOProperty declaredProperty = (SDOProperty) dataObject.getType().getDeclaredProperties().get(propertyIndex);
-        DatabaseMapping mapping = this.getJAXBMappignForSDOMapping(declaredProperty.getXmlMapping());
+        DatabaseMapping mapping = this.getJAXBMappingForProperty(declaredProperty);
         if(declaredProperty.isMany()) {
             Collection collection = (Collection) mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
             if(null == collection) {
@@ -151,7 +157,7 @@ public class JAXBValueStore implements ValueStore {
      */
     public void unsetDeclaredProperty(int propertyIndex) {
         SDOProperty declaredProperty = (SDOProperty) dataObject.getType().getDeclaredProperties().get(propertyIndex);
-        DatabaseMapping mapping = this.getJAXBMappignForSDOMapping(declaredProperty.getXmlMapping());
+        DatabaseMapping mapping = this.getJAXBMappingForProperty(declaredProperty);
         if(declaredProperty.isMany()) {
             ContainerMapping containerMapping = (ContainerMapping) mapping;
             Object container = containerMapping.getContainerPolicy().containerInstance();
@@ -185,7 +191,8 @@ public class JAXBValueStore implements ValueStore {
         throw new UnsupportedOperationException();
     }
 
-    private DatabaseMapping getJAXBMappignForSDOMapping(DatabaseMapping sdoMapping) {
+    DatabaseMapping getJAXBMappingForProperty(SDOProperty sdoProperty) {
+        DatabaseMapping sdoMapping = sdoProperty.getXmlMapping();
         XMLField field;
         if(sdoMapping instanceof XMLObjectReferenceMapping) {
             XMLObjectReferenceMapping referenceMapping = (XMLObjectReferenceMapping) sdoMapping;
