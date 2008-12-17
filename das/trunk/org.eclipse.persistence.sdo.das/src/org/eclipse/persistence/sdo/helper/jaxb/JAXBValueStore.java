@@ -35,6 +35,7 @@ import org.eclipse.persistence.jaxb.JAXBContext;
 import org.eclipse.persistence.mappings.ContainerMapping;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.oxm.XMLField;
+import org.eclipse.persistence.oxm.mappings.XMLObjectReferenceMapping;
 import org.eclipse.persistence.sdo.SDODataObject;
 import org.eclipse.persistence.sdo.SDOProperty;
 import org.eclipse.persistence.sdo.ValueStore;
@@ -83,7 +84,7 @@ public class JAXBValueStore implements ValueStore {
      */
     public Object getDeclaredProperty(int propertyIndex) {
         SDOProperty declaredProperty = (SDOProperty) dataObject.getType().getDeclaredProperties().get(propertyIndex);
-        DatabaseMapping mapping = this.getMappignForField((XMLField) declaredProperty.getXmlMapping().getField());
+        DatabaseMapping mapping = this.getJAXBMappignForSDOMapping(declaredProperty.getXmlMapping());
         Object value = mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
         if(null == value || declaredProperty.getType().isDataType()) {
             return value;
@@ -114,7 +115,7 @@ public class JAXBValueStore implements ValueStore {
      */
     public void setDeclaredProperty(int propertyIndex, Object value) {
         SDOProperty declaredProperty = (SDOProperty) dataObject.getType().getDeclaredProperties().get(propertyIndex);
-        DatabaseMapping mapping = this.getMappignForField((XMLField) declaredProperty.getXmlMapping().getField());
+        DatabaseMapping mapping = this.getJAXBMappignForSDOMapping(declaredProperty.getXmlMapping());
         if(declaredProperty.getType().isDataType()) {
             mapping.getAttributeAccessor().setAttributeValueInObject(entity, value);
         } else if(declaredProperty.isMany()) {
@@ -131,7 +132,7 @@ public class JAXBValueStore implements ValueStore {
      */
     public boolean isSetDeclaredProperty(int propertyIndex) {
         SDOProperty declaredProperty = (SDOProperty) dataObject.getType().getDeclaredProperties().get(propertyIndex);
-        DatabaseMapping mapping = this.getMappignForField((XMLField) declaredProperty.getXmlMapping().getField());
+        DatabaseMapping mapping = this.getJAXBMappignForSDOMapping(declaredProperty.getXmlMapping());
         if(declaredProperty.isMany()) {
             Collection collection = (Collection) mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
             if(null == collection) {
@@ -150,7 +151,7 @@ public class JAXBValueStore implements ValueStore {
      */
     public void unsetDeclaredProperty(int propertyIndex) {
         SDOProperty declaredProperty = (SDOProperty) dataObject.getType().getDeclaredProperties().get(propertyIndex);
-        DatabaseMapping mapping = this.getMappignForField((XMLField) declaredProperty.getXmlMapping().getField());
+        DatabaseMapping mapping = this.getJAXBMappignForSDOMapping(declaredProperty.getXmlMapping());
         if(declaredProperty.isMany()) {
             ContainerMapping containerMapping = (ContainerMapping) mapping;
             Object container = containerMapping.getContainerPolicy().containerInstance();
@@ -184,15 +185,32 @@ public class JAXBValueStore implements ValueStore {
         throw new UnsupportedOperationException();
     }
 
-    private DatabaseMapping getMappignForField(XMLField field) {
+    private DatabaseMapping getJAXBMappignForSDOMapping(DatabaseMapping sdoMapping) {
+        XMLField field;
+        if(sdoMapping instanceof XMLObjectReferenceMapping) {
+            XMLObjectReferenceMapping referenceMapping = (XMLObjectReferenceMapping) sdoMapping;
+            field = (XMLField) referenceMapping.getFields().get(0);
+        } else {
+            field = (XMLField) sdoMapping.getField();
+        }
         TreeObjectBuilder treeObjectBuilder = (TreeObjectBuilder) descriptor.getObjectBuilder();
         XPathNode xPathNode = treeObjectBuilder.getRootXPathNode();
         XPathFragment xPathFragment = field.getXPathFragment();
         while(xPathNode != null && xPathFragment != null) {
             if(xPathFragment.isAttribute()) {
-                xPathNode = (XPathNode) xPathNode.getAttributeChildrenMap().get(xPathFragment);
+                Map attributeChildrenMap = xPathNode.getAttributeChildrenMap();
+                if(null == attributeChildrenMap) {
+                    xPathNode = null;
+                } else {
+                    xPathNode = (XPathNode) xPathNode.getAttributeChildrenMap().get(xPathFragment);
+                }
             } else {
-                xPathNode = (XPathNode) xPathNode.getNonAttributeChildrenMap().get(xPathFragment);
+                Map nonAttributeChildrenMap = xPathNode.getNonAttributeChildrenMap();
+                if(null == nonAttributeChildrenMap) {
+                    xPathNode = null;
+                } else {
+                    xPathNode = (XPathNode) xPathNode.getNonAttributeChildrenMap().get(xPathFragment);
+                }
             }
             xPathFragment = xPathFragment.getNextFragment();
         }
@@ -200,7 +218,7 @@ public class JAXBValueStore implements ValueStore {
             MappingNodeValue mappingNodeValue = (MappingNodeValue) xPathNode.getNodeValue();
             return mappingNodeValue.getMapping();
         }
-        return null;
+        throw new RuntimeException("A JAXB Mapping could not be found for the XPath:  " + field.getXPath());
     }
 
 }
