@@ -28,6 +28,7 @@ import org.eclipse.persistence.internal.queries.ContainerPolicy;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.jaxb.JAXBContext;
 import org.eclipse.persistence.mappings.DatabaseMapping;
+import org.eclipse.persistence.oxm.mappings.XMLCompositeCollectionMapping;
 import org.eclipse.persistence.sdo.SDOChangeSummary;
 import org.eclipse.persistence.sdo.SDOProperty;
 import org.eclipse.persistence.sdo.helper.ListWrapper;
@@ -394,6 +395,17 @@ public class JAXBListWrapper extends ListWrapper {
         } else {
             return jaxbValueStore.getJAXBHelperContext().wrap(containerPolicy.vectorFor(elements, session)).iterator();
         }
+    }
+
+    protected void updateContainment(Object item, boolean updateSequence) {
+        if(mapping.isAbstractCompositeCollectionMapping() && null != item) {
+            XMLCompositeCollectionMapping compositeMapping = (XMLCompositeCollectionMapping) mapping;
+            if(compositeMapping.getContainerAccessor() != null) {
+                Object itemEntity = jaxbValueStore.getJAXBHelperContext().unwrap((DataObject) item);
+                compositeMapping.getContainerAccessor().setAttributeValueInObject(itemEntity, jaxbValueStore.getEntity());                            
+            }
+        }
+        super.updateContainment(item, updateSequence);
     }
 
 }
