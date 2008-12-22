@@ -36,6 +36,7 @@ import org.eclipse.persistence.mappings.ContainerMapping;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.oxm.XMLDescriptor;
 import org.eclipse.persistence.oxm.XMLField;
+import org.eclipse.persistence.oxm.mappings.XMLCompositeCollectionMapping;
 import org.eclipse.persistence.oxm.mappings.XMLCompositeObjectMapping;
 import org.eclipse.persistence.oxm.mappings.XMLObjectReferenceMapping;
 import org.eclipse.persistence.sdo.SDODataObject;
@@ -136,7 +137,7 @@ public class JAXBValueStore implements ValueStore {
                     compositeMapping.getContainerAccessor().setAttributeValueInObject(oldValue, null);
                 }
             }
-            
+
             // NEW VALUE
             value = jaxbHelperContext.unwrap((DataObject) value);
             mapping.getAttributeAccessor().setAttributeValueInObject(entity, value);
@@ -177,17 +178,40 @@ public class JAXBValueStore implements ValueStore {
         DatabaseMapping mapping = this.getJAXBMappingForProperty(declaredProperty);
         if(declaredProperty.isMany()) {
             ContainerMapping containerMapping = (ContainerMapping) mapping;
-            Object container = containerMapping.getContainerPolicy().containerInstance();
+            ContainerPolicy containerPolicy = containerMapping.getContainerPolicy();
+
+            // OLD VALUE
+            if(mapping.isAbstractCompositeCollectionMapping()) {
+                XMLCompositeCollectionMapping compositeMapping = (XMLCompositeCollectionMapping) mapping;
+                if(compositeMapping.getContainerAccessor() != null) {
+                    Object oldContainer = mapping.getAttributeValueFromObject(entity);
+                    if(oldContainer != null) {
+                        AbstractSession session = ((JAXBContext) jaxbHelperContext.getJAXBContext()).getXMLContext().getSession(entity);
+                        Object iterator = containerPolicy.iteratorFor(oldContainer);
+                        while(containerPolicy.hasNext(iterator)) {
+                            Object oldValue =  containerPolicy.next(iterator, session);
+                            compositeMapping.getContainerAccessor().setAttributeValueInObject(oldValue, null);                            
+                        }
+                    }
+                }
+            }
+
+            // NEW VALUE
+            Object container = containerPolicy.containerInstance();
             mapping.getAttributeAccessor().setAttributeValueInObject(entity, container);
         } else {
             // OLD VALUE
-            Object oldValue = mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
             if(mapping.isAbstractCompositeObjectMapping()) {
                 XMLCompositeObjectMapping compositeMapping = (XMLCompositeObjectMapping) mapping;
-                if(oldValue != null && compositeMapping.getContainerAccessor() != null) {
-                    compositeMapping.getContainerAccessor().setAttributeValueInObject(oldValue, null);
+                if(compositeMapping.getContainerAccessor() != null) {
+                    Object oldValue = mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
+                    if(oldValue != null) {
+                        compositeMapping.getContainerAccessor().setAttributeValueInObject(oldValue, null);
+                    }
                 }
             }
+
+            // NEW VALUE
             mapping.getAttributeAccessor().setAttributeValueInObject(entity, null);
         }
     }
