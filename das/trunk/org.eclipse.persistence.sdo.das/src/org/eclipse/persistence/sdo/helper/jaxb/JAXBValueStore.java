@@ -36,6 +36,7 @@ import org.eclipse.persistence.mappings.ContainerMapping;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.oxm.XMLDescriptor;
 import org.eclipse.persistence.oxm.XMLField;
+import org.eclipse.persistence.oxm.mappings.XMLCompositeObjectMapping;
 import org.eclipse.persistence.oxm.mappings.XMLObjectReferenceMapping;
 import org.eclipse.persistence.sdo.SDODataObject;
 import org.eclipse.persistence.sdo.SDOProperty;
@@ -127,8 +128,24 @@ public class JAXBValueStore implements ValueStore {
             ListWrapper listWrapper = (ListWrapper)getDeclaredProperty(propertyIndex);
             listWrapper.setCurrentElements((List)value);
         } else {
+            // OLD VALUE
+            Object oldValue = mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
+            if(mapping.isAbstractCompositeObjectMapping()) {
+                XMLCompositeObjectMapping compositeMapping = (XMLCompositeObjectMapping) mapping;
+                if(oldValue != null && compositeMapping.getContainerAccessor() != null) {
+                    compositeMapping.getContainerAccessor().setAttributeValueInObject(oldValue, null);
+                }
+            }
+            
+            // NEW VALUE
             value = jaxbHelperContext.unwrap((DataObject) value);
             mapping.getAttributeAccessor().setAttributeValueInObject(entity, value);
+            if(mapping.isAbstractCompositeObjectMapping()) {
+                XMLCompositeObjectMapping compositeMapping = (XMLCompositeObjectMapping) mapping;
+                if(value != null && compositeMapping.getContainerAccessor() != null) {
+                    compositeMapping.getContainerAccessor().setAttributeValueInObject(value, entity);
+                }
+            }
         }
     }
 
@@ -163,6 +180,14 @@ public class JAXBValueStore implements ValueStore {
             Object container = containerMapping.getContainerPolicy().containerInstance();
             mapping.getAttributeAccessor().setAttributeValueInObject(entity, container);
         } else {
+            // OLD VALUE
+            Object oldValue = mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
+            if(mapping.isAbstractCompositeObjectMapping()) {
+                XMLCompositeObjectMapping compositeMapping = (XMLCompositeObjectMapping) mapping;
+                if(oldValue != null && compositeMapping.getContainerAccessor() != null) {
+                    compositeMapping.getContainerAccessor().setAttributeValueInObject(oldValue, null);
+                }
+            }
             mapping.getAttributeAccessor().setAttributeValueInObject(entity, null);
         }
     }
