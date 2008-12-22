@@ -198,6 +198,9 @@ public class XMLCompositeObjectMappingNodeValue extends XMLRelationshipMappingNo
         // Set the child object on the parent
         unmarshalRecord.setAttributeValue(object, xmlCompositeObjectMapping);
         unmarshalRecord.setChildRecord(null);
+        if(null != getMapping().getContainerAccessor()) {
+            getMapping().getContainerAccessor().setAttributeValueInObject(object, unmarshalRecord.getCurrentObject());
+        }        
     }
 
     public UnmarshalRecord buildSelfRecord(UnmarshalRecord unmarshalRecord, Attributes atts) {
