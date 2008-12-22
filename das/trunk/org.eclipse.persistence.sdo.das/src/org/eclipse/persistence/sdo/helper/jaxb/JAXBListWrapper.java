@@ -127,7 +127,7 @@ public class JAXBListWrapper extends ListWrapper {
     }
 
     protected void copyElements() {
-        // update element arrays before we modify original object        
+        // update element arrays before we modify original object
         if (isLogging() && (!((SDOChangeSummary)dataObject.getChangeSummary()).isDirty(this))) {
             //getElements will return a new Vector containing the elements. No need to update the main collection.
             ((SDOChangeSummary)dataObject.getChangeSummary()).getOriginalElements().put(this, getCurrentElements());
@@ -169,14 +169,14 @@ public class JAXBListWrapper extends ListWrapper {
             return;
         }
         if (cs.isDirty(this)) {
-            // swap elements, discard current state            
+            // swap elements, discard current state
             setCurrentElements((List)cs.getOriginalElements().get(this));
             cs.getOriginalElements().remove(this);
         }
     }
 
     public boolean remove(Object item, boolean fromDelete, boolean updateSequence) {
-        // update element arrays before we modify original object        
+        // update element arrays before we modify original object
         copyElements();
         // pass the remove containment (fromDelete) flag back to the recursive delete/detach call to dataObject
         // fromDelete will always be false when called within ListWrapper
@@ -402,7 +402,7 @@ public class JAXBListWrapper extends ListWrapper {
             XMLCompositeCollectionMapping compositeMapping = (XMLCompositeCollectionMapping) mapping;
             if(compositeMapping.getContainerAccessor() != null) {
                 Object itemEntity = jaxbValueStore.getJAXBHelperContext().unwrap((DataObject) item);
-                compositeMapping.getContainerAccessor().setAttributeValueInObject(itemEntity, jaxbValueStore.getEntity());                            
+                compositeMapping.getContainerAccessor().setAttributeValueInObject(itemEntity, jaxbValueStore.getEntity());
             }
         }
         super.updateContainment(item, updateSequence);
