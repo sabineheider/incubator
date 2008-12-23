@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xml-schema>
+   <name>Customer-XML</name>
+   <target-namespace-url>urn:customer</target-namespace-url>
+   <schema-source type="file">
+      <location>../src/xsd/jpadas-customer.xsd</location>
+   </schema-source>
+   <built-in-namespaces>
+      <namespace url="http://www.w3.org/2001/XMLSchema" prefix="xs"/>
+      <namespace url="http://www.w3.org/2001/XMLSchema-instance" prefix="xsi"/>
+   </built-in-namespaces>
+   <declared-namespaces>
+      <namespace>
+         <namespace-prefix>tns</namespace-prefix>
+         <namespace-prefix-is-user-defined>false</namespace-prefix-is-user-defined>
+         <namespace-url>urn:customer</namespace-url>
+         <declared>true</declared>
+         <type-definitions>
+            <type-definition type="complex-type">
+               <name>address</name>
+               <namespace-url>urn:customer</namespace-url>
+               <abstract>false</abstract>
+               <derivation-method>restriction</derivation-method>
+               <base-type type="complex-type-ref">
+                  <name>anyType</name>
+                  <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+               </base-type>
+               <attributes>
+                  <attribute type="attribute">
+                     <name>id</name>
+                     <use>required</use>
+                     <type type="simple-type-ref">
+                        <name>ID</name>
+                        <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                     </type>
+                  </attribute>
+               </attributes>
+               <content type="complex">
+                  <mixed-flag>false</mixed-flag>
+                  <particle compositor="sequence" type="model-group">
+                     <particles>
+                        <particle type="element">
+                           <name>street</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="simple-type-ref">
+                              <name>ID</name>
+                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                           </type>
+                           <min-occurs>0</min-occurs>
+                        </particle>
+                        <particle type="element">
+                           <name>city</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="simple-type-ref">
+                              <name>string</name>
+                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                           </type>
+                           <min-occurs>0</min-occurs>
+                        </particle>
+                        <particle type="element">
+                           <name>province</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="simple-type-ref">
+                              <name>string</name>
+                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                           </type>
+                           <min-occurs>0</min-occurs>
+                        </particle>
+                        <particle type="element">
+                           <name>postal-code</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="simple-type-ref">
+                              <name>string</name>
+                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                           </type>
+                           <min-occurs>0</min-occurs>
+                        </particle>
+                     </particles>
+                  </particle>
+               </content>
+            </type-definition>
+            <type-definition type="complex-type">
+               <name>customer</name>
+               <namespace-url>urn:customer</namespace-url>
+               <abstract>false</abstract>
+               <derivation-method>restriction</derivation-method>
+               <base-type type="complex-type-ref">
+                  <name>anyType</name>
+                  <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+               </base-type>
+               <attributes>
+                  <attribute type="attribute">
+                     <name>id</name>
+                     <use>required</use>
+                     <type type="simple-type-ref">
+                        <name>int</name>
+                        <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                     </type>
+                  </attribute>
+               </attributes>
+               <content type="complex">
+                  <mixed-flag>false</mixed-flag>
+                  <particle compositor="sequence" type="model-group">
+                     <particles>
+                        <particle type="element">
+                           <name>first-name</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="simple-type-ref">
+                              <name>string</name>
+                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                           </type>
+                           <min-occurs>0</min-occurs>
+                        </particle>
+                        <particle type="element">
+                           <name>last-name</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="simple-type-ref">
+                              <name>string</name>
+                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                           </type>
+                           <min-occurs>0</min-occurs>
+                        </particle>
+                        <particle type="element">
+                           <name>billing-address</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="complex-type-ref">
+                              <name>address</name>
+                              <namespace-url>urn:customer</namespace-url>
+                           </type>
+                           <min-occurs>0</min-occurs>
+                        </particle>
+                        <particle type="element">
+                           <name>shipping-address</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="complex-type-ref">
+                              <name>address</name>
+                              <namespace-url>urn:customer</namespace-url>
+                           </type>
+                           <min-occurs>0</min-occurs>
+                        </particle>
+                        <particle type="element">
+                           <name>phone-number</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="complex-type-ref">
+                              <name>phone-number</name>
+                              <namespace-url>urn:customer</namespace-url>
+                           </type>
+                           <nillable>true</nillable>
+                           <min-occurs>0</min-occurs>
+                           <max-occurs>-1</max-occurs>
+                        </particle>
+                        <particle type="element">
+                           <name>spouse</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="complex-type-ref">
+                              <name>spouse</name>
+                              <namespace-url>urn:customer</namespace-url>
+                           </type>
+                           <min-occurs>0</min-occurs>
+                        </particle>
+                     </particles>
+                  </particle>
+               </content>
+            </type-definition>
+            <type-definition type="complex-type">
+               <name>phone-number</name>
+               <namespace-url>urn:customer</namespace-url>
+               <abstract>false</abstract>
+               <derivation-method>restriction</derivation-method>
+               <base-type type="complex-type-ref">
+                  <name>anyType</name>
+                  <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+               </base-type>
+               <attributes>
+                  <attribute type="attribute">
+                     <name>id</name>
+                     <use>required</use>
+                     <type type="simple-type-ref">
+                        <name>ID</name>
+                        <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                     </type>
+                  </attribute>
+               </attributes>
+               <content type="complex">
+                  <mixed-flag>false</mixed-flag>
+                  <particle compositor="sequence" type="model-group">
+                     <particles>
+                        <particle type="element">
+                           <name>type</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="simple-type-ref">
+                              <name>string</name>
+                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                           </type>
+                           <min-occurs>0</min-occurs>
+                        </particle>
+                        <particle type="element">
+                           <name>number</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="simple-type-ref">
+                              <name>string</name>
+                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                           </type>
+                           <min-occurs>0</min-occurs>
+                        </particle>
+                     </particles>
+                  </particle>
+               </content>
+            </type-definition>
+            <type-definition type="complex-type">
+               <name>spouse</name>
+               <namespace-url>urn:customer</namespace-url>
+               <abstract>false</abstract>
+               <derivation-method>restriction</derivation-method>
+               <base-type type="complex-type-ref">
+                  <name>anyType</name>
+                  <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+               </base-type>
+               <attributes>
+                  <attribute type="attribute">
+                     <name>id</name>
+                     <use>required</use>
+                     <type type="simple-type-ref">
+                        <name>int</name>
+                        <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                     </type>
+                  </attribute>
+               </attributes>
+               <content type="complex">
+                  <mixed-flag>false</mixed-flag>
+                  <particle compositor="sequence" type="model-group">
+                     <particles>
+                        <particle type="element">
+                           <name>first-name</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="simple-type-ref">
+                              <name>string</name>
+                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                           </type>
+                           <min-occurs>0</min-occurs>
+                        </particle>
+                        <particle type="element">
+                           <name>last-name</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="simple-type-ref">
+                              <name>string</name>
+                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                           </type>
+                           <min-occurs>0</min-occurs>
+                        </particle>
+                        <particle type="element">
+                           <name>mailing-address</name>
+                           <namespace-url>urn:customer</namespace-url>
+                           <type type="simple-type-ref">
+                              <name>IDREF</name>
+                              <namespace-url>http://www.w3.org/2001/XMLSchema</namespace-url>
+                           </type>
+                           <min-occurs>0</min-occurs>
+                        </particle>
+                     </particles>
+                  </particle>
+               </content>
+            </type-definition>
+         </type-definitions>
+      </namespace>
+   </declared-namespaces>
+</xml-schema>

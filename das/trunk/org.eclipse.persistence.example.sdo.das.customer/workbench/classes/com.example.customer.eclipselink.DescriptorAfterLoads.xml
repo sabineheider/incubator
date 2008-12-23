@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<class>
+   <name>com.example.customer.eclipselink.DescriptorAfterLoads</name>
+   <modifier>1</modifier>
+   <superclass-handle>
+      <type-name>java.lang.Object</type-name>
+   </superclass-handle>
+   <last-refresh-timestamp>2008-12-18T11:35:22.578</last-refresh-timestamp>
+   <methods>
+      <method>
+         <name>DescriptorAfterLoads</name>
+         <constructor>true</constructor>
+         <modifier>1</modifier>
+      </method>
+      <method>
+         <name>amendCustomerDescriptor</name>
+         <modifier>9</modifier>
+         <return-type-declaration>
+            <type-handle>
+               <type-name>void</type-name>
+            </type-handle>
+         </return-type-declaration>
+         <method-parameters>
+            <method-parameter>
+               <type-declaration>
+                  <type-handle>
+                     <type-name>org.eclipse.persistence.descriptors.ClassDescriptor</type-name>
+                  </type-handle>
+               </type-declaration>
+            </method-parameter>
+         </method-parameters>
+      </method>
+   </methods>
+</class>

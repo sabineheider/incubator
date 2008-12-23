@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<descriptor type="o-x">
+   <name>com.example.customer.Customer</name>
+   <class-handle>
+      <type-name>com.example.customer.Customer</type-name>
+   </class-handle>
+   <transactional-policy type="ox">
+      <descriptor-alias>Customer</descriptor-alias>
+      <refresh-cache-policy/>
+      <caching-policy/>
+      <query-manager type="ox"/>
+      <locking-policy type="ox"/>
+      <primary-key-policy/>
+   </transactional-policy>
+   <mappings>
+      <mapping type="composite-object">
+         <name>billingAddress</name>
+         <attribute-handle>
+            <attribute-declaring-type-name>com.example.customer.Customer</attribute-declaring-type-name>
+            <attribute-name>billingAddress</attribute-name>
+         </attribute-handle>
+         <reference-descriptor-handle>
+            <descriptor-name>com.example.customer.Address</descriptor-name>
+         </reference-descriptor-handle>
+         <xpath>tns:billing-address</xpath>
+      </mapping>
+      <mapping type="xml-direct">
+         <name>firstName</name>
+         <attribute-handle>
+            <attribute-declaring-type-name>com.example.customer.Customer</attribute-declaring-type-name>
+            <attribute-name>firstName</attribute-name>
+         </attribute-handle>
+         <xml-field>tns:first-name/text()</xml-field>
+      </mapping>
+      <mapping type="xml-direct">
+         <name>id</name>
+         <attribute-handle>
+            <attribute-declaring-type-name>com.example.customer.Customer</attribute-declaring-type-name>
+            <attribute-name>id</attribute-name>
+         </attribute-handle>
+         <xml-field>@id</xml-field>
+      </mapping>
+      <mapping type="xml-direct">
+         <name>lastName</name>
+         <attribute-handle>
+            <attribute-declaring-type-name>com.example.customer.Customer</attribute-declaring-type-name>
+            <attribute-name>lastName</attribute-name>
+         </attribute-handle>
+         <xml-field>tns:last-name/text()</xml-field>
+      </mapping>
+      <mapping type="composite-collection">
+         <name>phoneNumbers</name>
+         <attribute-handle>
+            <attribute-declaring-type-name>com.example.customer.Customer</attribute-declaring-type-name>
+            <attribute-name>phoneNumbers</attribute-name>
+         </attribute-handle>
+         <reference-descriptor-handle>
+            <descriptor-name>com.example.customer.PhoneNumber</descriptor-name>
+         </reference-descriptor-handle>
+         <xpath>tns:phone-number</xpath>
+         <container-policy type="set">
+            <container-class>
+               <uses-default-container-class>true</uses-default-container-class>
+            </container-class>
+         </container-policy>
+      </mapping>
+      <mapping type="composite-object">
+         <name>shippingAddress</name>
+         <attribute-handle>
+            <attribute-declaring-type-name>com.example.customer.Customer</attribute-declaring-type-name>
+            <attribute-name>shippingAddress</attribute-name>
+         </attribute-handle>
+         <reference-descriptor-handle>
+            <descriptor-name>com.example.customer.Address</descriptor-name>
+         </reference-descriptor-handle>
+         <xpath>tns:shipping-address</xpath>
+      </mapping>
+      <mapping type="composite-object">
+         <name>spouse</name>
+         <attribute-handle>
+            <attribute-declaring-type-name>com.example.customer.Customer</attribute-declaring-type-name>
+            <attribute-name>spouse</attribute-name>
+         </attribute-handle>
+         <reference-descriptor-handle>
+            <descriptor-name>com.example.customer.Spouse</descriptor-name>
+         </reference-descriptor-handle>
+         <xpath>tns:spouse</xpath>
+      </mapping>
+   </mappings>
+   <after-loading-policy>
+      <post-load-class-handle>
+         <type-name>com.example.customer.eclipselink.DescriptorAfterLoads</type-name>
+      </post-load-class-handle>
+      <post-load-method-handle>
+         <method-declaring-type-name>com.example.customer.eclipselink.DescriptorAfterLoads</method-declaring-type-name>
+         <method-signature>amendCustomerDescriptor(org.eclipse.persistence.descriptors.ClassDescriptor)</method-signature>
+      </post-load-method-handle>
+   </after-loading-policy>
+   <schema-context-handle>
+      <schema>Customer-XML</schema>
+      <qname-path>
+         <qname component-type="complex-type" namespace-uri="urn:customer" local-name="customer"/>
+      </qname-path>
+   </schema-context-handle>
+   <root-descriptor>false</root-descriptor>
+</descriptor>

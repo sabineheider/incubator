@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tns:ROOT xsi:type="tns:customer" id="1" xmlns:tns="urn:customer" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <tns:first-name>Jane</tns:first-name>
+   <tns:last-name>Doe</tns:last-name>
+   <tns:billing-address id="1">
+      <tns:street>1229111021156 Any Street</tns:street>
+      <tns:city>Ottawa</tns:city>
+      <tns:province>ON</tns:province>
+      <tns:postal-code>A1B2C3</tns:postal-code>
+   </tns:billing-address>
+   <tns:shipping-address id="2">
+      <tns:street>456 Another Road</tns:street>
+      <tns:city>Nepean</tns:city>
+      <tns:province>ON</tns:province>
+      <tns:postal-code>A2B4C6</tns:postal-code>
+   </tns:shipping-address>
+   <tns:phone-number id="1">
+      <tns:type>work</tns:type>
+      <tns:number>613-555-WORK</tns:number>
+   </tns:phone-number>
+   <tns:phone-number id="2">
+      <tns:type>home</tns:type>
+      <tns:number>613-555-HOME</tns:number>
+   </tns:phone-number>
+   <tns:spouse>
+   	  <tns:first-name>Jane</tns:first-name>
+   	  <tns:last-name>Doe</tns:last-name>
+      <tns:mailing-address>1</tns:mailing-address>
+   </tns:spouse>
+</tns:ROOT>
