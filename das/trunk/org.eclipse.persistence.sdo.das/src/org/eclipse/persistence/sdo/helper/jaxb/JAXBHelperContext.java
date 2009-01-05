@@ -134,4 +134,8 @@ public class JAXBHelperContext extends SDOHelperContext {
         return entities;
     }
 
+    void putWrapperDataObject(Object anObject, SDODataObject aDataObject) {
+        wrapperDataObjects.put(anObject, aDataObject);
+    }
+
 }

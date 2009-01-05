@@ -45,6 +45,7 @@ public class JAXBDataFactory extends SDODataFactoryDelegate {
         JAXBValueStore jpaValueStore = new JAXBValueStore(getHelperContext(),((SDOType)type).getQName());
         jpaValueStore.initialize(dataObject);
         dataObject._setCurrentValueStore(jpaValueStore);
+        getHelperContext().putWrapperDataObject(jpaValueStore.getEntity(), dataObject);
         return dataObject;
     }
 
