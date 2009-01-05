@@ -48,11 +48,11 @@ public class JAXBHelperContext extends SDOHelperContext {
     private org.eclipse.persistence.jaxb.JAXBContext jaxbContext;
     private Map<Object, SDODataObject> wrapperDataObjects;
 
-    public JAXBHelperContext(JAXBContext aJAXBContext) throws Exception {
+    public JAXBHelperContext(JAXBContext aJAXBContext) {
         this(aJAXBContext, Thread.currentThread().getContextClassLoader());
     }
 
-    public JAXBHelperContext(JAXBContext aJAXBContext, ClassLoader aClassLoader) throws Exception {
+    public JAXBHelperContext(JAXBContext aJAXBContext, ClassLoader aClassLoader) {
         super(aClassLoader);
         wrapperDataObjects = new WeakHashMap<Object, SDODataObject>();
         jaxbContext = (org.eclipse.persistence.jaxb.JAXBContext) aJAXBContext;
