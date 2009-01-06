@@ -22,6 +22,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { ReadDataObjectsFromDB.class, PopulateDatabaseFromXML.class })
+@Suite.SuiteClasses( { ReadDataObjectsFromDB.class, PopulateDatabaseFromXML.class, UpdateDBFromXMLUsingSDO.class })
 public class AllTests {
 }

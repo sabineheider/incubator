@@ -20,8 +20,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import testing.jpa.EclipseLinkJPATest;
+import testing.jpa.SamplePopulation;
 
-import commonj.sdo.DataObject;
 import commonj.sdo.helper.*;
 
 @PersistenceContext(unitName = "employee")
@@ -40,7 +40,7 @@ public class PopulateDatabaseFromXML extends EclipseLinkJPATest {
 		assertTrue(sampleFolder.isDirectory());
 
 		File[] sampleFiles = sampleFolder.listFiles();
-		assertEquals(12, sampleFiles.length);
+		assertEquals(13, sampleFiles.length);
 
 		Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
 		em.getTransaction().begin();
@@ -48,23 +48,27 @@ public class PopulateDatabaseFromXML extends EclipseLinkJPATest {
 		try {
 
 			for (int index = 0; index < sampleFiles.length; index++) {
-				FileInputStream xmlInputStream = new FileInputStream(sampleFiles[index]);
-				XMLDocument xmlDocument = XMLHelper.INSTANCE.load(xmlInputStream);
-				//DataObject employeeDO = xmlDocument.getRootObject();
-				xmlInputStream.close();
+				if (sampleFiles[index].getName().endsWith(".xml")) {
+					FileInputStream xmlInputStream = new FileInputStream(sampleFiles[index]);
+					XMLDocument xmlDocument = XMLHelper.INSTANCE.load(xmlInputStream);
+					// DataObject employeeDO = xmlDocument.getRootObject();
+					xmlInputStream.close();
 
-				StringWriter writer = new StringWriter();
-				XMLHelper.INSTANCE.save(xmlDocument, writer, null);
+					StringWriter writer = new StringWriter();
+					XMLHelper.INSTANCE.save(xmlDocument, writer, null);
 
-				System.out.println("READ> + " + sampleFiles[index] + "\n" + writer);
+					System.out.println("READ> + " + sampleFiles[index] + "\n" + writer);
 
-				Employee emp = (Employee) unmarshaller.unmarshal(new StringReader(writer.toString()));
+					Employee emp = (Employee) unmarshaller.unmarshal(new StringReader(writer.toString()));
 
-				em.persist(emp);
+					em.persist(emp);
+				}
 			}
-			
-		em.getTransaction().commit();
-		
+
+			em.getTransaction().commit();
+
+			SamplePopulation.population.verifyCounts(em);
+
 		} finally {
 			if (em != null && em.getTransaction().isActive()) {
 				em.getTransaction().rollback();

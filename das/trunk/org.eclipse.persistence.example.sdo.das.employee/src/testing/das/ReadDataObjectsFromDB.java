@@ -7,6 +7,7 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import commonj.sdo.helper.XSDHelper;
 
@@ -17,6 +18,7 @@ public class ReadDataObjectsFromDB extends EclipseLinkJPATest{
 
 	private static JAXBContext jaxbContext;
 
+	@Test
 	public void test() throws Exception {
 		
 	}

@@ -2,10 +2,10 @@
 <classpath>
 	<classpathentry excluding="**/.svn/**" kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="var" path="ORACLE_JDBC_LIB"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/org.eclipse.persistence.jpa"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/javax.persistence 1.99"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/org.eclipse.persistence.sdo.das"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/commonj.sdo 2.1.0"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/org.eclipse.persistence.jpa"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/eclipselink.sdo.test"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

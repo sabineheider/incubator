@@ -2,9 +2,7 @@
 <classpath>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry excluding="**/.svn/**" kind="src" path="src"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/commonj.sdo 2.1.0"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/org.eclipse.persistence.jpa"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/org.eclipse.persistence.sdo"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/javax.persistence 1.99"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.sdo"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.moxy"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
