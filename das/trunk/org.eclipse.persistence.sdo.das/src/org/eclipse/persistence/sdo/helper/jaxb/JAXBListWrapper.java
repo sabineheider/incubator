@@ -63,7 +63,8 @@ public class JAXBListWrapper extends ListWrapper {
         this.elements  = list;
     }
 
-    private List getEmptyList() {
+    @SuppressWarnings("unused")
+	private List getEmptyList() {
         if(containerPolicy == null) {
             return null;
         }
