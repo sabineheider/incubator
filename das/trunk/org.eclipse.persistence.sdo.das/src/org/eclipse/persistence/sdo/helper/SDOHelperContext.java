@@ -358,4 +358,16 @@ public class SDOHelperContext implements HelperContext {
             }
         }
     }
+
+    /**
+     * ADVANCED
+     * Promote this helper context to be the default or global one.
+     * This will completely replace the existing default context including
+     * all types and properties defined. 
+     */
+    public void makeDefaultContext() {
+        Object key = getDelegateMapKey();
+        helperContexts.put(key, this);
+    }
+
 }
