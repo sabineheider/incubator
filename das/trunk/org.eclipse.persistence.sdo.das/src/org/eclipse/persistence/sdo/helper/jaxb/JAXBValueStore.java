@@ -254,6 +254,10 @@ public class JAXBValueStore implements ValueStore {
         XPathFragment xPathFragment = field.getXPathFragment();
         while(xPathNode != null && xPathFragment != null) {
             if(xPathFragment.isAttribute()) {
+                if(sdoProperty.isMany() && !sdoProperty.isContainment() && !sdoProperty.getType().isDataType()) {
+                    xPathFragment = null;
+                    break;
+                }
                 Map attributeChildrenMap = xPathNode.getAttributeChildrenMap();
                 if(null == attributeChildrenMap) {
                     xPathNode = null;
@@ -269,6 +273,12 @@ public class JAXBValueStore implements ValueStore {
                 }
             }
             xPathFragment = xPathFragment.getNextFragment();
+            if(xPathFragment != null && xPathFragment.nameIsText()) {
+                if(sdoProperty.isMany() && !sdoProperty.isContainment() && !sdoProperty.getType().isDataType()) {
+                    xPathFragment = null;
+                    break;
+                }
+            }
         }
         if(null == xPathFragment && xPathNode != null) {
             MappingNodeValue mappingNodeValue = (MappingNodeValue) xPathNode.getNodeValue();
