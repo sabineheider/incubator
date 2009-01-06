@@ -2683,16 +2683,48 @@ public class SDODataObject implements DataObject, SequencedObject {
             SDOProperty oppositeProperty = (SDOProperty) property.getOpposite();
             if(null != oppositeProperty) {
                 if(null != value) {
-                    SDODataObject valueDO = (SDODataObject) value;
-                    if(this != valueDO.get(oppositeProperty)) {
-                        valueDO.setInternal(oppositeProperty, this, true);
+                    if(property.isMany()) {
+                        List<SDODataObject> valueList = (List<SDODataObject>) value;
+                        for(SDODataObject valueDO : valueList) {
+                            if(this != valueDO.get(oppositeProperty)) {
+                                valueDO.setInternal(oppositeProperty, this, true);
+                            }
+                        }
+                    } else {
+                        SDODataObject valueDO = (SDODataObject) value;
+                        if(oppositeProperty.isMany()) {
+                            List oppositeList = valueDO.getList(oppositeProperty);
+                            if(!oppositeList.contains(this)) {
+                                oppositeList.add(this);
+                            }
+                        } else {
+                            if(this != valueDO.get(oppositeProperty)) {
+                                valueDO.setInternal(oppositeProperty, this, true);
+                            }
+                        }
                     }
                 }
-                
+
                 if(null != origValue) {
-                    DataObject origValueDO = (DataObject) origValue;
-                    if(null != origValueDO.get(oppositeProperty)) {
-                        origValueDO.set(oppositeProperty, null);
+                    if(property.isMany()) {
+                        List<SDODataObject> origValueList = (List<SDODataObject>) origValue;
+                        for(SDODataObject origValueDO : origValueList) {
+                            if(null != origValueDO.get(oppositeProperty)) {
+                                origValueDO.set(oppositeProperty, null);
+                            }
+                        }
+                    } else {
+                        DataObject origValueDO = (DataObject) origValue;
+                        if(oppositeProperty.isMany()) {
+                            List oppositeList = origValueDO.getList(oppositeProperty);
+                            if(oppositeList.contains(this)) {
+                                oppositeList.remove(this);
+                            }
+                        } else {
+                            if(null != origValueDO.get(oppositeProperty)) {
+                                origValueDO.set(oppositeProperty, null);
+                            }
+                        }
                     }
                 }
             }
