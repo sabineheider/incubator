@@ -59,8 +59,11 @@
   
     <target name="package" >
         <delete file="eclipselink-das.jar"/>
-
-        <jar jarfile="eclipselink-das.jar">
+        
+        <!-- include order is important. original eclipselink jar must be -->
+        <!-- included last to allow inclusion of incubation classes, and  -->
+        <!-- exclusion of original eclipselink classes                    -->
+        <jar jarfile="eclipselink-das.jar" duplicate="preserve">
              <manifest>
                 <attribute name="Specification-Title"    value="${eclipselink.specification.title}"/>
                 <attribute name="Specification-Vendor"   value="${specification.vendor}"/>
@@ -71,10 +74,10 @@
                 <attribute name="Release-Designation"    value="${release.designation}"/>
                 <attribute name="Premain-Class"          value="${eclipselink.premain.class}"/>
             </manifest>
+            <fileset dir="${classes.dir}" />
             <zipgroupfileset dir="${trunk.dir}">
                 <include name="eclipselink.jar" />
             </zipgroupfileset>
-            <fileset dir="${classes.dir}" />
         </jar>
     </target>
 
