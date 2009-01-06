@@ -19,6 +19,7 @@
 package org.eclipse.persistence.sdo.helper.jaxb;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -236,8 +237,23 @@ public class JAXBValueStore implements ValueStore {
         throw new UnsupportedOperationException();
     }
 
-    public void setManyProperty(Property propertyName, Object value) {
-        throw new UnsupportedOperationException();
+    public void setManyProperty(Property property, Object value) {
+        DatabaseMapping mapping = this.getJAXBMappingForProperty((SDOProperty) property);
+        ContainerMapping containerMapping = (ContainerMapping) mapping;
+        ContainerPolicy containerPolicy = containerMapping.getContainerPolicy();
+        AbstractSession session = ((JAXBContext) jaxbHelperContext.getJAXBContext()).getXMLContext().getSession(entity);
+        Collection collection = (Collection) value;
+        if(!property.getType().isDataType()) {
+            collection = getJAXBHelperContext().unwrap(collection);
+        }
+
+        Iterator collectionIterator = collection.iterator();
+        Object container = containerMapping.getContainerPolicy().containerInstance();
+        while(collectionIterator.hasNext()) {
+            Object collectionValue = collectionIterator.next();
+            containerPolicy.addInto(collectionValue, container, session);
+        }
+        mapping.setAttributeValueInObject(entity, container);
     }
 
     public ValueStore copy() {
