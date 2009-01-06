@@ -63,6 +63,9 @@ public class JAXBValueStore implements ValueStore {
         xPathFragment.setNamespaceURI(qName.getNamespaceURI());
         JAXBContext jaxbContext = (JAXBContext) jaxbHelperContext.getJAXBContext();
         this.descriptor = jaxbContext.getXMLContext().getDescriptorByGlobalType(xPathFragment);
+        if(this.descriptor == null) {
+            this.descriptor = jaxbContext.getXMLContext().getDescriptor(qName);
+        }
         this.entity = descriptor.getInstantiationPolicy().buildNewInstance();
     }
 
