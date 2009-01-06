@@ -102,7 +102,11 @@ public class JAXBValueStore implements ValueStore {
         DatabaseMapping mapping = this.getJAXBMappingForProperty(declaredProperty);
         Object value = mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
         if(null == value || declaredProperty.getType().isDataType()) {
-            return value;
+            if(declaredProperty.isMany()) {
+                return new JAXBListWrapper(this, declaredProperty);
+            } else {
+                return value;
+            }
         } else if(declaredProperty.isMany()) {
             ListWrapper listWrapper = listWrappers.get(declaredProperty);
             if(null != listWrapper) {
