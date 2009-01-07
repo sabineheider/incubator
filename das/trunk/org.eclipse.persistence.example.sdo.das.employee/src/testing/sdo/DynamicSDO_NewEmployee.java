@@ -18,12 +18,14 @@ public class DynamicSDO_NewEmployee {
 		File[] sampleFiles = sampleFolder.listFiles();
 
 		for (int index = 0; index < sampleFiles.length; index++) {
-			System.out.println("READING> " + sampleFiles[index].getName());
-			FileInputStream xmlInputStream = new FileInputStream(sampleFiles[index]);
-			XMLDocument xmlDocument = XMLHelper.INSTANCE.load(xmlInputStream);
-			DataObject employeeDO = xmlDocument.getRootObject();
-			System.out.println("\t> DataObject: " + employeeDO);
-			xmlInputStream.close();
+			if (sampleFiles[index].isFile()) {
+				System.out.println("READING> " + sampleFiles[index].getName());
+				FileInputStream xmlInputStream = new FileInputStream(sampleFiles[index]);
+				XMLDocument xmlDocument = XMLHelper.INSTANCE.load(xmlInputStream);
+				DataObject employeeDO = xmlDocument.getRootObject();
+				System.out.println("\t> DataObject: " + employeeDO);
+				xmlInputStream.close();
+			}
 		}
 	}
 }
