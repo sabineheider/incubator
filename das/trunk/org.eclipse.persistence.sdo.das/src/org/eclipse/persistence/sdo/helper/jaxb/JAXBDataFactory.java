@@ -18,6 +18,8 @@
  ******************************************************************************/
 package org.eclipse.persistence.sdo.helper.jaxb;
 
+import javax.xml.namespace.QName;
+
 import org.eclipse.persistence.sdo.SDODataObject;
 import org.eclipse.persistence.sdo.SDOType;
 import org.eclipse.persistence.sdo.helper.delegates.SDODataFactoryDelegate;
@@ -42,7 +44,11 @@ public class JAXBDataFactory extends SDODataFactoryDelegate {
 
     public DataObject create(Type type) {
         SDODataObject dataObject = (SDODataObject) super.create(type);
-        JAXBValueStore jpaValueStore = new JAXBValueStore(getHelperContext(),((SDOType)type).getQName());
+        QName xsdQName = ((SDOType)type).getXsdType();
+        if(null == xsdQName) {
+            xsdQName = ((SDOType) type).getQName();
+        }
+        JAXBValueStore jpaValueStore = new JAXBValueStore(getHelperContext(), xsdQName);
         jpaValueStore.initialize(dataObject);
         dataObject._setCurrentValueStore(jpaValueStore);
         getHelperContext().putWrapperDataObject(jpaValueStore.getEntity(), dataObject);
