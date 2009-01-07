@@ -28,7 +28,7 @@ import org.eclipse.persistence.sessions.Session;
  * <p><b>Purpose</b>: This is how the XML Direct Mapping is handled when used
  * with the TreeObjectBuilder.</p>
  */
-public class XMLDirectMappingNodeValue extends XMLSimpleMappingNodeValue implements NullCapableValue, MappingNodeValue {
+public class XMLDirectMappingNodeValue extends XMLSimpleMappingNodeValue implements NullCapableValue {
     private XMLDirectMapping xmlDirectMapping;
 
     public XMLDirectMappingNodeValue(XMLDirectMapping xmlDirectMapping) {
@@ -119,8 +119,9 @@ public class XMLDirectMappingNodeValue extends XMLSimpleMappingNodeValue impleme
     public boolean isNullCapableValue() {
         return xmlDirectMapping.getNullPolicy().getIsSetPerformedForAbsentNode();
     }
-    
+
     public XMLDirectMapping getMapping() {
         return xmlDirectMapping;
     }
+
 }

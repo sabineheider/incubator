@@ -41,7 +41,7 @@ import org.xml.sax.SAXException;
  * <p><b>Purpose</b>: This is how the XML Composite Object Mapping is handled
  * when used with the TreeObjectBuilder.</p>
  */
-public class XMLCompositeObjectMappingNodeValue extends XMLRelationshipMappingNodeValue implements NullCapableValue, MappingNodeValue {
+public class XMLCompositeObjectMappingNodeValue extends XMLRelationshipMappingNodeValue implements NullCapableValue {
     private XMLCompositeObjectMapping xmlCompositeObjectMapping;
 
     public XMLCompositeObjectMappingNodeValue(XMLCompositeObjectMapping xmlCompositeObjectMapping) {
@@ -198,9 +198,6 @@ public class XMLCompositeObjectMappingNodeValue extends XMLRelationshipMappingNo
         // Set the child object on the parent
         unmarshalRecord.setAttributeValue(object, xmlCompositeObjectMapping);
         unmarshalRecord.setChildRecord(null);
-        if(null != getMapping().getContainerAccessor()) {
-            getMapping().getContainerAccessor().setAttributeValueInObject(object, unmarshalRecord.getCurrentObject());
-        }        
     }
 
     public UnmarshalRecord buildSelfRecord(UnmarshalRecord unmarshalRecord, Attributes atts) {
@@ -267,8 +264,9 @@ public class XMLCompositeObjectMappingNodeValue extends XMLRelationshipMappingNo
             addTypeAttribute(descriptor, marshalRecord, xmlRef.getSchemaContext());
         }
     }
-    
+
     public XMLCompositeObjectMapping getMapping() {
         return xmlCompositeObjectMapping;
     }
+
 }

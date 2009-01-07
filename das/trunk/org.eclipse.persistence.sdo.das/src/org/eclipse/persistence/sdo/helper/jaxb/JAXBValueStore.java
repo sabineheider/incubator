@@ -307,8 +307,10 @@ public class JAXBValueStore implements ValueStore {
             }
         }
         if(null == xPathFragment && xPathNode != null) {
-            MappingNodeValue mappingNodeValue = (MappingNodeValue) xPathNode.getNodeValue();
-            return mappingNodeValue.getMapping();
+            if(xPathNode.getNodeValue().isMappingNodeValue()) {
+                MappingNodeValue mappingNodeValue = (MappingNodeValue) xPathNode.getNodeValue();
+                return mappingNodeValue.getMapping();
+            }
         }
         throw new RuntimeException("A mapping could not be found for the XPath:  " + field.getXPath());
     }
