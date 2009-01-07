@@ -63,8 +63,11 @@ public class JAXBValueStore implements ValueStore {
         xPathFragment.setNamespaceURI(qName.getNamespaceURI());
         JAXBContext jaxbContext = (JAXBContext) jaxbHelperContext.getJAXBContext();
         this.descriptor = jaxbContext.getXMLContext().getDescriptorByGlobalType(xPathFragment);
-        if(this.descriptor == null) {
+        if(null == this.descriptor) {
             this.descriptor = jaxbContext.getXMLContext().getDescriptor(qName);
+            if(null == this.descriptor) {
+                throw new RuntimeException("A descriptor could not be found for the XML type:  " + qName.toString());
+            }
         }
         this.entity = descriptor.getInstantiationPolicy().buildNewInstance();
     }
@@ -307,7 +310,7 @@ public class JAXBValueStore implements ValueStore {
             MappingNodeValue mappingNodeValue = (MappingNodeValue) xPathNode.getNodeValue();
             return mappingNodeValue.getMapping();
         }
-        throw new RuntimeException("A JAXB Mapping could not be found for the XPath:  " + field.getXPath());
+        throw new RuntimeException("A mapping could not be found for the XPath:  " + field.getXPath());
     }
 
 }
