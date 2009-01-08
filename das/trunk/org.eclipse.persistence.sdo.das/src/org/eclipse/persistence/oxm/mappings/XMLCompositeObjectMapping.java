@@ -227,10 +227,12 @@ public class XMLCompositeObjectMapping extends AbstractCompositeObjectMapping im
      * @param attributeName - the name of the backpointer attribute to be populated
      */
     public void setContainerAttributeName(String attributeName) {
-    	if(this.containerAccessor == null) {
-    		this.containerAccessor = new InstanceVariableAttributeAccessor();
+    	if(attributeName != null) {
+    		if(this.containerAccessor == null) {
+    			this.containerAccessor = new InstanceVariableAttributeAccessor();
+    		}
+    		this.getContainerAccessor().setAttributeName(attributeName);
     	}
-    	this.getContainerAccessor().setAttributeName(attributeName);
     }
     
     /**

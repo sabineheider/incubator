@@ -178,10 +178,12 @@ public class XMLCompositeCollectionMapping extends AbstractCompositeCollectionMa
      * @param attributeName - the name of the backpointer attribute to be populated
      */    
     public void setContainerAttributeName(String attributeName) {
-    	if(this.getContainerAccessor() == null) {
-    		this.containerAccessor = new InstanceVariableAttributeAccessor();
+    	if(attributeName != null) {
+    		if(this.getContainerAccessor() == null) {
+    			this.containerAccessor = new InstanceVariableAttributeAccessor();
+    		}
+    		this.getContainerAccessor().setAttributeName(attributeName);
     	}
-    	this.getContainerAccessor().setAttributeName(attributeName);
     }
     
     /**
