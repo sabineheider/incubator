@@ -28,6 +28,7 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.Source;
 
+import org.eclipse.persistence.jaxb.JAXBUnmarshaller;
 import org.eclipse.persistence.oxm.XMLRoot;
 import org.eclipse.persistence.sdo.helper.delegates.SDOXMLHelperDelegate;
 import org.xml.sax.InputSource;
@@ -58,8 +59,7 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
     @Override
     public XMLDocument load(InputSource inputSource, String locationURI, Object options) throws IOException {
         try {
-            Unmarshaller unmarshaller = getHelperContext().getJAXBContext().createUnmarshaller();
-            Object jaxbElement = unmarshaller.unmarshal(inputSource);
+            Object jaxbElement = getUnmarshaller().unmarshal(inputSource);
             return wrap(jaxbElement);
         } catch(JAXBException e) {
             throw new RuntimeException(e);
@@ -74,8 +74,7 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
     @Override
     public XMLDocument load(InputStream inputStream) throws IOException {
         try {
-            Unmarshaller unmarshaller = getHelperContext().getJAXBContext().createUnmarshaller();
-            Object jaxbElement = unmarshaller.unmarshal(inputStream);
+            Object jaxbElement = getUnmarshaller().unmarshal(inputStream);
             return wrap(jaxbElement);
         } catch(JAXBException e) {
             throw new RuntimeException(e);
@@ -85,8 +84,7 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
     @Override
     public XMLDocument load(Reader inputReader, String locationURI, Object options) throws IOException {
         try {
-            Unmarshaller unmarshaller = getHelperContext().getJAXBContext().createUnmarshaller();
-            Object jaxbElement = unmarshaller.unmarshal(inputReader);
+            Object jaxbElement = getUnmarshaller().unmarshal(inputReader);
             return wrap(jaxbElement);
         } catch(JAXBException e) {
             throw new RuntimeException(e);
@@ -96,8 +94,7 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
     @Override
     public XMLDocument load(Source source, String locationURI, Object options) throws IOException {
         try {
-            Unmarshaller unmarshaller = getHelperContext().getJAXBContext().createUnmarshaller();
-            Object jaxbElement = unmarshaller.unmarshal(source);
+            Object jaxbElement = getUnmarshaller().unmarshal(source);
             return wrap(jaxbElement);
         } catch(JAXBException e) {
             throw new RuntimeException(e);
@@ -112,6 +109,12 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
         } catch(IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Unmarshaller getUnmarshaller() throws JAXBException {
+        JAXBUnmarshaller unmarshaller = (JAXBUnmarshaller) getHelperContext().getJAXBContext().createUnmarshaller();
+        unmarshaller.getXMLUnmarshaller().setResultAlwaysXMLRoot(true);
+        return unmarshaller;
     }
 
     private XMLDocument wrap(Object object) {
