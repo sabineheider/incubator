@@ -8,13 +8,7 @@
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *     dclarke - JPA DAS INCUBATOR - Enhancement 258057
- *     			 http://wiki.eclipse.org/EclipseLink/Development/SDO-JPA
- *     
- * This code is being developed under INCUBATION and is not currently included 
- * in the automated EclipseLink build. The API in this code may change, or 
- * may never be included in the product. Please provide feedback through mailing 
- * lists or the bug database.
+ * 		dclarke - initial JPA Employee example using XML (bug 217884)
  ******************************************************************************/
 package testing.jpa;
 
@@ -23,8 +17,14 @@ import java.util.Map;
 
 import javax.persistence.*;
 
+import junit.framework.Assert;
+
+import org.eclipse.persistence.jpa.JpaHelper;
 import org.junit.After;
 import org.junit.AfterClass;
+
+import testing.jpa.util.QuerySQLTracker;
+
 
 /**
  * Base test case for testing a JPA persistence unit in JavaSE using JUnit4.
@@ -38,9 +38,8 @@ import org.junit.AfterClass;
  * @author dclarke
  * @since EclipseLink 1.1
  */
+@PersistenceContext(unitName="employee")
 public abstract class EclipseLinkJPATest {
-
-	public static final String PERSISTENCE_UNIT_NAME = "employee";
 
 	/**
 	 * This is he current EMF in use
@@ -67,12 +66,25 @@ public abstract class EclipseLinkJPATest {
 
 	private EntityManagerFactory createEMF() {
 		try {
-			return createEMF(null);
+			return createEMF(getUnitName(), null);
 		} catch (RuntimeException e) {
 			System.out.println("Persistence.createEMF FAILED: " + e.getMessage());
 			e.printStackTrace();
 			throw e;
 		}
+	}
+	
+	private String getUnitName() {
+		PersistenceContext context = null;
+		Class javaClass = getClass();
+		
+		while (context == null && javaClass != Object.class) {
+			context = (PersistenceContext) javaClass.getAnnotation(PersistenceContext.class);
+			javaClass = javaClass.getSuperclass();
+		}
+		Assert.assertNotNull("No @PersistenceContext found", context);
+		
+		return context.unitName();
 	}
 
 	/**
@@ -80,7 +92,7 @@ public abstract class EclipseLinkJPATest {
 	 * @param properties
 	 * @return
 	 */
-	protected EntityManagerFactory createEMF(Map properties) {
+	protected EntityManagerFactory createEMF(String unitName, Map properties) {
 		Map emfProps = getEMFProperties();
 
 		if (properties != null) {
@@ -88,8 +100,9 @@ public abstract class EclipseLinkJPATest {
 		}
 
 		try {
-			return Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME, emfProps);
-
+			EntityManagerFactory emf = Persistence.createEntityManagerFactory(unitName, emfProps);
+			QuerySQLTracker.install(JpaHelper.getServerSession(emf));
+			return emf;
 		} catch (RuntimeException e) {
 			System.out.println("Persistence.createEMF FAILED: " + e.getMessage());
 			e.printStackTrace();
@@ -112,19 +125,31 @@ public abstract class EclipseLinkJPATest {
 
 		return properties;
 	}
+	
+
+	protected QuerySQLTracker getQuerySQLTracker(EntityManager em) {
+		return QuerySQLTracker.getTracker(JpaHelper.getEntityManager(em).getActiveSession());
+	}
 
 	@After
 	public void cleanupClosedEMF() {
-		if (this.entityManager != null && this.entityManager.isOpen()) {
+		if (this.entityManager != null) {
+
 			if (this.entityManager.getTransaction().isActive()) {
 				this.entityManager.getTransaction().rollback();
 			}
-			this.entityManager.close();
+			if (this.entityManager.isOpen()) {
+				this.entityManager.close();
+			}
 		}
 		this.entityManager = null;
 
-		if (emf != null && !emf.isOpen()) {
-			emf = null;
+		if (emf != null) {
+			if (!emf.isOpen()) {
+				emf = null;
+			} else {
+				QuerySQLTracker.getTracker(JpaHelper.getServerSession(emf)).reset();
+			}
 		}
 	}
 

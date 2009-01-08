@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<object-persistence version="Eclipse Persistence Services - 1.1 (Build SNAPSHOT-20080918)" xmlns="http://www.eclipse.org/eclipselink/xsds/persistence" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:eclipselink="http://www.eclipse.org/eclipselink/xsds/persistence">
+<object-persistence version="Eclipse Persistence Services - 1.1.0 (Build 20081209)" xmlns="http://www.eclipse.org/eclipselink/xsds/persistence" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:eclipselink="http://www.eclipse.org/eclipselink/xsds/persistence">
    <name>jpadas-employee</name>
    <class-mapping-descriptors>
       <class-mapping-descriptor xsi:type="xml-class-mapping-descriptor">
@@ -54,7 +54,7 @@
             <default-namespace-uri>http://www.example.org/jpadas-employee</default-namespace-uri>
          </namespace-resolver>
          <schema xsi:type="schema-file-reference">
-            <resource>../src/xsd/jpadas-employee.xsd</resource>
+            <resource>..\src\xsd\jpadas-employee.xsd</resource>
             <schema-context>/emp:address-type</schema-context>
             <node-type>complex-type</node-type>
          </schema>
@@ -132,7 +132,7 @@
             <default-namespace-uri>http://www.example.org/jpadas-employee</default-namespace-uri>
          </namespace-resolver>
          <schema xsi:type="schema-file-reference">
-            <resource>../src/xsd/jpadas-employee.xsd</resource>
+            <resource>..\src\xsd\jpadas-employee.xsd</resource>
             <schema-context>/emp:employee</schema-context>
             <node-type>element</node-type>
          </schema>
@@ -173,7 +173,7 @@
             <default-namespace-uri>http://www.example.org/jpadas-employee</default-namespace-uri>
          </namespace-resolver>
          <schema xsi:type="schema-file-reference">
-            <resource>../src/xsd/jpadas-employee.xsd</resource>
+            <resource>..\src\xsd\jpadas-employee.xsd</resource>
             <schema-context>/emp:phone-type</schema-context>
             <node-type>complex-type</node-type>
          </schema>
@@ -182,6 +182,5 @@
    <login xsi:type="xml-login">
       <platform-class>org.eclipse.persistence.oxm.platform.SAXPlatform</platform-class>
       <user-name></user-name>
-      <password></password>
    </login>
 </object-persistence>

@@ -20,7 +20,7 @@ public class MOXyDescriptorCustomizers {
 		genderMapping.setConverter(converter);
 		
 		XMLCompositeCollectionMapping phoneMapping = (XMLCompositeCollectionMapping) descriptor.getMappingForAttributeName("phoneNumbers");
-		phoneMapping.setCo
+		phoneMapping.setContainerAttributeName("owner");
 		
 		descriptor.getDescriptorEventManager().addListener(new FixPhonesListener());
 	}

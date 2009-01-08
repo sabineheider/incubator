@@ -4,8 +4,8 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="var" path="ORACLE_JDBC_LIB"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
-	<classpathentry kind="lib" path="/org.eclipse.persistence.sdo.das/eclipselink-das.jar" sourcepath="/org.eclipse.persistence.sdo.das/eclipselink-das-src.zip"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/javax.persistence 1.99"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/commonj.sdo 2.1.0"/>
+	<classpathentry kind="lib" path="/org.eclipse.persistence.sdo.das/eclipselink-das.jar" sourcepath="/org.eclipse.persistence.sdo.das/eclipselink-das-src.zip"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
