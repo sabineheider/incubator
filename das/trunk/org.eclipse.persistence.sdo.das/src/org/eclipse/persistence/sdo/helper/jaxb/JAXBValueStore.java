@@ -40,6 +40,7 @@ import org.eclipse.persistence.oxm.XMLDescriptor;
 import org.eclipse.persistence.oxm.XMLField;
 import org.eclipse.persistence.oxm.mappings.XMLCompositeCollectionMapping;
 import org.eclipse.persistence.oxm.mappings.XMLCompositeObjectMapping;
+import org.eclipse.persistence.oxm.mappings.XMLDirectMapping;
 import org.eclipse.persistence.oxm.mappings.XMLObjectReferenceMapping;
 import org.eclipse.persistence.sdo.SDODataObject;
 import org.eclipse.persistence.sdo.SDOProperty;
@@ -135,9 +136,18 @@ public class JAXBValueStore implements ValueStore {
         SDOProperty declaredProperty = (SDOProperty) dataObject.getType().getDeclaredProperties().get(propertyIndex);
         DatabaseMapping mapping = this.getJAXBMappingForProperty(declaredProperty);
         if(declaredProperty.getType().isDataType()) {
-            DatabaseField field = mapping.getField();
-            AbstractSession session = ((JAXBContext) jaxbHelperContext.getJAXBContext()).getXMLContext().getSession(entity);
-            value = session.getDatasourcePlatform().getConversionManager().convertObject(value, descriptor.getObjectBuilder().getFieldClassification(field));
+            if(declaredProperty.isMany()) {
+                mapping.setAttributeValueInObject(entity, value);
+            } else {
+                AbstractSession session = ((JAXBContext) jaxbHelperContext.getJAXBContext()).getXMLContext().getSession(entity);
+                XMLDirectMapping  directMapping = (XMLDirectMapping) mapping;
+                if(directMapping.hasConverter()) {
+                    value = directMapping.getConverter().convertDataValueToObjectValue(value, session);
+                } else {
+                    DatabaseField field = mapping.getField();
+                    value = session.getDatasourcePlatform().getConversionManager().convertObject(value, descriptor.getObjectBuilder().getFieldClassification(field));                    
+                }
+            }
             mapping.setAttributeValueInObject(entity, value);
         } else if(declaredProperty.isMany()) {
             //Get a ListWrapper and set it's current elements
