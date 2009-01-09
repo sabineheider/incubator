@@ -30,7 +30,7 @@ import commonj.sdo.DataObject;
  * @author dclarke
  * @since EclipseLink 1.1
  */
-public class ChangeSetBuilder {
+public class ChangeSetBuilder { 
 
 	public static UnitOfWorkChangeSet buildChangeSet(DataObject dataobject, 
 			DatabaseSession jaxbSession, DatabaseSession jpaSession) {
