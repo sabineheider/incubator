@@ -1,15 +1,22 @@
 package testing.das;
 
 import static junit.framework.Assert.*;
+
+import java.math.BigInteger;
+
 import model.Employee;
 import model.Gender;
 
 import org.eclipse.persistence.internal.descriptors.PersistenceEntity;
+import org.eclipse.persistence.sdo.helper.jaxb.JAXBHelperContext;
 import org.junit.*;
 
 import service.EmployeeDAS;
 
 import commonj.sdo.DataObject;
+import commonj.sdo.Type;
+import commonj.sdo.helper.HelperContext;
+import commonj.sdo.impl.HelperProvider;
 
 /**
  * 
@@ -21,6 +28,26 @@ public class TestEmployeeDAS {
 	private EmployeeDAS das;
 
 	@Test
+	public void verifyDefaultContext() {
+		// Note: This call also sets the JAXBHelperContext to be the default so
+		// it must be made first
+		JAXBHelperContext dasCtx = getDAS().getContext();
+		assertNotNull(dasCtx);
+
+		HelperContext sdoCtx = HelperProvider.getDefaultContext();
+		assertNotNull(sdoCtx);
+
+		assertSame(dasCtx, sdoCtx);
+	}
+
+	@Test
+	public void verifyTypes() {
+		Type employeeType = getDAS().getContext().getTypeHelper().getType("http://www.example.org/jpadas-employee", "employee-type");
+		assertNotNull(employeeType);
+
+	}
+
+	@Test
 	public void testFind() {
 		int empId = getDAS().findMinimumEmployeeId();
 
@@ -29,7 +56,7 @@ public class TestEmployeeDAS {
 		assertNotNull(empDO);
 		assertEquals(empId, empDO.getInt("id"));
 
-		Employee emp = (Employee) getDAS().unWrap(empDO);
+		Employee emp = (Employee) getDAS().getContext().unwrap(empDO);
 		assertNotNull(emp);
 
 		assertTrue(emp instanceof PersistenceEntity);
@@ -73,19 +100,24 @@ public class TestEmployeeDAS {
 
 	@Test
 	public void testCreateNewEmployee() {
-		DataObject empDO = getDAS().create(666);
-		
+		HelperContext sdoCtx = getDAS().getContext();
+
+		Type type = sdoCtx.getTypeHelper().getType("http://www.example.org/jpadas-employee", "employee-type");
+		DataObject empDO = sdoCtx.getDataFactory().create(type);
+
 		assertNotNull(empDO);
+
+		empDO.setInt("id", 666);
 		assertEquals(666, empDO.getInt("id"));
-		
-		Employee emp = (Employee) getDAS().unWrap(empDO);
+
+		Employee emp = (Employee) getDAS().getContext().unwrap(empDO);
 		assertNotNull(emp);
 		assertEquals(666, emp.getId());
-		
+
 		empDO.setString("first-name", "Delete");
 		empDO.setString("last-name", "Me");
-		empDO.setString("gender", Gender.Male.name());
-		
+		empDO.set("gender", Gender.Male);
+
 		getDAS().merge(empDO);
 	}
 

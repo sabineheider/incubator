@@ -14,7 +14,6 @@ import model.persistence.PersistenceHelper;
 import org.eclipse.persistence.sdo.helper.jaxb.JAXBHelperContext;
 
 import commonj.sdo.DataObject;
-import commonj.sdo.Type;
 
 /**
  * 
@@ -31,15 +30,22 @@ public class EmployeeDAS {
 
 	private EntityManagerFactory emf;
 
-	protected JAXBHelperContext getContext() {
+	/**
+	 * Return the JAXBHelperContext and lazily create one if null.
+	 */
+	public JAXBHelperContext getContext() {
 		if (this.context == null) {
 			InputStream xsdIn = null;
 
 			try {
 				JAXBContext jaxbContext = JAXBContext.newInstance(MODEL_PACKAGE);
 				this.context = new JAXBHelperContext(jaxbContext);
+
 				xsdIn = Thread.currentThread().getContextClassLoader().getResourceAsStream(SCHEMA);
 				this.context.getXSDHelper().define(xsdIn, null);
+
+				// Make this the default context
+				this.context.makeDefaultContext();
 			} catch (JAXBException e) {
 				throw new RuntimeException("EmployeeDAS.getContext()::Could not create JAXBContext for: " + MODEL_PACKAGE, e);
 			} finally {
@@ -98,7 +104,7 @@ public class EmployeeDAS {
 				return null;
 			}
 			emp = em.merge(emp);
-			
+
 			em.getTransaction().commit();
 
 			return getContext().wrap(emp);
@@ -109,15 +115,6 @@ public class EmployeeDAS {
 			em.close();
 		}
 	}
-	
-	public DataObject create(int id) {
-		Type type = getContext().getTypeHelper().getType("http://www.example.org/jpadas-employee", "employee-type");
-		DataObject empDO = getContext().getDataFactory().create(type);
-		
-		empDO.setInt("id", id);
-		
-		return empDO;
-	}
 
 	public int findMinimumEmployeeId() {
 		EntityManager em = getEMF().createEntityManager();
@@ -127,9 +124,5 @@ public class EmployeeDAS {
 		} finally {
 			em.close();
 		}
-	}
-
-	public Object unWrap(DataObject dataObject) {
-		return getContext().unwrap(dataObject);
 	}
 }
