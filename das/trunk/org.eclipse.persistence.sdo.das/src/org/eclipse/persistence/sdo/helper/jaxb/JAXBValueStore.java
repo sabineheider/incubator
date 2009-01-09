@@ -26,6 +26,7 @@ import java.util.WeakHashMap;
 
 import javax.xml.namespace.QName;
 
+import org.eclipse.persistence.internal.helper.DatabaseField;
 import org.eclipse.persistence.internal.oxm.MappingNodeValue;
 import org.eclipse.persistence.internal.oxm.TreeObjectBuilder;
 import org.eclipse.persistence.internal.oxm.XPathFragment;
@@ -134,7 +135,10 @@ public class JAXBValueStore implements ValueStore {
         SDOProperty declaredProperty = (SDOProperty) dataObject.getType().getDeclaredProperties().get(propertyIndex);
         DatabaseMapping mapping = this.getJAXBMappingForProperty(declaredProperty);
         if(declaredProperty.getType().isDataType()) {
-            mapping.getAttributeAccessor().setAttributeValueInObject(entity, value);
+            DatabaseField field = mapping.getField();
+            AbstractSession session = ((JAXBContext) jaxbHelperContext.getJAXBContext()).getXMLContext().getSession(entity);
+            value = session.getDatasourcePlatform().getConversionManager().convertObject(value, descriptor.getObjectBuilder().getFieldClassification(field));
+            mapping.setAttributeValueInObject(entity, value);
         } else if(declaredProperty.isMany()) {
             //Get a ListWrapper and set it's current elements
             ListWrapper listWrapper = (ListWrapper)getDeclaredProperty(propertyIndex);
