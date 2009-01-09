@@ -83,7 +83,7 @@ public class TestEmployeeDAS {
 		assertEquals(666, emp.getId());
 		
 		empDO.setString("first-name", "Delete");
-		empDO.setString("last-Name", "Me");
+		empDO.setString("last-name", "Me");
 		empDO.setString("gender", Gender.Male.name());
 		
 		getDAS().merge(empDO);
