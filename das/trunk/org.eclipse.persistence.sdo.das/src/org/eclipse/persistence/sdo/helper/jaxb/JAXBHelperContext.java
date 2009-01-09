@@ -75,6 +75,29 @@ public class JAXBHelperContext extends SDOHelperContext {
     }
 
     /**
+     * Return the SDO type corresponding to the wrapped class. 
+     */
+    public Type getType(Class entityClass) {
+        if(null == entityClass) {
+            return null;
+        }
+
+        XMLDescriptor entityDescriptor = (XMLDescriptor) jaxbContext.getXMLContext().getSession(entityClass).getDescriptor(entityClass);
+        QName qName = entityDescriptor.getSchemaReference().getSchemaContextAsQName(entityDescriptor.getNamespaceResolver());
+        Type wrapperType;
+        if(entityDescriptor.getSchemaReference().getType() == XMLSchemaReference.COMPLEX_TYPE) {
+            wrapperType = getTypeHelper().getType(qName.getNamespaceURI(), qName.getLocalPart());            
+        } else {
+            Property property = getXSDHelper().getGlobalProperty(qName.getNamespaceURI(), qName.getLocalPart(), true);
+            wrapperType = property.getType();
+        }
+        if(null == wrapperType) {
+            throw new RuntimeException("The following SDO type could not be found:  " + qName);
+        }
+        return wrapperType;
+    }
+
+    /**
      * Return a DataObject that wraps the JPA entity.
      * Multiple calls to wrap for the same instance entity return the same
      * instance of DataObject, in other words the following is always true:
@@ -87,20 +110,7 @@ public class JAXBHelperContext extends SDOHelperContext {
             return wrapperDO;
         }
 
-        XMLDescriptor entityDescriptor = (XMLDescriptor) jaxbContext.getXMLContext().getSession(entity).getDescriptor(entity);
-        
-        QName qName = entityDescriptor.getSchemaReference().getSchemaContextAsQName(entityDescriptor.getNamespaceResolver());
-        Type wrapperType;
-        if(entityDescriptor.getSchemaReference().getType() == XMLSchemaReference.COMPLEX_TYPE) {
-            wrapperType = getTypeHelper().getType(qName.getNamespaceURI(), qName.getLocalPart());            
-        } else {
-            Property property = getXSDHelper().getGlobalProperty(qName.getNamespaceURI(), qName.getLocalPart(), true);
-            wrapperType = property.getType();
-        }
-        if(null == wrapperType) {
-            throw new RuntimeException("The following SDO type could not be found:  " + qName);
-        }
-
+        Type wrapperType = getType(entity.getClass());
         wrapperDO = (SDODataObject) getDataFactory().create(wrapperType);
 
         JAXBValueStore jaxbValueStore = new JAXBValueStore(this, entity); 
