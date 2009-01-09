@@ -28,6 +28,7 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.namespace.QName;
 
 import org.eclipse.persistence.oxm.XMLDescriptor;
+import org.eclipse.persistence.platform.xml.XMLSchemaReference;
 import org.eclipse.persistence.sdo.SDODataObject;
 import org.eclipse.persistence.sdo.helper.SDOCopyHelper;
 import org.eclipse.persistence.sdo.helper.SDODataHelper;
@@ -37,6 +38,7 @@ import org.eclipse.persistence.sdo.helper.delegates.SDOTypeHelperDelegate;
 import org.eclipse.persistence.sdo.helper.delegates.SDOXSDHelperDelegate;
 
 import commonj.sdo.DataObject;
+import commonj.sdo.Property;
 import commonj.sdo.Type;
 
 /**
@@ -86,11 +88,19 @@ public class JAXBHelperContext extends SDOHelperContext {
         }
 
         XMLDescriptor entityDescriptor = (XMLDescriptor) jaxbContext.getXMLContext().getSession(entity).getDescriptor(entity);
+        
         QName qName = entityDescriptor.getSchemaReference().getSchemaContextAsQName(entityDescriptor.getNamespaceResolver());
-        Type wrapperType = getTypeHelper().getType(qName.getNamespaceURI(), qName.getLocalPart());
+        Type wrapperType;
+        if(entityDescriptor.getSchemaReference().getType() == XMLSchemaReference.COMPLEX_TYPE) {
+            wrapperType = getTypeHelper().getType(qName.getNamespaceURI(), qName.getLocalPart());            
+        } else {
+            Property property = getXSDHelper().getGlobalProperty(qName.getNamespaceURI(), qName.getLocalPart(), true);
+            wrapperType = property.getType();
+        }
         if(null == wrapperType) {
             throw new RuntimeException("The following SDO type could not be found:  " + qName);
         }
+
         wrapperDO = (SDODataObject) getDataFactory().create(wrapperType);
 
         JAXBValueStore jaxbValueStore = new JAXBValueStore(this, entity); 
