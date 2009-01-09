@@ -101,7 +101,7 @@
    <schema-context-handle>
       <schema>employee</schema>
       <qname-path>
-         <qname component-type="element" namespace-uri="http://www.example.org/jpadas-employee" local-name="employee"/>
+         <qname component-type="complex-type" namespace-uri="http://www.example.org/jpadas-employee" local-name="employee-type"/>
       </qname-path>
    </schema-context-handle>
    <default-root-element-handle>

@@ -133,8 +133,8 @@
          </namespace-resolver>
          <schema xsi:type="schema-file-reference">
             <resource>..\src\xsd\jpadas-employee.xsd</resource>
-            <schema-context>/emp:employee</schema-context>
-            <node-type>element</node-type>
+            <schema-context>/emp:employee-type</schema-context>
+            <node-type>complex-type</node-type>
          </schema>
       </class-mapping-descriptor>
       <class-mapping-descriptor xsi:type="xml-class-mapping-descriptor">
