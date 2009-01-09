@@ -19,6 +19,8 @@ import javax.persistence.*;
 
 import junit.framework.Assert;
 
+import model.persistence.PersistenceHelper;
+
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -116,13 +118,7 @@ public abstract class EclipseLinkJPATest {
 	 */
 	protected Map getEMFProperties() {
 		Map properties = new HashMap();
-
-		// Use the system properties to override the ones specified in the
-		// persistence.xml
-		// This allows the caller< Example build/test system, to override the
-		// default values
-		properties.putAll(System.getProperties());
-
+		PersistenceHelper.applyUserHomeProperties(properties);
 		return properties;
 	}
 	

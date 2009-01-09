@@ -14,6 +14,7 @@ import model.persistence.PersistenceHelper;
 import org.eclipse.persistence.sdo.helper.jaxb.JAXBHelperContext;
 
 import commonj.sdo.DataObject;
+import commonj.sdo.Type;
 
 /**
  * 
@@ -86,6 +87,38 @@ public class EmployeeDAS {
 		}
 	}
 
+	public DataObject merge(DataObject empDO) {
+		EntityManager em = getEMF().createEntityManager();
+
+		try {
+			em.getTransaction().begin();
+			Employee emp = (Employee) getContext().unwrap(empDO);
+
+			if (emp == null) {
+				return null;
+			}
+			emp = em.merge(emp);
+			
+			em.getTransaction().commit();
+
+			return getContext().wrap(emp);
+		} finally {
+			if (em.getTransaction().isActive()) {
+				em.getTransaction().rollback();
+			}
+			em.close();
+		}
+	}
+	
+	public DataObject create(int id) {
+		Type type = getContext().getTypeHelper().getType("http://www.example.org/jpadas-employee", "employee-type");
+		DataObject empDO = getContext().getDataFactory().create(type);
+		
+		empDO.setInt("id", id);
+		
+		return empDO;
+	}
+
 	public int findMinimumEmployeeId() {
 		EntityManager em = getEMF().createEntityManager();
 
@@ -96,4 +129,7 @@ public class EmployeeDAS {
 		}
 	}
 
+	public Object unWrap(DataObject dataObject) {
+		return getContext().unwrap(dataObject);
+	}
 }

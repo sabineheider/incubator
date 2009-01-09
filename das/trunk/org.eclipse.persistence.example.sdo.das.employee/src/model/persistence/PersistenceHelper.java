@@ -18,16 +18,13 @@
  ******************************************************************************/
 package model.persistence;
 
-import static org.eclipse.persistence.config.PersistenceUnitProperties.*;
-
-import java.util.HashMap;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
-import javax.persistence.spi.PersistenceUnitTransactionType;
 
-import org.eclipse.persistence.config.TargetServer;
+import org.eclipse.persistence.config.PersistenceUnitProperties;
 
 /**
  * 
@@ -39,7 +36,7 @@ public abstract class PersistenceHelper {
 	public static final String PERSISTENCE_UNIT_NAME = "employee";
 
 	public static EntityManagerFactory createEMF() {
-		return createEMF(null);
+		return createEMF(new HashMap());
 	}
 
 	/**
@@ -48,19 +45,12 @@ public abstract class PersistenceHelper {
 	 * @return
 	 */
 	public static EntityManagerFactory createEMF(Map properties) {
-		Map emfProps = getEMFProperties();
-
-		if (properties != null) {
-			emfProps.putAll(properties);
-		}
-
 		try {
-			return Persistence.createEntityManagerFactory(
-					PERSISTENCE_UNIT_NAME, emfProps);
+			applyUserHomeProperties(properties);
+			return Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME, properties);
 
 		} catch (RuntimeException e) {
-			System.out.println("Persistence.createEMF FAILED: "
-					+ e.getMessage());
+			System.out.println("Persistence.createEMF FAILED: " + e.getMessage());
 			e.printStackTrace();
 			throw e;
 		}
@@ -68,33 +58,45 @@ public abstract class PersistenceHelper {
 
 	/**
 	 * 
-	 * @return
+	 * @param properties
 	 */
-	public static Map getEMFProperties() {
-		Map properties = new HashMap();
+	public static void applyUserHomeProperties(Map puProperties) {
+		String userHome = System.getProperty("user.home");
 
-		// Ensure RESOURCE_LOCAL transactions is used.
-		properties.put(TRANSACTION_TYPE,
-				PersistenceUnitTransactionType.RESOURCE_LOCAL.name());
+		if (userHome != null && !userHome.isEmpty()) {
+			if (!userHome.endsWith(System.getProperty("file.separator"))) {
+				userHome = userHome + System.getProperty("file.separator");
+			}
+			
+			File testPropFile = new File(userHome + "test.properties");
 
-		// Configure the internal EclipseLink connection pool
-		properties.put(JDBC_DRIVER, "oracle.jdbc.OracleDriver");
-		properties.put(JDBC_URL, "jdbc:oracle:thin:@localhost:1521:ORCL");
-		properties.put(JDBC_USER, "scott");
-		properties.put(JDBC_PASSWORD, "tiger");
-		properties.put(JDBC_READ_CONNECTIONS_MIN, "1");
-		properties.put(JDBC_WRITE_CONNECTIONS_MIN, "1");
+			if (testPropFile.exists()) {
+				Properties testProperties = new Properties();
+				FileInputStream in = null;
 
-		// Configure logging. FINE ensures all SQL is shown
-		properties.put(LOGGING_LEVEL, "FINE");
-		properties.put(LOGGING_TIMESTAMP, "false");
-		properties.put(LOGGING_THREAD, "false");
-		properties.put(LOGGING_SESSION, "false");
-		
-		// Ensure that no server-platform is configured
-		properties.put(TARGET_SERVER, TargetServer.None);
+				try {
+					in = new FileInputStream(testPropFile);
+					testProperties.load(in);
+				} catch (FileNotFoundException fnfe) {
+					return;
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 
-		return properties;
+				// Now process the test properties into the PU properties
+				copyProperty(testProperties, "db.driver", puProperties, PersistenceUnitProperties.JDBC_DRIVER);
+				copyProperty(testProperties, "db.url", puProperties, PersistenceUnitProperties.JDBC_URL);
+				copyProperty(testProperties, "db.user", puProperties, PersistenceUnitProperties.JDBC_USER);
+				copyProperty(testProperties, "db.pwd", puProperties, PersistenceUnitProperties.JDBC_PASSWORD);
+				copyProperty(testProperties, "db.platform", puProperties, PersistenceUnitProperties.TARGET_DATABASE);
+			}
+		}
 	}
-
+	
+	private static void copyProperty(Properties testProperties, String testProp, Map puProperties, String puProperty) {
+		if (testProperties.containsKey(testProp)) {
+			puProperties.put(puProperty, testProperties.get(testProp));
+		}
+	}
 }

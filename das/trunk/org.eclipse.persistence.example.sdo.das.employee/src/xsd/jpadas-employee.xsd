@@ -31,8 +31,8 @@
 			<xs:element name="salary" type="xs:double" />
 			<xs:element name="address" type="address-type" />
 			<xs:element name="phone-number" type="phone-type" maxOccurs="unbounded" />
-			<xs:element name="sdo-change-summary" type="sdo:ChangeSummaryType"
-				minOccurs="0" />
+			<!--   xs:element name="sdo-change-summary" type="sdo:ChangeSummaryType"
+				minOccurs="0" / -->
 		</xs:sequence>
 		<xs:attribute name="id" type="xs:integer" />
 		<xs:attribute name="version" type="xs:long" use="required"/>
