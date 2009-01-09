@@ -18,6 +18,8 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.tests.dynamic.orm.comics;
 
+import static junit.framework.Assert.assertEquals;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -25,6 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.expressions.ExpressionBuilder;
+import org.eclipse.persistence.queries.ReportQuery;
 import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.sessions.UnitOfWork;
 import org.eclipse.persistence.sessions.server.Server;
@@ -64,6 +68,21 @@ public class CreateAndInitDatabase {
 			sm.replaceSequences();
 
 			uow.commit();
+
+			ReportQuery countQuery = new ReportQuery(DynamicHelper.getType(server, "Publisher").getJavaClass(), new ExpressionBuilder());
+			countQuery.addCount();
+			countQuery.setShouldReturnSingleValue(true);
+			assertEquals(publishers.size(), ((Number) session.executeQuery(countQuery)).intValue());
+
+			countQuery = new ReportQuery(DynamicHelper.getType(server, "Title").getJavaClass(), new ExpressionBuilder());
+			countQuery.addCount();
+			countQuery.setShouldReturnSingleValue(true);
+			assertEquals(titles.size(), ((Number) session.executeQuery(countQuery)).intValue());
+
+			countQuery = new ReportQuery(DynamicHelper.getType(server, "Issue").getJavaClass(), new ExpressionBuilder());
+			countQuery.addCount();
+			countQuery.setShouldReturnSingleValue(true);
+			assertEquals(issues.size(), ((Number) session.executeQuery(countQuery)).intValue());
 		} finally {
 			if (uow != null && uow.isActive()) {
 				uow.release();

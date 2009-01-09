@@ -24,6 +24,7 @@ import java.util.List;
 import javax.persistence.*;
 
 import org.eclipse.persistence.annotations.*;
+import org.eclipse.persistence.annotations.Cache;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;

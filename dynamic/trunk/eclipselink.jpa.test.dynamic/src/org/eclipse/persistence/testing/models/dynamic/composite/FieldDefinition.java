@@ -21,6 +21,7 @@ package org.eclipse.persistence.testing.models.dynamic.composite;
 import javax.persistence.*;
 
 import org.eclipse.persistence.annotations.*;
+import org.eclipse.persistence.annotations.Cache;
 import org.eclipse.persistence.dynamic.EntityProperty;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 
