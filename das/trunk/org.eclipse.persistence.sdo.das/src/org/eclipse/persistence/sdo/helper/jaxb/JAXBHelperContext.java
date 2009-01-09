@@ -88,6 +88,9 @@ public class JAXBHelperContext extends SDOHelperContext {
         XMLDescriptor entityDescriptor = (XMLDescriptor) jaxbContext.getXMLContext().getSession(entity).getDescriptor(entity);
         QName qName = entityDescriptor.getSchemaReference().getSchemaContextAsQName(entityDescriptor.getNamespaceResolver());
         Type wrapperType = getTypeHelper().getType(qName.getNamespaceURI(), qName.getLocalPart());
+        if(null == wrapperType) {
+            throw new RuntimeException("The following SDO type could not be found:  " + qName);
+        }
         wrapperDO = (SDODataObject) getDataFactory().create(wrapperType);
 
         JAXBValueStore jaxbValueStore = new JAXBValueStore(this, entity); 
