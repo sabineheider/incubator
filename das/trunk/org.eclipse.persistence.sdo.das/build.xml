@@ -58,8 +58,8 @@
     </target>
   
     <target name="package" >
-        <!-- delete file="eclipselink-das.jar"/ -->
-        <!-- delete file="eclipselink-das-src.zip"/ -->
+        <delete file="eclipselink-das.jar"/>
+        <delete file="eclipselink-das-src.zip"/>
         
         <!-- include order is important. original eclipselink jar must be -->
         <!-- included last to allow inclusion of incubation classes, and  -->
