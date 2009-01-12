@@ -27,10 +27,12 @@ import model.Employee;
 import model.persistence.PersistenceHelper;
 
 import org.eclipse.persistence.internal.helper.SerializationHelper;
+import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.sdo.helper.jaxb.JAXBHelperContext;
 import org.junit.*;
 
 import service.EmployeeDAS;
+import testing.jpa.QuerySQLTracker;
 
 import commonj.sdo.DataObject;
 
@@ -87,6 +89,10 @@ public abstract class TestEmployeeDAS {
 			return null;
 		}
 	}
+	
+	protected QuerySQLTracker getTracker() {
+		return QuerySQLTracker.getTracker(JpaHelper.getServerSession(getEMF()));
+	}
 
 	@Before
 	public void initializeDAS() {
@@ -94,6 +100,8 @@ public abstract class TestEmployeeDAS {
 
 		this.das.setEMF(emf.createEntityManager());
 		this.das.setHelperContext(context);
+
+		getTracker().reset();
 	}
 
 	@After
@@ -115,6 +123,8 @@ public abstract class TestEmployeeDAS {
 	public static void intialize() {
 		emf = PersistenceHelper.createEMF(null);
 		context = PersistenceHelper.createJAXBHelperContext();
+
+		QuerySQLTracker.install(JpaHelper.getServerSession(emf));
 	}
 
 	@AfterClass

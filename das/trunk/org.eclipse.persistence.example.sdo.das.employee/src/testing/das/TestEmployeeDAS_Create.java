@@ -39,7 +39,7 @@ public class TestEmployeeDAS_Create extends TestEmployeeDAS {
 	}
 
 	@Test
-	public void createNewEmployeeWithAddress() {
+	public void createNewEmplyeeWithAddress() {
 		Type type = getDAS().getContext().getType(Employee.class);
 		DataObject empDO = getDAS().getContext().getDataFactory().create(type);
 
@@ -55,7 +55,44 @@ public class TestEmployeeDAS_Create extends TestEmployeeDAS {
 		empDO.setString("last-name", "Me");
 		empDO.setString("gender", Gender.Female.name());
 
-		empDO.setString("address/city", "Ottawa");
+		DataObject addressDO = empDO.createDataObject("address");
+		addressDO.setString("city", "Ottawa");
+		
+		getTracker().reset();
+		
+		getDAS().merge(empDO);
+		
+		assertEquals(3, getTracker().getTotalSQLINSERTCalls());
+	}
+
+	@Test
+	public void createNewEmplyeeWithAddressAndPhone() {
+		Type type = getDAS().getContext().getType(Employee.class);
+		DataObject empDO = getDAS().getContext().getDataFactory().create(type);
+
+		assertNotNull(empDO);
+
+		assertEquals(0, empDO.getInt("id"));
+
+		Employee emp = (Employee) getSDOContext().unwrap(empDO);
+		assertNotNull(emp);
+		assertEquals(0, emp.getId());
+
+		empDO.setString("first-name", "Delete");
+		empDO.setString("last-name", "Me");
+		empDO.setString("gender", Gender.Female.name());
+
+		DataObject addressDO = empDO.createDataObject("address");
+		addressDO.setString("city", "Ottawa");
+		
+		DataObject phoneDO =  empDO.createDataObject("phone-number");
+		phoneDO.setString("number", "6135551212");
+		
+		getTracker().reset();
+		
+		getDAS().merge(empDO);
+		
+		assertEquals(4, getTracker().getTotalSQLINSERTCalls());
 	}
 
 	public static DataObject createNewEmployee(TestEmployeeDAS test, String firstName, String lastName, Gender gender) {
