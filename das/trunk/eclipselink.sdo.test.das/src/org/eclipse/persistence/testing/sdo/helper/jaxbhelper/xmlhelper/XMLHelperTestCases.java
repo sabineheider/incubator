@@ -19,13 +19,14 @@ public class XMLHelperTestCases extends SDOTestCase {
 
     private static final String XML_SCHEMA = "org/eclipse/persistence/testing/sdo/helper/jaxbhelper/xmlhelper/GlobalElement.xsd";
     private static final String XML_INPUT = "org/eclipse/persistence/testing/sdo/helper/jaxbhelper/xmlhelper/GlobalElement.xml";
-    
+    private static final String XML_INPUT_UTF16 = "org/eclipse/persistence/testing/sdo/helper/jaxbhelper/xmlhelper/GlobalElement_UTF16.xml";
+
     private JAXBHelperContext jaxbHelperContext;
-    
+
     public XMLHelperTestCases(String name) {
         super(name);
     }
-    
+
     public void setUp() {
         XMLHelperProject project = new XMLHelperProject();
         XMLContext xmlContext = new XMLContext(project);
@@ -35,7 +36,7 @@ public class XMLHelperTestCases extends SDOTestCase {
         InputStream xsd = Thread.currentThread().getContextClassLoader().getResourceAsStream(XML_SCHEMA);
         jaxbHelperContext.getXSDHelper().define(xsd, null);
     }
-    
+
     public void testTypes() {
         Type rootTypeType = jaxbHelperContext.getTypeHelper().getType("urn:xml", "root-type");
         assertNotNull(rootTypeType);
@@ -43,13 +44,24 @@ public class XMLHelperTestCases extends SDOTestCase {
         Type rootType = jaxbHelperContext.getTypeHelper().getType("urn:xml", "root");
         assertNull(rootType);
     }
-    
+
     public void testCreateTypeFromGlobalComplexType() {
         try {
             InputStream xml = Thread.currentThread().getContextClassLoader().getResourceAsStream(XML_INPUT);
             XMLDocument xmlDocument = jaxbHelperContext.getXMLHelper().load(xml);
             assertNotNull(xmlDocument);
             assertNotNull(xmlDocument.getRootObject());
+        } catch(IOException e) {
+            fail();
+        }
+    }
+
+    public void testLoadUTF16() {
+        try {
+            InputStream xml = Thread.currentThread().getContextClassLoader().getResourceAsStream(XML_INPUT_UTF16);
+            XMLDocument xmlDocument = jaxbHelperContext.getXMLHelper().load(xml);
+            assertEquals("UTF-16LE", xmlDocument.getEncoding());
+            assertEquals("1.1", xmlDocument.getXMLVersion());
         } catch(IOException e) {
             fail();
         }

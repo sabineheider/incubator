@@ -18,30 +18,43 @@ import org.eclipse.persistence.sdo.helper.jaxb.JAXBHelperContext;
 import org.eclipse.persistence.testing.sdo.SDOTestCase;
 
 import commonj.sdo.DataObject;
+import commonj.sdo.Type;
 import commonj.sdo.helper.DataFactory;
 import commonj.sdo.helper.XMLHelper;
 import commonj.sdo.helper.XSDHelper;
 
 public class HelperContextTestCases extends SDOTestCase {
-    
+
     private JAXBHelperContext jaxbHelperContext;
-    
+
     public HelperContextTestCases(String name) {
         super(name);
     }
-    
+
     public void setUp() {
         try {
             Class[] classes = new Class[1];
             classes[0] = Root.class;
             JAXBContext jaxbContext = JAXBContext.newInstance(classes);
             jaxbHelperContext = new JAXBHelperContext(jaxbContext);
-            jaxbHelperContext.makeDefaultContext();
+            // jaxbHelperContext.makeDefaultContext();
+            JAXBSchemaOutputResolver jsor = new JAXBSchemaOutputResolver();
+            jaxbContext.generateSchema(jsor);
+            String xsd = jsor.getSchema();
+            System.out.println(xsd);
+            jaxbHelperContext.getXSDHelper().define(xsd);
         } catch(Exception e) {
             throw new RuntimeException(e);
         }
     }
-    
+    public void testGetType() {
+        Type pojoType = jaxbHelperContext.getType(Root.class);
+        assertNotNull(pojoType);
+        
+        Type rootType = jaxbHelperContext.getTypeHelper().getType("urn:helpercontext", "root");
+        assertSame(rootType, pojoType);
+    }
+
     public void testDataFactory() {
         SDODataFactory sdoDataFactory = (SDODataFactory) DataFactory.INSTANCE;
         System.out.println(sdoDataFactory.getHelperContext());
@@ -51,7 +64,7 @@ public class HelperContextTestCases extends SDOTestCase {
         SDOXMLHelper sdoXMLHelper = (SDOXMLHelper) XMLHelper.INSTANCE;
         System.out.println(sdoXMLHelper.getHelperContext());
     }
-    
+
     public void tearDown() {
     }
 
@@ -69,5 +82,5 @@ public class HelperContextTestCases extends SDOTestCase {
         }
         
     }
-    
+
 }
