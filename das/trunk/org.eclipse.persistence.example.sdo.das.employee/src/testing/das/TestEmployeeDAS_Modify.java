@@ -20,6 +20,8 @@ package testing.das;
 
 import static junit.framework.Assert.*;
 
+import model.Employee;
+
 import org.junit.Test;
 
 import commonj.sdo.DataObject;
@@ -30,23 +32,32 @@ import commonj.sdo.DataObject;
  */
 public class TestEmployeeDAS_Modify extends TestEmployeeDAS {
 	@Test
-	public void testIncrementSalary() {
+	public void incrementSalary() {
 		int empId = findMinimumEmployeeId();
 
 		DataObject empDO = getDAS().findEmployee(empId);
 
-		assertNotNull(empDO);
+		assertNotNull("No Employee DO returned for known employee id", empDO);
+		Employee emp = (Employee) getSDOContext().unwrap(empDO);
+		assertNotNull("Null POJO in DataObject wrapper", emp);
+		
 
 		long initialVersion = empDO.getLong("version");
-		int initialSalary = empDO.getInt("salary");
+		double initialSalary = empDO.getDouble("salary");
+		
+		// Double check values in POJO match
+		assertEquals(initialVersion, emp.getVersion());
+		assertEquals(initialSalary, emp.getSalary());
 
-		empDO.setInt("salary", initialSalary + 1);
+		empDO.setDouble("salary", initialSalary + 1);
+		assertEquals("Salary in POJO not incremented", initialSalary + 1, emp.getSalary());
+		assertEquals(initialVersion, emp.getVersion());
 
 		DataObject empDO2 = getDAS().merge(empDO);
 
 		assertSame(empDO, empDO2);
 		assertEquals(initialVersion + 1, empDO2.getLong("version"));
-		assertEquals(initialSalary + 1, empDO2.getInt("salary"));
+		assertEquals(initialSalary + 1, empDO2.getDouble("salary"));
 	}
 
 	@Test

@@ -18,6 +18,9 @@
  ******************************************************************************/
 package testing.jpa;
 
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -131,4 +134,25 @@ public class TransactionExamples extends EclipseLinkJPATest {
 
 		SamplePopulation.population.verifyCounts(em);
 	}
+
+	@Test
+	public void incrementSalary() {
+		EntityManager em = getEntityManager();
+
+		Employee emp = (Employee) em.createQuery("SELECT e FROM Employee e WHERE e.id IN (SELECT MIN(ee.id) FROM Employee ee)").getSingleResult();
+		assertNotNull("Null POJO in DataObject wrapper", emp);
+
+		long initialVersion = emp.getVersion();
+		double initialSalary = emp.getSalary();
+
+		emp.setSalary(initialSalary + 1);
+
+		em.getTransaction().begin();
+		em.merge(emp);
+		em.getTransaction().commit();
+
+		assertEquals(initialVersion + 1, emp.getVersion());
+		assertEquals(initialSalary + 1, emp.getSalary());
+	}
+
 }

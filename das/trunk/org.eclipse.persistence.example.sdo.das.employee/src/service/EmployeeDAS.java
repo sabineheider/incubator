@@ -81,18 +81,19 @@ public class EmployeeDAS {
 
 	public DataObject merge(DataObject empDO) {
 		EntityManager em = getEntityManager();
-
-		em.getTransaction().begin();
 		Employee emp = (Employee) getContext().unwrap(empDO);
 
-		if (emp == null) {
-			return null;
+		try {
+			em.getTransaction().begin();
+			emp = em.merge(emp);
+			em.getTransaction().commit();
+			return getContext().wrap(em.find(Employee.class, emp.getId()));
+		} finally {
+			if (em.getTransaction().isActive()) {
+				em.getTransaction().rollback();
+			}
 		}
-		emp = em.merge(emp);
 
-		em.getTransaction().commit();
-
-		return getContext().wrap(emp);
 	}
 
 	public void remove(DataObject empDO) {
