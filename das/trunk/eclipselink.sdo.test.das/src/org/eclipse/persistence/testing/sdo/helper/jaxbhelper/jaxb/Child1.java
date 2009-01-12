@@ -1,12 +1,9 @@
-package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.oppositeproperty;
-
-import java.util.Vector;
+package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.jaxb;
 
 public class Child1 {
 
     private int id;
     private Child2 child2;
-    private Vector child2Collection;
 
     public Child1() {
     }
@@ -25,14 +22,6 @@ public class Child1 {
 
     public void setChild2(Child2 child2) {
         this.child2 = child2;
-    }
-
-    public Vector getChild2Collection() {
-        return child2Collection;
-    }
-
-    public void setChild2Collection(Vector child2Collection) {
-        this.child2Collection = child2Collection;
     }
 
 }

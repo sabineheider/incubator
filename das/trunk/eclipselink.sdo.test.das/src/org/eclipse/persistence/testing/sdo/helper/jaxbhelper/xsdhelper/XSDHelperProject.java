@@ -1,4 +1,4 @@
-package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.oppositeproperty;
+package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.xsdhelper;
 
 import org.eclipse.persistence.oxm.NamespaceResolver;
 import org.eclipse.persistence.oxm.XMLDescriptor;
@@ -10,9 +10,9 @@ import org.eclipse.persistence.sessions.Project;
 import org.eclipse.persistence.oxm.schema.XMLSchemaClassPathReference;
 import org.eclipse.persistence.platform.xml.XMLSchemaReference;
 
-public class OppositeProject extends Project {
+public class XSDHelperProject extends Project {
 
-    public OppositeProject() {
+    public XSDHelperProject() {
         super();
         this.addDescriptor(getRootDescriptor());
         this.addDescriptor(getChild1Descriptor());
@@ -25,7 +25,7 @@ public class OppositeProject extends Project {
         xmlDescriptor.addPrimaryKeyFieldName("@id");
         
         NamespaceResolver namespaceResolver = new NamespaceResolver();
-        namespaceResolver.put("tns", "urn:opposite");
+        namespaceResolver.put("tns", "urn:xsd");
         xmlDescriptor.setNamespaceResolver(namespaceResolver);
         
         XMLSchemaClassPathReference schemaReference = new XMLSchemaClassPathReference();
@@ -38,33 +38,22 @@ public class OppositeProject extends Project {
         idMapping.setXPath("@id");
         xmlDescriptor.addMapping(idMapping);
 
-        XMLObjectReferenceMapping child2Mapping = new XMLObjectReferenceMapping();
-        child2Mapping.setReferenceClass(Child2.class);
-        child2Mapping.setAttributeName("child2");
-        child2Mapping.addSourceToTargetKeyFieldAssociation("tns:child2/text()", "@id");
-        xmlDescriptor.addMapping(child2Mapping);
-        
-        XMLCollectionReferenceMapping child2CollectionMapping = new XMLCollectionReferenceMapping();
-        child2CollectionMapping.setReferenceClass(Child2.class);
-        child2CollectionMapping.setAttributeName("child2Collection");
-        child2CollectionMapping.addSourceToTargetKeyFieldAssociation("tns:child2collection/text()", "@id");
-        xmlDescriptor.addMapping(child2CollectionMapping);
-        
         return xmlDescriptor;
     }
     
     private XMLDescriptor getChild2Descriptor() {
         XMLDescriptor xmlDescriptor = new XMLDescriptor();
         xmlDescriptor.setJavaClass(Child2.class);
+        xmlDescriptor.setDefaultRootElement("tns:child2");
         xmlDescriptor.addPrimaryKeyFieldName("@id");
         
         XMLSchemaClassPathReference schemaReference = new XMLSchemaClassPathReference();
         schemaReference.setSchemaContext("/tns:child2");
-        schemaReference.setType(XMLSchemaReference.COMPLEX_TYPE);
+        schemaReference.setType(XMLSchemaReference.ELEMENT);
         xmlDescriptor.setSchemaReference(schemaReference);
 
         NamespaceResolver namespaceResolver = new NamespaceResolver();
-        namespaceResolver.put("tns", "urn:opposite");
+        namespaceResolver.put("tns", "urn:xsd");
         xmlDescriptor.setNamespaceResolver(namespaceResolver);
         
         XMLDirectMapping idMapping = new XMLDirectMapping();
@@ -72,12 +61,6 @@ public class OppositeProject extends Project {
         idMapping.setXPath("@id");
         xmlDescriptor.addMapping(idMapping);
 
-        XMLObjectReferenceMapping child1Mapping = new XMLObjectReferenceMapping();
-        child1Mapping.setReferenceClass(Child1.class);
-        child1Mapping.setAttributeName("child1");
-        child1Mapping.addSourceToTargetKeyFieldAssociation("tns:child1/text()", "@id");
-        xmlDescriptor.addMapping(child1Mapping);
-        
         return xmlDescriptor;
     }
     
@@ -91,7 +74,7 @@ public class OppositeProject extends Project {
         xmlDescriptor.setSchemaReference(schemaReference);
         
         NamespaceResolver namespaceResolver = new NamespaceResolver();
-        namespaceResolver.put("tns", "urn:opposite");
+        namespaceResolver.put("tns", "urn:xsd");
         xmlDescriptor.setNamespaceResolver(namespaceResolver);
         
         XMLCompositeObjectMapping child1Mapping = new XMLCompositeObjectMapping();

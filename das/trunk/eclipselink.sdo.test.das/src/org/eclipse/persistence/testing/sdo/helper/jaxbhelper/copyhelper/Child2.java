@@ -1,4 +1,4 @@
-package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.oppositeproperty;
+package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.copyhelper;
 
 public class Child2 {
 

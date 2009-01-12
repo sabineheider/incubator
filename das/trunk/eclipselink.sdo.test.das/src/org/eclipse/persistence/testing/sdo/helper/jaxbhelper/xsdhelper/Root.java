@@ -1,4 +1,4 @@
-package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.oppositeproperty;
+package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.xsdhelper;
 
 public class Root {
 
@@ -23,5 +23,5 @@ public class Root {
     public void setChild2(Child2 child2) {
         this.child2 = child2;
     }
-    
+
 }

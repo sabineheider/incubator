@@ -1,4 +1,4 @@
-package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.oppositeproperty;
+package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.copyhelper;
 
 import org.eclipse.persistence.oxm.NamespaceResolver;
 import org.eclipse.persistence.oxm.XMLDescriptor;
@@ -10,9 +10,9 @@ import org.eclipse.persistence.sessions.Project;
 import org.eclipse.persistence.oxm.schema.XMLSchemaClassPathReference;
 import org.eclipse.persistence.platform.xml.XMLSchemaReference;
 
-public class OppositeProject extends Project {
+public class CopyHelperProject extends Project {
 
-    public OppositeProject() {
+    public CopyHelperProject() {
         super();
         this.addDescriptor(getRootDescriptor());
         this.addDescriptor(getChild1Descriptor());
@@ -25,7 +25,7 @@ public class OppositeProject extends Project {
         xmlDescriptor.addPrimaryKeyFieldName("@id");
         
         NamespaceResolver namespaceResolver = new NamespaceResolver();
-        namespaceResolver.put("tns", "urn:opposite");
+        namespaceResolver.put("tns", "urn:copy");
         xmlDescriptor.setNamespaceResolver(namespaceResolver);
         
         XMLSchemaClassPathReference schemaReference = new XMLSchemaClassPathReference();
@@ -56,15 +56,16 @@ public class OppositeProject extends Project {
     private XMLDescriptor getChild2Descriptor() {
         XMLDescriptor xmlDescriptor = new XMLDescriptor();
         xmlDescriptor.setJavaClass(Child2.class);
+        xmlDescriptor.setDefaultRootElement("tns:child2");
         xmlDescriptor.addPrimaryKeyFieldName("@id");
         
         XMLSchemaClassPathReference schemaReference = new XMLSchemaClassPathReference();
         schemaReference.setSchemaContext("/tns:child2");
-        schemaReference.setType(XMLSchemaReference.COMPLEX_TYPE);
+        schemaReference.setType(XMLSchemaReference.ELEMENT);
         xmlDescriptor.setSchemaReference(schemaReference);
 
         NamespaceResolver namespaceResolver = new NamespaceResolver();
-        namespaceResolver.put("tns", "urn:opposite");
+        namespaceResolver.put("tns", "urn:copy");
         xmlDescriptor.setNamespaceResolver(namespaceResolver);
         
         XMLDirectMapping idMapping = new XMLDirectMapping();
@@ -91,7 +92,7 @@ public class OppositeProject extends Project {
         xmlDescriptor.setSchemaReference(schemaReference);
         
         NamespaceResolver namespaceResolver = new NamespaceResolver();
-        namespaceResolver.put("tns", "urn:opposite");
+        namespaceResolver.put("tns", "urn:copy");
         xmlDescriptor.setNamespaceResolver(namespaceResolver);
         
         XMLCompositeObjectMapping child1Mapping = new XMLCompositeObjectMapping();

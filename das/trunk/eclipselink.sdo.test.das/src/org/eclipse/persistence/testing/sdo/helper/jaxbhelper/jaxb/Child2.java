@@ -1,5 +1,10 @@
-package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.oppositeproperty;
+package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.jaxb;
 
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
+
+@XmlRootElement
+@XmlType(name="")
 public class Child2 {
 
     private int id;
