@@ -39,7 +39,7 @@ public class TestEmployeeDAS_Create extends TestEmployeeDAS {
 	}
 
 	@Test
-	public void createNewEmplyeeWithAddress() {
+	public void createNewEmployeeWithAddress() {
 		Type type = getDAS().getContext().getType(Employee.class);
 		DataObject empDO = getDAS().getContext().getDataFactory().create(type);
 
@@ -55,7 +55,7 @@ public class TestEmployeeDAS_Create extends TestEmployeeDAS {
 		empDO.setString("last-name", "Me");
 		empDO.setString("gender", Gender.Female.name());
 
-		empDO.setString("address\\city", "Ottawa");
+		empDO.setString("address/city", "Ottawa");
 	}
 
 	public static DataObject createNewEmployee(TestEmployeeDAS test, String firstName, String lastName, Gender gender) {
