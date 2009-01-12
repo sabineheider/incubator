@@ -29,6 +29,8 @@ import org.eclipse.persistence.config.PessimisticLock;
 import org.eclipse.persistence.config.QueryHints;
 import org.junit.Test;
 
+import testing.SamplePopulation;
+
 public class TransactionExamples extends EclipseLinkJPATest {
 
 	@Test

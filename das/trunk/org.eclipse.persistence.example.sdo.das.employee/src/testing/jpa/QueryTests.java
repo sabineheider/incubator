@@ -34,6 +34,8 @@ import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.ReadAllQuery;
 import org.junit.Test;
 
+import testing.SamplePopulation;
+
 /**
  * Simple query examples for the XML mapped Employee domain model.
  * 

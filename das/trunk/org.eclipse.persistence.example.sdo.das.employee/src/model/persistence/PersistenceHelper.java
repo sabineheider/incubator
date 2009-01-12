@@ -21,10 +21,12 @@ package model.persistence;
 import java.io.*;
 import java.util.*;
 
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
+import javax.persistence.*;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
+import org.eclipse.persistence.sdo.helper.jaxb.JAXBHelperContext;
 
 /**
  * 
@@ -36,7 +38,7 @@ public abstract class PersistenceHelper {
 	public static final String PERSISTENCE_UNIT_NAME = "employee";
 
 	public static EntityManagerFactory createEMF() {
-		return createEMF(new HashMap());
+		return createEMF(null);
 	}
 
 	/**
@@ -45,9 +47,11 @@ public abstract class PersistenceHelper {
 	 * @return
 	 */
 	public static EntityManagerFactory createEMF(Map properties) {
+		Map puProperties = properties == null ? new HashMap() : properties;
+		
 		try {
-			applyUserHomeProperties(properties);
-			return Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME, properties);
+			applyUserHomeProperties(puProperties);
+			return Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME, puProperties);
 
 		} catch (RuntimeException e) {
 			System.out.println("Persistence.createEMF FAILED: " + e.getMessage());
@@ -80,7 +84,6 @@ public abstract class PersistenceHelper {
 				} catch (FileNotFoundException fnfe) {
 					return;
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
@@ -99,4 +102,44 @@ public abstract class PersistenceHelper {
 			puProperties.put(puProperty, testProperties.get(testProp));
 		}
 	}
+	
+	public static final String MODEL_PACKAGE = "model";
+
+	public static final String SCHEMA_REOSURCE = "xsd/jpadas-employee.xsd";
+	
+	public static final String URI = "http://www.example.org/jpadas-employee";
+	
+	public static final String EMPLOYEE_TYPE = "employee-type";
+	public static final String ADDRESS_TYPE = "address-type";
+	public static final String PHONE_TYPE = "phone-type";
+
+	/**
+	 * Return the JAXBHelperContext and lazily create one if null.
+	 */
+	public static JAXBHelperContext createJAXBHelperContext() {
+			JAXBHelperContext context = null;
+			InputStream xsdIn = null;
+
+			try {
+				JAXBContext jaxbContext = JAXBContext.newInstance(MODEL_PACKAGE);
+				context = new JAXBHelperContext(jaxbContext);
+
+				xsdIn = Thread.currentThread().getContextClassLoader().getResourceAsStream(SCHEMA_REOSURCE);
+				context.getXSDHelper().define(xsdIn, null);
+
+				// Make this the default context
+				context.makeDefaultContext();
+			} catch (JAXBException e) {
+				throw new RuntimeException("EmployeeDAS.getContext()::Could not create JAXBContext for: " + MODEL_PACKAGE, e);
+			} finally {
+				if (xsdIn != null) {
+					try {
+						xsdIn.close();
+					} catch (IOException e) {
+					}
+				}
+			}
+		return context;
+	}
+
 }

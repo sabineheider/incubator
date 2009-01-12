@@ -30,6 +30,8 @@ import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 import org.junit.Test;
 
+import testing.SamplePopulation;
+
 /**
  * Utility class to create the database schema and populate it for the Employee
  * JPA example using XML configuration. This
