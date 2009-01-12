@@ -121,11 +121,17 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
         if(object instanceof JAXBElement) {
             JAXBElement jaxbElement = (JAXBElement) object;
             DataObject dataObject = getHelperContext().wrap(jaxbElement.getValue());
-            return getHelperContext().getXMLHelper().createDocument(dataObject, jaxbElement.getName().getNamespaceURI(), jaxbElement.getName().getLocalPart());
+            XMLDocument xmlDocument = getHelperContext().getXMLHelper().createDocument(dataObject, jaxbElement.getName().getNamespaceURI(), jaxbElement.getName().getLocalPart());
+            return xmlDocument;
         } else {
             XMLRoot xmlRoot = (XMLRoot) object;
             DataObject dataObject = getHelperContext().wrap(xmlRoot.getObject());
-            return getHelperContext().getXMLHelper().createDocument(dataObject, xmlRoot.getNamespaceURI(), xmlRoot.getLocalName());
+            XMLDocument xmlDocument =  getHelperContext().getXMLHelper().createDocument(dataObject, xmlRoot.getNamespaceURI(), xmlRoot.getLocalName());
+            xmlDocument.setEncoding(xmlRoot.getEncoding());
+            xmlDocument.setXMLVersion(xmlRoot.getXMLVersion());
+            xmlDocument.setSchemaLocation(xmlRoot.getSchemaLocation());
+            xmlDocument.setNoNamespaceSchemaLocation(xmlRoot.getNoNamespaceSchemaLocation());
+            return xmlDocument;
         }
     }
 
