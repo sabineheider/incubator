@@ -7,6 +7,7 @@ import junit.framework.TestSuite;
 import org.eclipse.persistence.testing.sdo.helper.datahelper.DataHelperToCalendarTest;
 import org.eclipse.persistence.testing.sdo.helper.datahelper.DataHelperToDateTest;
 import org.eclipse.persistence.testing.sdo.helper.jaxbhelper.copyhelper.CopyHelperTestCases;
+import org.eclipse.persistence.testing.sdo.helper.jaxbhelper.datafactory.DataFactoryTestCases;
 import org.eclipse.persistence.testing.sdo.helper.jaxbhelper.helpercontext.HelperContextTestCases;
 import org.eclipse.persistence.testing.sdo.helper.jaxbhelper.jaxb.JAXBTestCases;
 import org.eclipse.persistence.testing.sdo.helper.jaxbhelper.mappings.MappingsTestCases;
@@ -25,7 +26,8 @@ public class JAXBHelperTestSuite extends TestCase {
         suite.addTestSuite(OppositePropertyTestCases.class);
         suite.addTestSuite(XMLHelperTestCases.class);
         suite.addTestSuite(XSDHelperTestCases.class);
+        suite.addTestSuite(DataFactoryTestCases.class);
         return suite;
     }
-    
+
 }

@@ -141,9 +141,13 @@ public class JAXBHelperContext extends SDOHelperContext {
      * customer123 == jpaHelper.unwrap(jpaHelper.wrap(customer123))
      */
     public Object unwrap(DataObject dataObject) {
-        SDODataObject sdoDataObject = (SDODataObject) dataObject;
-        JAXBValueStore jpaValueStore = (JAXBValueStore) sdoDataObject._getCurrentValueStore();
-        return jpaValueStore.getEntity();
+        try {
+            SDODataObject sdoDataObject = (SDODataObject) dataObject;
+            JAXBValueStore jpaValueStore = (JAXBValueStore) sdoDataObject._getCurrentValueStore();
+            return jpaValueStore.getEntity();
+        } catch(ClassCastException e) {
+            return null;
+        }
     }
 
     public List<Object> unwrap(Collection<DataObject> dataObjects) {

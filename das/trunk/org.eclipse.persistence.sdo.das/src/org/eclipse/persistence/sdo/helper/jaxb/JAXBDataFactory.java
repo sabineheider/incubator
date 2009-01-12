@@ -48,10 +48,14 @@ public class JAXBDataFactory extends SDODataFactoryDelegate {
         if(null == xsdQName) {
             xsdQName = ((SDOType) type).getQName();
         }
-        JAXBValueStore jpaValueStore = new JAXBValueStore(getHelperContext(), xsdQName);
-        jpaValueStore.initialize(dataObject);
-        dataObject._setCurrentValueStore(jpaValueStore);
-        getHelperContext().putWrapperDataObject(jpaValueStore.getEntity(), dataObject);
+        try {
+            JAXBValueStore jpaValueStore = new JAXBValueStore(getHelperContext(), xsdQName);
+            jpaValueStore.initialize(dataObject);
+            dataObject._setCurrentValueStore(jpaValueStore);
+            getHelperContext().putWrapperDataObject(jpaValueStore.getEntity(), dataObject);
+        } catch(Exception e) {
+            return super.create(type);
+        }
         return dataObject;
     }
 
