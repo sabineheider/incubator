@@ -314,7 +314,7 @@ public class JAXBValueStore implements ValueStore {
             }
             xPathFragment = xPathFragment.getNextFragment();
             if(xPathFragment != null && xPathFragment.nameIsText()) {
-                if(sdoProperty.isMany() && !sdoProperty.isContainment() && !sdoProperty.getType().isDataType()) {
+                if(sdoProperty.isMany() && !sdoProperty.isContainment()) {
                     xPathFragment = null;
                     break;
                 }
