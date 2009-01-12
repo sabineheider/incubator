@@ -4,6 +4,6 @@
 	<classpathentry excluding="**/.svn/**" kind="src" path="src"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.sdo"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.moxy"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/commonj.sdo 2.1.0"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/commonj.sdo 2.1.0"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

@@ -22,6 +22,9 @@ import static junit.framework.Assert.*;
 
 import model.Employee;
 
+import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
+import org.eclipse.persistence.internal.descriptors.changetracking.AttributeChangeListener;
+import org.eclipse.persistence.jpa.JpaHelper;
 import org.junit.Test;
 
 import commonj.sdo.DataObject;
@@ -31,11 +34,50 @@ import commonj.sdo.DataObject;
  * @author dclarke EclipseLink 1.1
  */
 public class TestEmployeeDAS_Modify extends TestEmployeeDAS {
+
 	@Test
-	public void incrementSalary() {
+	public void incrementSalary_Local() {
 		int empId = findMinimumEmployeeId();
 
 		DataObject empDO = getDAS().findEmployee(empId);
+
+		assertNotNull("No Employee DO returned for known employee id", empDO);
+		Employee emp = (Employee) getSDOContext().unwrap(empDO);
+		assertNotNull("Null POJO in DataObject wrapper", emp);
+		
+
+		long initialVersion = empDO.getLong("version");
+		double initialSalary = empDO.getDouble("salary");
+		
+		// Double check values in POJO match
+		assertEquals(initialVersion, emp.getVersion());
+		assertEquals(initialSalary, emp.getSalary());
+
+		if (emp instanceof ChangeTracker && ((ChangeTracker) emp)._persistence_getPropertyChangeListener() != null && ((ChangeTracker) emp)._persistence_getPropertyChangeListener() instanceof AttributeChangeListener) {
+			assertFalse(JpaHelper.getEntityManager(getDAS().getEntityManager()).getUnitOfWork().hasChanges());
+		}
+
+		empDO.setDouble("salary", initialSalary + 1);
+		
+		if (emp instanceof ChangeTracker && ((ChangeTracker) emp)._persistence_getPropertyChangeListener() != null && ((ChangeTracker) emp)._persistence_getPropertyChangeListener() instanceof AttributeChangeListener) {
+			assertTrue(JpaHelper.getEntityManager(getDAS().getEntityManager()).getUnitOfWork().hasChanges());
+		}
+		
+		assertEquals("Salary in POJO not incremented", initialSalary + 1, emp.getSalary());
+		assertEquals(initialVersion, emp.getVersion());
+
+		DataObject empDO2 = getDAS().merge(empDO);
+
+		assertSame(empDO, empDO2);
+		assertEquals(initialVersion + 1, empDO2.getLong("version"));
+		assertEquals(initialSalary + 1, empDO2.getDouble("salary"));
+	}
+
+	@Test
+	public void incrementSalary_Remote() {
+		int empId = findMinimumEmployeeId();
+
+		DataObject empDO = serialize(getDAS().findEmployee(empId));
 
 		assertNotNull("No Employee DO returned for known employee id", empDO);
 		Employee emp = (Employee) getSDOContext().unwrap(empDO);
@@ -53,9 +95,9 @@ public class TestEmployeeDAS_Modify extends TestEmployeeDAS {
 		assertEquals("Salary in POJO not incremented", initialSalary + 1, emp.getSalary());
 		assertEquals(initialVersion, emp.getVersion());
 
-		DataObject empDO2 = getDAS().merge(empDO);
+		DataObject empDO2 = serialize(getDAS().merge(serialize(empDO)));
 
-		assertSame(empDO, empDO2);
+		assertNotSame(empDO, empDO2);
 		assertEquals(initialVersion + 1, empDO2.getLong("version"));
 		assertEquals(initialSalary + 1, empDO2.getDouble("salary"));
 	}

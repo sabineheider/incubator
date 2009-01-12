@@ -26,10 +26,13 @@ import javax.persistence.EntityManagerFactory;
 import model.Employee;
 import model.persistence.PersistenceHelper;
 
+import org.eclipse.persistence.internal.helper.SerializationHelper;
 import org.eclipse.persistence.sdo.helper.jaxb.JAXBHelperContext;
 import org.junit.*;
 
 import service.EmployeeDAS;
+
+import commonj.sdo.DataObject;
 
 /**
  * 
@@ -46,11 +49,11 @@ public abstract class TestEmployeeDAS {
 	public EmployeeDAS getDAS() {
 		return this.das;
 	}
-	
+
 	protected EntityManagerFactory getEMF() {
 		return emf;
 	}
-	
+
 	protected JAXBHelperContext getSDOContext() {
 		return context;
 	}
@@ -72,6 +75,16 @@ public abstract class TestEmployeeDAS {
 			return (Integer) em.createQuery("SELECT MAX(E.id) FROM Employee e").getSingleResult();
 		} finally {
 			em.close();
+		}
+	}
+
+	protected DataObject serialize(DataObject dataObject) {
+		try {
+			byte[] bytes = SerializationHelper.serialize(dataObject);
+			return (DataObject) SerializationHelper.deserialize(bytes);
+		} catch (Exception e) {
+			Assert.fail("Exception thrown serializing: " + dataObject + "::" + e);
+			return null;
 		}
 	}
 
@@ -111,5 +124,4 @@ public abstract class TestEmployeeDAS {
 			emf = null;
 		}
 	}
-
 }
