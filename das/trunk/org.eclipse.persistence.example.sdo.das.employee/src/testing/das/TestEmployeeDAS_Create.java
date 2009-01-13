@@ -87,6 +87,7 @@ public class TestEmployeeDAS_Create extends TestEmployeeDAS {
 		
 		DataObject phoneDO =  empDO.createDataObject("phone-number");
 		phoneDO.setString("number", "6135551212");
+		phoneDO.setString("type", "cell");
 		
 		getTracker().reset();
 		
