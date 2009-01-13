@@ -18,12 +18,15 @@
  ******************************************************************************/
 package org.eclipse.persistence.sdo.helper.jaxb;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Vector;
 
+import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
 import org.eclipse.persistence.internal.queries.ContainerPolicy;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.jaxb.JAXBContext;
@@ -403,6 +406,13 @@ public class JAXBListWrapper extends ListWrapper {
             XMLCompositeCollectionMapping compositeMapping = (XMLCompositeCollectionMapping) mapping;
             if(compositeMapping.getContainerAccessor() != null) {
                 Object itemEntity = jaxbValueStore.getJAXBHelperContext().unwrap((DataObject) item);
+                if (itemEntity instanceof ChangeTracker) {
+                    PropertyChangeListener listener = ((ChangeTracker) itemEntity)._persistence_getPropertyChangeListener();
+                    if (listener != null) {
+                        Object itemEntityOldContainer = compositeMapping.getContainerAccessor().getAttributeValueFromObject(itemEntity);
+                        listener.propertyChange(new PropertyChangeEvent(itemEntity, mapping.getAttributeName(), jaxbValueStore.getEntity(), itemEntityOldContainer));
+                    }
+                }
                 compositeMapping.getContainerAccessor().setAttributeValueInObject(itemEntity, jaxbValueStore.getEntity());
             }
         }
