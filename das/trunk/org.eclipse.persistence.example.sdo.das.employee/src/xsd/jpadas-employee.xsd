@@ -55,6 +55,6 @@
 	</xs:complexType>
 	<xs:complexType name="phone-type">
 		<xs:attribute name="type" type="xs:string" />
-		<attribute name="number" type="xs:string" />
+		<xs:attribute name="number" type="xs:string" />
 	</xs:complexType>
 </xs:schema>
