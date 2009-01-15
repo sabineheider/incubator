@@ -36,7 +36,7 @@ public class CopyHelperProject extends Project {
         this.addDescriptor(getChild1Descriptor());
         this.addDescriptor(getChild2Descriptor());
     }
-    
+
     private XMLDescriptor getChild1Descriptor() {
         XMLDescriptor xmlDescriptor = new XMLDescriptor();
         xmlDescriptor.setJavaClass(Child1.class);
@@ -45,7 +45,7 @@ public class CopyHelperProject extends Project {
         NamespaceResolver namespaceResolver = new NamespaceResolver();
         namespaceResolver.put("tns", "urn:copy");
         xmlDescriptor.setNamespaceResolver(namespaceResolver);
-        
+
         XMLSchemaClassPathReference schemaReference = new XMLSchemaClassPathReference();
         schemaReference.setSchemaContext("/tns:child1");
         schemaReference.setType(XMLSchemaReference.COMPLEX_TYPE);
@@ -70,7 +70,7 @@ public class CopyHelperProject extends Project {
         
         return xmlDescriptor;
     }
-    
+
     private XMLDescriptor getChild2Descriptor() {
         XMLDescriptor xmlDescriptor = new XMLDescriptor();
         xmlDescriptor.setJavaClass(Child2.class);
@@ -99,20 +99,20 @@ public class CopyHelperProject extends Project {
         
         return xmlDescriptor;
     }
-    
+
     private XMLDescriptor getRootDescriptor() {
         XMLDescriptor xmlDescriptor = new XMLDescriptor();
         xmlDescriptor.setJavaClass(Root.class);
-        
+
         XMLSchemaClassPathReference schemaReference = new XMLSchemaClassPathReference();
         schemaReference.setSchemaContext("/tns:root");
         schemaReference.setType(XMLSchemaReference.COMPLEX_TYPE);
         xmlDescriptor.setSchemaReference(schemaReference);
-        
+
         NamespaceResolver namespaceResolver = new NamespaceResolver();
         namespaceResolver.put("tns", "urn:copy");
         xmlDescriptor.setNamespaceResolver(namespaceResolver);
-        
+
         XMLCompositeObjectMapping child1Mapping = new XMLCompositeObjectMapping();
         child1Mapping.setAttributeName("child1");
         child1Mapping.setXPath("tns:child1");
@@ -122,8 +122,8 @@ public class CopyHelperProject extends Project {
         child2Mapping.setAttributeName("child2");
         child2Mapping.setXPath("tns:child2");
         xmlDescriptor.addMapping(child2Mapping);
-        
+
         return xmlDescriptor;
     }
-    
+
 }

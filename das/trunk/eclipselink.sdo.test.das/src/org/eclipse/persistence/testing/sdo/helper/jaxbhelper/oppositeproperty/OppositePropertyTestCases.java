@@ -37,9 +37,9 @@ import org.eclipse.persistence.sdo.helper.jaxb.JAXBHelperContext;
 public class OppositePropertyTestCases extends SDOTestCase {
 
     private static final String XML_SCHEMA = "org/eclipse/persistence/testing/sdo/helper/jaxbhelper/oppositeproperty/OppositeProperty.xsd";
-    
+
     private JAXBHelperContext jaxbHelperContext;
-    
+
     public OppositePropertyTestCases(String name) {
         super(name);
     }
@@ -53,7 +53,7 @@ public class OppositePropertyTestCases extends SDOTestCase {
         InputStream xsd = Thread.currentThread().getContextClassLoader().getResourceAsStream(XML_SCHEMA);
         jaxbHelperContext.getXSDHelper().define(xsd, null);
     }
-    
+
     public void testOppositePropertySet() {
         DataObject rootDO = jaxbHelperContext.getDataFactory().create("urn:opposite", "root");
         DataObject child1DO = rootDO.createDataObject("child1");
@@ -66,7 +66,7 @@ public class OppositePropertyTestCases extends SDOTestCase {
         Child2 child2 = (Child2) jaxbHelperContext.unwrap(child2DO);
         this.assertNotNull(child2.getChild1());
     }
-    
+
     public void testOppositePropertyCleared1() {
         DataObject rootDO = jaxbHelperContext.getDataFactory().create("urn:opposite", "root");
         DataObject child1DO = rootDO.createDataObject("child1");
@@ -76,13 +76,13 @@ public class OppositePropertyTestCases extends SDOTestCase {
         Property child2Property = child1DO.getType().getProperty("child2");
         child1DO.set(child2Property, child2DO);
         child1DO.set(child2Property, newChild2DO);
-        
+
         this.assertNull(child2DO.get("child1"));
         this.assertEquals(child1DO, newChild2DO.get("child1"));
-        
+
         Child2 child2 = (Child2) jaxbHelperContext.unwrap(child2DO);
         this.assertNull(child2.getChild1());
-        
+
         Child2 newChild2 = (Child2) jaxbHelperContext.unwrap(newChild2DO);
         this.assertNotNull(newChild2.getChild1());        
     }
@@ -92,21 +92,21 @@ public class OppositePropertyTestCases extends SDOTestCase {
         DataObject child1DO = jaxbHelperContext.getDataFactory().create("urn:opposite", "child1");
         DataObject child2DO = jaxbHelperContext.getDataFactory().create("urn:opposite", "child2");
         DataObject newChild2DO =  jaxbHelperContext.getDataFactory().create("urn:opposite", "child2");
-        
+
         Property child2Property = child1DO.getType().getProperty("child2");
         child1DO.set(child2Property, child2DO);
         child1DO.set(child2Property, newChild2DO);
-        
+
         this.assertNull(child2DO.get("child1"));
         this.assertEquals(child1DO, newChild2DO.get("child1"));
         
         Child2 child2 = (Child2) jaxbHelperContext.unwrap(child2DO);
         this.assertNull(child2.getChild1());
-        
+
         Child2 newChild2 = (Child2) jaxbHelperContext.unwrap(newChild2DO);
         this.assertNotNull(newChild2.getChild1());        
     }
-    
+
     public void testOppositePropertySetCollectionCaseAdd() {
         DataObject rootDO = jaxbHelperContext.getDataFactory().create("urn:opposite", "root");
         DataObject child1DO = rootDO.createDataObject("child1");
@@ -136,8 +136,8 @@ public class OppositePropertyTestCases extends SDOTestCase {
         Child2 child2 = (Child2) jaxbHelperContext.unwrap(child2DO);
         this.assertNotNull(child2.getChild1());
     }
-    
+
     public void tearDown() {
     }
-    
+
 }

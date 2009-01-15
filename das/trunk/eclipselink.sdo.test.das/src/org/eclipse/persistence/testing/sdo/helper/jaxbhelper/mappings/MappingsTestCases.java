@@ -36,13 +36,13 @@ public class MappingsTestCases extends SDOTestCase {
 
     private static final String XML_SCHEMA = "org/eclipse/persistence/testing/sdo/helper/jaxbhelper/mappings/Mappings.xsd";
     private static final String XML_INPUT = "org/eclipse/persistence/testing/sdo/helper/jaxbhelper/mappings/Mappings.xml";
-    
+
     private JAXBHelperContext jaxbHelperContext;
-    
+
     public MappingsTestCases(String name) {
         super(name);
     }
-    
+
     public void setUp() {
         MappingsProject project = new MappingsProject();
         XMLContext xmlContext = new XMLContext(project);
@@ -52,11 +52,11 @@ public class MappingsTestCases extends SDOTestCase {
         InputStream xsd = Thread.currentThread().getContextClassLoader().getResourceAsStream(XML_SCHEMA);
         jaxbHelperContext.getXSDHelper().define(xsd, null);
     }
-    
+
     public void test1() throws IOException {
         InputStream xml = Thread.currentThread().getContextClassLoader().getResourceAsStream(XML_INPUT);
         XMLDocument xmlDocument = jaxbHelperContext.getXMLHelper().load(xml);
-        
+
         DataObject rootDO = xmlDocument.getRootObject();
         assertNotNull(rootDO);
         Root root = (Root) jaxbHelperContext.unwrap(rootDO);
@@ -67,22 +67,22 @@ public class MappingsTestCases extends SDOTestCase {
         Type t = jaxbHelperContext.getType(Root.class);
         Property simpleListProp = t.getProperty("simple-list");
         assertNotNull(simpleListProp);
-        
+
         List doSimpleList = rootDO.getList(simpleListProp);
         assertEquals(2, doSimpleList.size());
         assertTrue(doSimpleList.contains("FOO"));
         assertTrue(doSimpleList.contains("BAR"));
-        
+
         List simpleList = root.getSimpleList();
         assertEquals(2, simpleList.size());
         assertTrue(simpleList.contains("FOO"));
         assertTrue(simpleList.contains("BAR"));        
-        
+
         DataObject child1DO = rootDO.getDataObject("child1");
         assertNotNull(child1DO);
         Child1 child1 = (Child1) jaxbHelperContext.unwrap(child1DO);
         assertNotNull(child1);
-        
+
         List child2DOCollection = rootDO.getList("child2");
         assertEquals(2, child2DOCollection.size());
         List child2Collection = jaxbHelperContext.unwrap(child2DOCollection);
@@ -91,7 +91,7 @@ public class MappingsTestCases extends SDOTestCase {
         Child2 child2A = (Child2) child2Collection.get(0);
         assertEquals(child1, child2A.getChild1());
         assertTrue(child1.getChild2Collection().contains(child2A));
-        
+
         Child2 child2B = (Child2) child2Collection.get(1);
         assertEquals(child1, child2B.getChild1());
         assertTrue(child1.getChild2Collection().contains(child2B));

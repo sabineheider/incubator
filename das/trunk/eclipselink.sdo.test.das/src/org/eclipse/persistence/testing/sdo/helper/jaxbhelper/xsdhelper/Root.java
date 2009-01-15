@@ -22,7 +22,7 @@ public class Root {
 
     private Child1 child1;
     private Child2 child2;
-    
+
     public Root() {
     }
 

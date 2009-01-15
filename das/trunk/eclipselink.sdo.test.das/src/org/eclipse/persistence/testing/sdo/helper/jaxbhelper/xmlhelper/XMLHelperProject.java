@@ -34,27 +34,26 @@ public class XMLHelperProject extends Project {
         super();
         this.addDescriptor(getRootDescriptor());
     }
-        
+
     private XMLDescriptor getRootDescriptor() {
         XMLDescriptor xmlDescriptor = new XMLDescriptor();
         xmlDescriptor.setJavaClass(Root.class);
         xmlDescriptor.setDefaultRootElement("tns:root");
-        
+
         XMLSchemaClassPathReference schemaReference = new XMLSchemaClassPathReference();
         schemaReference.setSchemaContext("/tns:root-type");
         schemaReference.setType(XMLSchemaReference.COMPLEX_TYPE);
         xmlDescriptor.setSchemaReference(schemaReference);
-        
+
         NamespaceResolver namespaceResolver = new NamespaceResolver();
         namespaceResolver.put("tns", "urn:xml");
         xmlDescriptor.setNamespaceResolver(namespaceResolver);
-        
-        
+
         XMLDirectMapping nameMapping = new XMLDirectMapping();
         nameMapping.setAttributeName("name");
         nameMapping.setXPath("tns:name/text()");
         
         return xmlDescriptor;
     }
-    
+
 }

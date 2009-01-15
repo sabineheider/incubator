@@ -22,7 +22,7 @@ public class Root {
 
     private Child1 child1;
     private Child2 child2;
-    
+
     public Root() {
     }
 
@@ -41,5 +41,5 @@ public class Root {
     public void setChild2(Child2 child2) {
         this.child2 = child2;
     }
-    
+
 }

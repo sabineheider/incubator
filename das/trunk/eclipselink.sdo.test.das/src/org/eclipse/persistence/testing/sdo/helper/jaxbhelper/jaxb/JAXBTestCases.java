@@ -37,13 +37,13 @@ import commonj.sdo.DataObject;
 import commonj.sdo.helper.XSDHelper;
 
 public class JAXBTestCases extends SDOTestCase {
-    
+
     private JAXBHelperContext jaxbHelperContext;
-    
+
     public JAXBTestCases(String name) {
         super(name);
     }
-    
+
     public void setUp() {
         try {
             Class[] classes = new Class[3];
@@ -52,7 +52,7 @@ public class JAXBTestCases extends SDOTestCase {
             classes[2] = Child2.class;
             JAXBContext jaxbContext = JAXBContext.newInstance(classes);
             jaxbHelperContext = new JAXBHelperContext(jaxbContext);
-            
+
             JAXBSchemaOutputResolver sor = new JAXBSchemaOutputResolver();
             jaxbContext.generateSchema(sor);
             String xmlSchema = sor.getSchema();
@@ -62,11 +62,11 @@ public class JAXBTestCases extends SDOTestCase {
             throw new RuntimeException(e);
         }
     }
-    
+
     public void testCreateGlobalComplexType() {
        DataObject rootDO = jaxbHelperContext.getDataFactory().create("urn:jaxb", "root");
        assertNotNull(rootDO);
-       
+
        Root root = (Root) jaxbHelperContext.unwrap(rootDO);
        assertNotNull(root);
        assertEquals(Root.class, root.getClass());
@@ -75,7 +75,7 @@ public class JAXBTestCases extends SDOTestCase {
     public void testCreateGlobalComplexElement() {
         DataObject child2DO = jaxbHelperContext.getDataFactory().create("urn:jaxb", "child2");
         assertNotNull(child2DO);
-        
+
         Child2 child2 = (Child2) jaxbHelperContext.unwrap(child2DO);
         assertNotNull(child2);
         assertEquals(Child2.class, child2.getClass());
@@ -87,7 +87,7 @@ public class JAXBTestCases extends SDOTestCase {
     private class JAXBSchemaOutputResolver extends SchemaOutputResolver {
 
         private StringWriter schemaWriter;
-        
+
         public String getSchema() {
             return schemaWriter.toString();
         }
@@ -96,7 +96,7 @@ public class JAXBTestCases extends SDOTestCase {
             schemaWriter = new StringWriter();
             return new StreamResult(schemaWriter);
         }
-        
+
     }
-    
+
 }

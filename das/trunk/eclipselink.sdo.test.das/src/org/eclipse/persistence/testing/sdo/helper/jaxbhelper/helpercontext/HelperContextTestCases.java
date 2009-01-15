@@ -32,12 +32,14 @@ import javax.xml.transform.stream.StreamResult;
 import org.eclipse.persistence.oxm.XMLContext;
 import org.eclipse.persistence.sdo.helper.SDODataFactory;
 import org.eclipse.persistence.sdo.helper.SDOXMLHelper;
+import org.eclipse.persistence.sdo.helper.delegates.SDOXMLHelperDelegator;
 import org.eclipse.persistence.sdo.helper.jaxb.JAXBHelperContext;
 import org.eclipse.persistence.testing.sdo.SDOTestCase;
 
 import commonj.sdo.DataObject;
 import commonj.sdo.Type;
 import commonj.sdo.helper.DataFactory;
+import commonj.sdo.helper.HelperContext;
 import commonj.sdo.helper.XMLHelper;
 import commonj.sdo.helper.XSDHelper;
 
@@ -55,7 +57,7 @@ public class HelperContextTestCases extends SDOTestCase {
             classes[0] = Root.class;
             JAXBContext jaxbContext = JAXBContext.newInstance(classes);
             jaxbHelperContext = new JAXBHelperContext(jaxbContext);
-            // jaxbHelperContext.makeDefaultContext();
+            jaxbHelperContext.makeDefaultContext();
             JAXBSchemaOutputResolver jsor = new JAXBSchemaOutputResolver();
             jaxbContext.generateSchema(jsor);
             String xsd = jsor.getSchema();
@@ -65,6 +67,7 @@ public class HelperContextTestCases extends SDOTestCase {
             throw new RuntimeException(e);
         }
     }
+
     public void testGetType() {
         Type pojoType = jaxbHelperContext.getType(Root.class);
         assertNotNull(pojoType);
@@ -79,8 +82,9 @@ public class HelperContextTestCases extends SDOTestCase {
     }
 
     public void testXMLHelper() {
-        SDOXMLHelper sdoXMLHelper = (SDOXMLHelper) XMLHelper.INSTANCE;
-        System.out.println(sdoXMLHelper.getHelperContext());
+        SDOXMLHelperDelegator sdoXMLHelperDelegator = (SDOXMLHelperDelegator) XMLHelper.INSTANCE;
+        HelperContext testHelperContext = sdoXMLHelperDelegator.getXMLHelperDelegate().getHelperContext(); 
+        assertSame(jaxbHelperContext, testHelperContext);
     }
 
     public void tearDown() {
@@ -98,7 +102,7 @@ public class HelperContextTestCases extends SDOTestCase {
             schemaWriter = new StringWriter();
             return new StreamResult(schemaWriter);
         }
-        
+
     }
 
 }

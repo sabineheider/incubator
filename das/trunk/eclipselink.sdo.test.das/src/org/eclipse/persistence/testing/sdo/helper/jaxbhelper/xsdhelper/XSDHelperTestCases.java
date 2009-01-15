@@ -21,7 +21,6 @@ package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.xsdhelper;
 import java.io.InputStream;
 import java.util.List;
 
-
 import org.eclipse.persistence.jaxb.JAXBContext;
 import org.eclipse.persistence.oxm.XMLContext;
 import org.eclipse.persistence.sdo.helper.jaxb.JAXBHelperContext;
@@ -33,23 +32,23 @@ import commonj.sdo.helper.XSDHelper;
 public class XSDHelperTestCases extends SDOTestCase {
 
     private static final String XML_SCHEMA = "org/eclipse/persistence/testing/sdo/helper/jaxbhelper/xsdhelper/XSDHelper.xsd";
-    
+
     private JAXBHelperContext jaxbHelperContext;
-    
+
     public XSDHelperTestCases(String name) {
         super(name);
     }
-    
+
     public void setUp() {
         XSDHelperProject project = new XSDHelperProject();
         XMLContext xmlContext = new XMLContext(project);
         JAXBContext jaxbContext = new JAXBContext(xmlContext);
         jaxbHelperContext = new JAXBHelperContext(jaxbContext);
-        
+
         InputStream xsd = Thread.currentThread().getContextClassLoader().getResourceAsStream(XML_SCHEMA);
         jaxbHelperContext.getXSDHelper().define(xsd, null);
     }
-    
+
     public void testCreateTypeFromGlobalComplexType() {
         DataObject rootDO = jaxbHelperContext.getDataFactory().create("urn:xsd", "root");
         assertNotNull(rootDO);

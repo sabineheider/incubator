@@ -27,7 +27,7 @@ public class Root {
     private List<String> simpleList;
     private Child1 child1;
     private List<Child2> child2;
-    
+
     public Root() {
     }
 
@@ -70,5 +70,5 @@ public class Root {
     public void setChild2(List<Child2> child2) {
         this.child2 = child2;
     }
-    
+
 }

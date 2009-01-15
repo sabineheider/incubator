@@ -25,7 +25,7 @@ public class Child2 {
     
     public Child2() {
     }
-    
+
     public int getId() {
         return id;
     }
@@ -41,5 +41,5 @@ public class Child2 {
     public void setChild1(Child1 child1) {
         this.child1 = child1;
     }
-   
+
 }

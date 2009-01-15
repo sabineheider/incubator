@@ -41,13 +41,13 @@ import commonj.sdo.helper.XMLHelper;
 import commonj.sdo.helper.XSDHelper;
 
 public class DataFactoryTestCases extends SDOTestCase {
-    
+
     private JAXBHelperContext jaxbHelperContext;
-    
+
     public DataFactoryTestCases(String name) {
         super(name);
     }
-    
+
     public void setUp() {
         try {
             Class[] classes = new Class[1];
@@ -62,7 +62,7 @@ public class DataFactoryTestCases extends SDOTestCase {
             throw new RuntimeException(e);
         }
     }
-    
+
     public void testCreatePojoType() {
         DataObject rootDO = jaxbHelperContext.getDataFactory().create("urn:datafactory", "root");
         assertNotNull(rootDO);
@@ -70,7 +70,7 @@ public class DataFactoryTestCases extends SDOTestCase {
         Root root = (Root) jaxbHelperContext.unwrap(rootDO);
         assertNotNull(root);
     }
-    
+
     public void testCreateNonPojoType() {
         DataObject typeDO = jaxbHelperContext.getDataFactory().create("commonj.sdo", "Type");
         assertNotNull(typeDO);
@@ -78,7 +78,7 @@ public class DataFactoryTestCases extends SDOTestCase {
         Object object = jaxbHelperContext.unwrap(typeDO);
         assertNull(object);
     }
-    
+
     public void testInvalidType() {
         boolean fail = true;
         try {
@@ -90,7 +90,7 @@ public class DataFactoryTestCases extends SDOTestCase {
             fail("An IllegalArgumentException should have been thrown.");
         }
     }
-    
+
     public void tearDown() {
     }
 
@@ -106,7 +106,7 @@ public class DataFactoryTestCases extends SDOTestCase {
             schemaWriter = new StringWriter();
             return new StreamResult(schemaWriter);
         }
-        
+
     }
-    
+
 }

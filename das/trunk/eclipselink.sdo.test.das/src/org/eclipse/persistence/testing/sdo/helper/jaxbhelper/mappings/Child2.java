@@ -23,10 +23,10 @@ public class Child2 {
     private int id;
     private Child1 child1;
     private Child1 child1Attribute;
-    
+
     public Child2() {
     }
-    
+
     public int getId() {
         return id;
     }
@@ -50,5 +50,5 @@ public class Child2 {
     public void setChild1Attribute(Child1 child1Attribute) {
         this.child1Attribute = child1Attribute;
     }
-   
+
 }
