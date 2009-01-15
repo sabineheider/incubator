@@ -32,7 +32,10 @@ import javax.xml.transform.stream.StreamResult;
 import org.eclipse.persistence.oxm.XMLContext;
 import org.eclipse.persistence.sdo.helper.SDODataFactory;
 import org.eclipse.persistence.sdo.helper.SDOXMLHelper;
+import org.eclipse.persistence.sdo.helper.delegates.SDODataFactoryDelegator;
+import org.eclipse.persistence.sdo.helper.delegates.SDOTypeHelperDelegator;
 import org.eclipse.persistence.sdo.helper.delegates.SDOXMLHelperDelegator;
+import org.eclipse.persistence.sdo.helper.delegates.SDOXSDHelperDelegator;
 import org.eclipse.persistence.sdo.helper.jaxb.JAXBHelperContext;
 import org.eclipse.persistence.testing.sdo.SDOTestCase;
 
@@ -40,8 +43,10 @@ import commonj.sdo.DataObject;
 import commonj.sdo.Type;
 import commonj.sdo.helper.DataFactory;
 import commonj.sdo.helper.HelperContext;
+import commonj.sdo.helper.TypeHelper;
 import commonj.sdo.helper.XMLHelper;
 import commonj.sdo.helper.XSDHelper;
+import commonj.sdo.impl.HelperProvider;
 
 public class HelperContextTestCases extends SDOTestCase {
 
@@ -76,14 +81,43 @@ public class HelperContextTestCases extends SDOTestCase {
         assertSame(rootType, pojoType);
     }
 
-    public void testDataFactory() {
-        SDODataFactory sdoDataFactory = (SDODataFactory) DataFactory.INSTANCE;
-        System.out.println(sdoDataFactory.getHelperContext());
+    public void testDataFactoryGetHelperContext() {
+        SDODataFactoryDelegator sdoDataFactoryDelegator = (SDODataFactoryDelegator) DataFactory.INSTANCE;
+
+        HelperContext testDefaultHelperContext = sdoDataFactoryDelegator.getHelperContext();
+        assertSame(HelperProvider.getDefaultContext(), testDefaultHelperContext);
+
+        HelperContext testHelperContext = sdoDataFactoryDelegator.getDataFactoryDelegate().getHelperContext(); 
+        assertSame(jaxbHelperContext, testHelperContext);
     }
 
-    public void testXMLHelper() {
+    public void testTypeHelperGetHelperContext() {
+        SDOTypeHelperDelegator sdoTypeHelperDelegator = (SDOTypeHelperDelegator) TypeHelper.INSTANCE;
+
+        HelperContext testDefaultHelperContext = sdoTypeHelperDelegator.getHelperContext();
+        assertSame(HelperProvider.getDefaultContext(), testDefaultHelperContext);
+
+        HelperContext testHelperContext = sdoTypeHelperDelegator.getTypeHelperDelegate().getHelperContext(); 
+        assertSame(jaxbHelperContext, testHelperContext);
+    }
+
+    public void testXMLHelperGetHelperContext() {
         SDOXMLHelperDelegator sdoXMLHelperDelegator = (SDOXMLHelperDelegator) XMLHelper.INSTANCE;
+
+        HelperContext testDefaultHelperContext = sdoXMLHelperDelegator.getHelperContext();
+        assertSame(HelperProvider.getDefaultContext(), testDefaultHelperContext);
+
         HelperContext testHelperContext = sdoXMLHelperDelegator.getXMLHelperDelegate().getHelperContext(); 
+        assertSame(jaxbHelperContext, testHelperContext);
+    }
+
+    public void testXSDHelperGetHelperContext() {
+        SDOXSDHelperDelegator sdoXSDHelperDelegator = (SDOXSDHelperDelegator) XSDHelper.INSTANCE;
+
+        HelperContext testDefaultHelperContext = sdoXSDHelperDelegator.getHelperContext();
+        assertSame(HelperProvider.getDefaultContext(), testDefaultHelperContext);
+
+        HelperContext testHelperContext = sdoXSDHelperDelegator.getXSDHelperDelegate().getHelperContext(); 
         assertSame(jaxbHelperContext, testHelperContext);
     }
 
@@ -93,7 +127,7 @@ public class HelperContextTestCases extends SDOTestCase {
     private class JAXBSchemaOutputResolver extends SchemaOutputResolver {
 
         private StringWriter schemaWriter;
-        
+
         public String getSchema() {
             return schemaWriter.toString();
         }
