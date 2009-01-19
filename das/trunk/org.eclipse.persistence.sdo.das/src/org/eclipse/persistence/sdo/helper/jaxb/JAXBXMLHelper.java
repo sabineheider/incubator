@@ -23,13 +23,13 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 
-import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.Source;
 
+import org.eclipse.persistence.exceptions.XMLMarshalException;
 import org.eclipse.persistence.jaxb.JAXBUnmarshaller;
 import org.eclipse.persistence.oxm.XMLRoot;
+import org.eclipse.persistence.oxm.XMLUnmarshaller;
 import org.eclipse.persistence.sdo.helper.delegates.SDOXMLHelperDelegate;
 import org.xml.sax.InputSource;
 
@@ -59,10 +59,10 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
     @Override
     public XMLDocument load(InputSource inputSource, String locationURI, Object options) throws IOException {
         try {
-            Object jaxbElement = getUnmarshaller().unmarshal(inputSource);
-            return wrap(jaxbElement);
-        } catch(JAXBException e) {
-            throw new RuntimeException(e);
+            XMLRoot xmlRoot = (XMLRoot) createXMLUnmarshaller().unmarshal(inputSource);
+            return wrap(xmlRoot);
+        } catch (XMLMarshalException xmlMarshalException) {
+            return handleLoadException(xmlMarshalException);
         }
     }
 
@@ -73,31 +73,31 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
 
     @Override
     public XMLDocument load(InputStream inputStream) throws IOException {
-        try {
-            Object jaxbElement = getUnmarshaller().unmarshal(inputStream);
-            return wrap(jaxbElement);
-        } catch(JAXBException e) {
-            throw new RuntimeException(e);
-        }
+       try {
+           XMLRoot xmlRoot = (XMLRoot) createXMLUnmarshaller().unmarshal(inputStream);
+           return wrap(xmlRoot);
+       } catch(XMLMarshalException xmlMarshalException) {
+           return handleLoadException(xmlMarshalException);
+       }
     }
 
     @Override
     public XMLDocument load(Reader inputReader, String locationURI, Object options) throws IOException {
         try {
-            Object jaxbElement = getUnmarshaller().unmarshal(inputReader);
-            return wrap(jaxbElement);
-        } catch(JAXBException e) {
-            throw new RuntimeException(e);
+            XMLRoot xmlRoot = (XMLRoot) createXMLUnmarshaller().unmarshal(inputReader);
+            return wrap(xmlRoot);
+        } catch(XMLMarshalException xmlMarshalException) {
+            return handleLoadException(xmlMarshalException);
         }
     }
 
     @Override
     public XMLDocument load(Source source, String locationURI, Object options) throws IOException {
         try {
-            Object jaxbElement = getUnmarshaller().unmarshal(source);
-            return wrap(jaxbElement);
-        } catch(JAXBException e) {
-            throw new RuntimeException(e);
+            XMLRoot xmlRoot = (XMLRoot) createXMLUnmarshaller().unmarshal(source);
+            return wrap(xmlRoot);
+        } catch(XMLMarshalException xmlMarshalException) {
+            return handleLoadException(xmlMarshalException);
         }
     }
 
@@ -111,27 +111,32 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
         }
     }
 
-    private Unmarshaller getUnmarshaller() throws JAXBException {
-        JAXBUnmarshaller unmarshaller = (JAXBUnmarshaller) getHelperContext().getJAXBContext().createUnmarshaller();
-        unmarshaller.getXMLUnmarshaller().setResultAlwaysXMLRoot(true);
-        return unmarshaller;
+    private XMLUnmarshaller createXMLUnmarshaller() {
+        try {
+            JAXBUnmarshaller unmarshaller = (JAXBUnmarshaller) getHelperContext().getJAXBContext().createUnmarshaller();
+            XMLUnmarshaller xmlUnmarshaller = unmarshaller.getXMLUnmarshaller();
+            xmlUnmarshaller.setResultAlwaysXMLRoot(true);
+            return xmlUnmarshaller;
+        } catch(JAXBException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private XMLDocument wrap(Object object) {
-        if(object instanceof JAXBElement) {
-            JAXBElement jaxbElement = (JAXBElement) object;
-            DataObject dataObject = getHelperContext().wrap(jaxbElement.getValue());
-            XMLDocument xmlDocument = getHelperContext().getXMLHelper().createDocument(dataObject, jaxbElement.getName().getNamespaceURI(), jaxbElement.getName().getLocalPart());
-            return xmlDocument;
+    private XMLDocument wrap(XMLRoot xmlRoot) {
+        DataObject dataObject = getHelperContext().wrap(xmlRoot.getObject());
+        XMLDocument xmlDocument =  getHelperContext().getXMLHelper().createDocument(dataObject, xmlRoot.getNamespaceURI(), xmlRoot.getLocalName());
+        xmlDocument.setEncoding(xmlRoot.getEncoding());
+        xmlDocument.setXMLVersion(xmlRoot.getXMLVersion());
+        xmlDocument.setSchemaLocation(xmlRoot.getSchemaLocation());
+        xmlDocument.setNoNamespaceSchemaLocation(xmlRoot.getNoNamespaceSchemaLocation());
+        return xmlDocument;
+    }
+
+    private XMLDocument handleLoadException(XMLMarshalException xmlMarshalException) throws IOException {
+        if(xmlMarshalException.getCause() instanceof IOException) {
+            throw (IOException) xmlMarshalException.getCause();
         } else {
-            XMLRoot xmlRoot = (XMLRoot) object;
-            DataObject dataObject = getHelperContext().wrap(xmlRoot.getObject());
-            XMLDocument xmlDocument =  getHelperContext().getXMLHelper().createDocument(dataObject, xmlRoot.getNamespaceURI(), xmlRoot.getLocalName());
-            xmlDocument.setEncoding(xmlRoot.getEncoding());
-            xmlDocument.setXMLVersion(xmlRoot.getXMLVersion());
-            xmlDocument.setSchemaLocation(xmlRoot.getSchemaLocation());
-            xmlDocument.setNoNamespaceSchemaLocation(xmlRoot.getNoNamespaceSchemaLocation());
-            return xmlDocument;
+            throw xmlMarshalException;
         }
     }
 

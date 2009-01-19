@@ -20,8 +20,10 @@ package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.xmlhelper;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.List;
 
+import javax.xml.transform.stream.StreamSource;
 
 import org.eclipse.persistence.jaxb.JAXBContext;
 import org.eclipse.persistence.oxm.XMLContext;
@@ -82,6 +84,72 @@ public class XMLHelperTestCases extends SDOTestCase {
             assertEquals("1.1", xmlDocument.getXMLVersion());
         } catch(IOException e) {
             fail();
+        }
+    }
+
+    public void testLoadInputStream1IOException() {
+        boolean fail = true;
+        try {
+            InputStream xml = Thread.currentThread().getContextClassLoader().getResourceAsStream(XML_INPUT_UTF16);
+            xml.close();
+            XMLDocument xmlDocument = jaxbHelperContext.getXMLHelper().load(xml);
+        } catch(IOException e) {
+            fail = false;
+        } catch(Exception e) {
+            fail("An IOException was expected, but another exception was thrown.");
+        }
+        if(fail) {
+            fail("An IOException should have been thrown, but no exceptions were thrown.");
+        }
+    }
+
+    public void testLoadInputStream2IOException() {
+        boolean fail = true;
+        try {
+            InputStream xml = Thread.currentThread().getContextClassLoader().getResourceAsStream(XML_INPUT_UTF16);
+            xml.close();
+            XMLDocument xmlDocument = jaxbHelperContext.getXMLHelper().load(xml, null, null);
+        } catch(IOException e) {
+            fail = false;
+        } catch(Exception e) {
+            fail("An IOException was expected, but another exception was thrown.");
+        }
+        if(fail) {
+            fail("An IOException should have been thrown, but no exceptions were thrown.");
+        }
+    }
+
+    public void testLoadSourceIOException() {
+        boolean fail = true;
+        try {
+            InputStream xml = Thread.currentThread().getContextClassLoader().getResourceAsStream(XML_INPUT_UTF16);
+            StreamSource source = new StreamSource(xml);
+            xml.close();
+            XMLDocument xmlDocument = jaxbHelperContext.getXMLHelper().load(source, null, null);
+        } catch(IOException e) {
+            fail = false;
+        } catch(Exception e) {
+            fail("An IOException was expected, but another exception was thrown.");
+        }
+        if(fail) {
+            fail("An IOException should have been thrown, but no exceptions were thrown.");
+        }
+    }
+
+    public void testLoadReaderIOException() {
+        boolean fail = true;
+        try {
+            InputStream xml = Thread.currentThread().getContextClassLoader().getResourceAsStream(XML_INPUT_UTF16);
+            xml.close();
+            InputStreamReader reader = new InputStreamReader(xml);
+            XMLDocument xmlDocument = jaxbHelperContext.getXMLHelper().load(reader, null, null);
+        } catch(IOException e) {
+            fail = false;
+        } catch(Exception e) {
+            fail("An IOException was expected, but another exception was thrown.");
+        }
+        if(fail) {
+            fail("An IOException should have been thrown, but no exceptions were thrown.");
         }
     }
 
