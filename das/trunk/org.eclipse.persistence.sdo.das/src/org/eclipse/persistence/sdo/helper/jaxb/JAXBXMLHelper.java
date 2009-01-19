@@ -58,6 +58,9 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
 
     @Override
     public XMLDocument load(InputSource inputSource, String locationURI, Object options) throws IOException {
+        if(null == inputSource) {
+            return super.load(inputSource, locationURI, options);
+        }
         try {
             XMLRoot xmlRoot = (XMLRoot) createXMLUnmarshaller().unmarshal(inputSource);
             return wrap(xmlRoot);
@@ -68,21 +71,30 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
 
     @Override
     public XMLDocument load(InputStream inputStream, String locationURI, Object options) throws IOException {
+        if(null == inputStream) {
+            return super.load(inputStream, locationURI, options);
+        }
         return load(inputStream);
     }
 
     @Override
     public XMLDocument load(InputStream inputStream) throws IOException {
-       try {
-           XMLRoot xmlRoot = (XMLRoot) createXMLUnmarshaller().unmarshal(inputStream);
-           return wrap(xmlRoot);
-       } catch(XMLMarshalException xmlMarshalException) {
-           return handleLoadException(xmlMarshalException);
-       }
+        if(null == inputStream) {
+            return super.load(inputStream);
+        }
+        try {
+            XMLRoot xmlRoot = (XMLRoot) createXMLUnmarshaller().unmarshal(inputStream);
+            return wrap(xmlRoot);
+        } catch(XMLMarshalException xmlMarshalException) {
+            return handleLoadException(xmlMarshalException);
+        }
     }
 
     @Override
     public XMLDocument load(Reader inputReader, String locationURI, Object options) throws IOException {
+        if(null == inputReader) {
+            return super.load(inputReader, locationURI, options);
+        }
         try {
             XMLRoot xmlRoot = (XMLRoot) createXMLUnmarshaller().unmarshal(inputReader);
             return wrap(xmlRoot);
@@ -93,6 +105,9 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
 
     @Override
     public XMLDocument load(Source source, String locationURI, Object options) throws IOException {
+        if(null == source) {
+            return super.load(source, locationURI, options);
+        }
         try {
             XMLRoot xmlRoot = (XMLRoot) createXMLUnmarshaller().unmarshal(source);
             return wrap(xmlRoot);
@@ -103,6 +118,9 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
 
     @Override
     public XMLDocument load(String inputString) {
+        if(null == inputString) {
+            return super.load(inputString);
+        }
         try {
             StringReader reader = new StringReader(inputString);
             return load(reader, null, null);
