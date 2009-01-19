@@ -21,7 +21,10 @@ package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.helpercontext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -30,6 +33,7 @@ import javax.xml.transform.Result;
 import javax.xml.transform.stream.StreamResult;
 
 import org.eclipse.persistence.oxm.XMLContext;
+import org.eclipse.persistence.sdo.SDODataObject;
 import org.eclipse.persistence.sdo.helper.SDODataFactory;
 import org.eclipse.persistence.sdo.helper.SDOXMLHelper;
 import org.eclipse.persistence.sdo.helper.delegates.SDODataFactoryDelegator;
@@ -37,6 +41,7 @@ import org.eclipse.persistence.sdo.helper.delegates.SDOTypeHelperDelegator;
 import org.eclipse.persistence.sdo.helper.delegates.SDOXMLHelperDelegator;
 import org.eclipse.persistence.sdo.helper.delegates.SDOXSDHelperDelegator;
 import org.eclipse.persistence.sdo.helper.jaxb.JAXBHelperContext;
+import org.eclipse.persistence.sdo.helper.jaxb.JAXBValueStore;
 import org.eclipse.persistence.testing.sdo.SDOTestCase;
 
 import commonj.sdo.DataObject;
@@ -63,11 +68,10 @@ public class HelperContextTestCases extends SDOTestCase {
             JAXBContext jaxbContext = JAXBContext.newInstance(classes);
             jaxbHelperContext = new JAXBHelperContext(jaxbContext);
             jaxbHelperContext.makeDefaultContext();
-            JAXBSchemaOutputResolver jsor = new JAXBSchemaOutputResolver();
-            jaxbContext.generateSchema(jsor);
-            String xsd = jsor.getSchema();
-            System.out.println(xsd);
-            jaxbHelperContext.getXSDHelper().define(xsd);
+            JAXBSchemaOutputResolver sor = new JAXBSchemaOutputResolver();
+            jaxbContext.generateSchema(sor);
+            String xmlSchema = sor.getSchema();
+            jaxbHelperContext.getXSDHelper().define(xmlSchema);
         } catch(Exception e) {
             throw new RuntimeException(e);
         }
@@ -119,6 +123,103 @@ public class HelperContextTestCases extends SDOTestCase {
 
         HelperContext testHelperContext = sdoXSDHelperDelegator.getXSDHelperDelegate().getHelperContext(); 
         assertSame(jaxbHelperContext, testHelperContext);
+    }
+
+    public void testWrap() {
+        Root root = new Root();
+        SDODataObject rootDO = (SDODataObject) jaxbHelperContext.wrap(root);
+        assertNotNull(rootDO);
+        
+        assertSame(JAXBValueStore.class, rootDO._getCurrentValueStore().getClass());
+    }
+
+    public void testWrapTwice() {
+        Root root = new Root();
+
+        SDODataObject rootDO1 = (SDODataObject) jaxbHelperContext.wrap(root);
+        assertNotNull(rootDO1);
+
+        SDODataObject rootDO2 = (SDODataObject) jaxbHelperContext.wrap(root);
+        assertNotNull(rootDO2);
+
+        assertSame(rootDO1, rootDO2);
+    }
+
+    public void testWrapCollection() {
+        Root root1 = new Root();
+        Root root2 = new Root();
+        Set collection = new HashSet(2);
+        collection.add(root1);
+        collection.add(root2);
+        List<DataObject> wrappedList = jaxbHelperContext.wrap(collection);
+
+        for(DataObject dataObject: wrappedList) {
+            assertNotNull(dataObject);
+            assertSame(JAXBValueStore.class, ((SDODataObject) dataObject)._getCurrentValueStore().getClass());
+        }
+    }
+
+    public void testWrapNullCollection() {
+        List<DataObject> wrappedList = jaxbHelperContext.wrap(null);
+        assertNotNull(wrappedList);
+        assertEquals(0, wrappedList.size());
+    }
+
+    public void testWrapEmptyCollection() {
+        Set collection = new HashSet(0);
+        List<DataObject> wrappedList = jaxbHelperContext.wrap(collection);
+        assertNotNull(wrappedList);
+        assertEquals(0, wrappedList.size());
+    }
+
+    public void testWrapNull() {
+        DataObject nullDO = jaxbHelperContext.wrap((Object) null);
+        assertNull(nullDO);
+    }
+
+    public void testWrapUnknownObject() {
+        Object unknownObject = "FOO";
+
+        jaxbHelperContext.wrap(unknownObject);
+    }
+
+    public void testUnwrap() {
+        Root root = new Root();
+        SDODataObject rootDO = (SDODataObject) jaxbHelperContext.wrap(root);
+        assertSame(root, jaxbHelperContext.unwrap(rootDO));
+    }
+
+    public void testUnwrapNull() {
+        Object object = jaxbHelperContext.unwrap((DataObject) null);
+        assertNull(object);
+    }
+
+    public void testUnwrapCollection() {
+        Root root1 = new Root();
+        Root root2 = new Root();
+        Set collection = new HashSet(2);
+        collection.add(root1);
+        collection.add(root2);
+        Collection<DataObject> wrappedEntities = jaxbHelperContext.wrap(collection);
+
+        List<Object> entities = jaxbHelperContext.unwrap(wrappedEntities);
+        assertNotNull(entities);
+        assertEquals(2, entities.size());
+        assertTrue(entities.contains(root1));
+        assertTrue(entities.contains(root2));
+    }
+
+    public void testUnwrapNullCollection() {
+        List<Object> entities = jaxbHelperContext.unwrap((Collection) null);
+        assertNotNull(entities);
+        assertEquals(0, entities.size());
+    }
+
+    public void testUnwrapEmptyCollection() {
+        Collection wrappedCollection = new HashSet(0);
+        List entities = jaxbHelperContext.unwrap(wrappedCollection);
+        assertNotNull(entities);
+        assertEquals(0, entities.size());
     }
 
     public void tearDown() {

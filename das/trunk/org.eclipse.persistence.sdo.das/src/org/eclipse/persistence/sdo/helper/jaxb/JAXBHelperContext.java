@@ -105,6 +105,9 @@ public class JAXBHelperContext extends SDOHelperContext {
      * jpaHelper.wrap(customer123) != jpaHelper.wrap(customer456)
      */
     public DataObject wrap(Object entity) {
+        if(null == entity) {
+            return null;
+        }
         SDODataObject wrapperDO = wrapperDataObjects.get(entity);
         if(null != wrapperDO) {
             return wrapperDO;
@@ -123,7 +126,7 @@ public class JAXBHelperContext extends SDOHelperContext {
 
     public List<DataObject> wrap(Collection<Object> entities) {
         if(null == entities) {
-            return null;
+            return new ArrayList<DataObject>(0);
         }
         List<DataObject> dataObjects = new ArrayList<DataObject>(entities.size());
         for(Object entity: entities) {
@@ -142,6 +145,9 @@ public class JAXBHelperContext extends SDOHelperContext {
      */
     public Object unwrap(DataObject dataObject) {
         try {
+            if(null == dataObject) {
+                return null;
+            }
             SDODataObject sdoDataObject = (SDODataObject) dataObject;
             JAXBValueStore jpaValueStore = (JAXBValueStore) sdoDataObject._getCurrentValueStore();
             return jpaValueStore.getEntity();
@@ -152,7 +158,7 @@ public class JAXBHelperContext extends SDOHelperContext {
 
     public List<Object> unwrap(Collection<DataObject> dataObjects) {
         if(null == dataObjects) {
-            return null;
+            return new ArrayList<Object>(0);
         }
         List<Object> entities = new ArrayList<Object>(dataObjects.size());
         for(DataObject dataObject: dataObjects) {
