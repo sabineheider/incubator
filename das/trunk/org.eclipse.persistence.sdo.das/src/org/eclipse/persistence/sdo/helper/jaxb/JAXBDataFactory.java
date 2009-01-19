@@ -43,6 +43,9 @@ public class JAXBDataFactory extends SDODataFactoryDelegate {
     }
 
     public DataObject create(Type type) {
+        if(null == type) {
+            return super.create(type);
+        }
         SDODataObject dataObject = (SDODataObject) super.create(type);
         QName xsdQName = ((SDOType)type).getXsdType();
         if(null == xsdQName) {
