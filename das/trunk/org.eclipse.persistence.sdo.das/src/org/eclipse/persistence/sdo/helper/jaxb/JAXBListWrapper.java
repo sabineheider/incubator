@@ -102,11 +102,8 @@ public class JAXBListWrapper extends ListWrapper {
             throw new UnsupportedOperationException("Property [" + property.getName() + "] is non-nullable");
         }
 
-        // see testLitWrapperAddMaintainsContainment()
         // fail-fast range checking
         if ((index < 0) || (index > size())) {
-            // TODO: throw IndexOutOfBoundsException
-            //throw new IndexOutOfBoundsException("index " + index + " is out of bounds.");
             return;
         }
 
@@ -216,9 +213,6 @@ public class JAXBListWrapper extends ListWrapper {
             }
         }
 
-        // TODO: We need to answer if updateContainment occurs before or after setManyProperty
-        //dataObject.updateContainment(property, items);
-        // non-default Pluggable implementations do not require updateContainment
         dataObject._getCurrentValueStore().setManyProperty(property, this);
 
         /**
@@ -238,12 +232,9 @@ public class JAXBListWrapper extends ListWrapper {
     public boolean addAll(int position, Collection items, boolean updateSequence) {
         // fail-fast range checking
         if ((position < 0) || (position > size())) {
-            // TODO: throw IndexOutOfBoundsException
-            //throw new IndexOutOfBoundsException("position " + position + " is out of bounds.");
             return false;
         }
         if ((items == null) || (items.size() == 0)) {
-            //TODO: throw new IllegalArgumentException();
             return false;
         }
 
@@ -306,8 +297,6 @@ public class JAXBListWrapper extends ListWrapper {
     public Object remove(int index, boolean updateSequence) {
         // fail-fast range checking
         if ((index < 0) || (index >= size())) {
-            // TODO: throw IndexOutOfBoundsException
-            //throw new IndexOutOfBoundsException("index " + index + " is out of bounds.");
             return null;
         }
 
