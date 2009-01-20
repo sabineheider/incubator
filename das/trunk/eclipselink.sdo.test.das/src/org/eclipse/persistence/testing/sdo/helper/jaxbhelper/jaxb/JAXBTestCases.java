@@ -56,7 +56,6 @@ public class JAXBTestCases extends SDOTestCase {
             JAXBSchemaOutputResolver sor = new JAXBSchemaOutputResolver();
             jaxbContext.generateSchema(sor);
             String xmlSchema = sor.getSchema();
-            System.out.println(xmlSchema);
             jaxbHelperContext.getXSDHelper().define(xmlSchema);
         } catch(Exception e) {
             throw new RuntimeException(e);
