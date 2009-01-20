@@ -26,6 +26,7 @@ import java.io.StringReader;
 import javax.xml.bind.JAXBException;
 import javax.xml.transform.Source;
 
+import org.eclipse.persistence.exceptions.SDOException;
 import org.eclipse.persistence.exceptions.XMLMarshalException;
 import org.eclipse.persistence.jaxb.JAXBUnmarshaller;
 import org.eclipse.persistence.oxm.XMLRoot;
@@ -125,7 +126,7 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
             StringReader reader = new StringReader(inputString);
             return load(reader, null, null);
         } catch(IOException e) {
-            throw new RuntimeException(e);
+            return null;
         }
     }
 
@@ -136,7 +137,7 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
             xmlUnmarshaller.setResultAlwaysXMLRoot(true);
             return xmlUnmarshaller;
         } catch(JAXBException e) {
-            throw new RuntimeException(e);
+            throw SDOException.sdoJaxbErrorCreatingJAXBUnmarshaller(e);
         }
     }
 

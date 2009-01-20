@@ -27,8 +27,9 @@ import java.util.WeakHashMap;
 import javax.xml.bind.JAXBContext;
 import javax.xml.namespace.QName;
 
+import org.eclipse.persistence.exceptions.SDOException;
 import org.eclipse.persistence.oxm.XMLDescriptor;
-import org.eclipse.persistence.platform.xml.XMLSchemaReference;
+import org.eclipse.persistence.oxm.schema.XMLSchemaReference;
 import org.eclipse.persistence.sdo.SDODataObject;
 import org.eclipse.persistence.sdo.helper.SDOCopyHelper;
 import org.eclipse.persistence.sdo.helper.SDODataHelper;
@@ -82,8 +83,23 @@ public class JAXBHelperContext extends SDOHelperContext {
             return null;
         }
 
-        XMLDescriptor entityDescriptor = (XMLDescriptor) jaxbContext.getXMLContext().getSession(entityClass).getDescriptor(entityClass);
-        QName qName = entityDescriptor.getSchemaReference().getSchemaContextAsQName(entityDescriptor.getNamespaceResolver());
+        XMLDescriptor entityDescriptor = null;
+        try {
+            entityDescriptor = (XMLDescriptor) jaxbContext.getXMLContext().getSession(entityClass).getDescriptor(entityClass);
+        } catch(Exception e) {
+            return null;
+        }
+
+        XMLSchemaReference schemaReference = entityDescriptor.getSchemaReference();
+        if(null == schemaReference) {
+            throw SDOException.sdoJaxbNoSchemaReference(entityClass);
+        }
+
+        QName qName = schemaReference.getSchemaContextAsQName(entityDescriptor.getNamespaceResolver());
+        if(null == qName) {
+            throw SDOException.sdoJaxbNoSchemaContext(entityClass);
+        }
+
         Type wrapperType;
         if(entityDescriptor.getSchemaReference().getType() == XMLSchemaReference.COMPLEX_TYPE) {
             wrapperType = getTypeHelper().getType(qName.getNamespaceURI(), qName.getLocalPart());            
@@ -92,7 +108,7 @@ public class JAXBHelperContext extends SDOHelperContext {
             wrapperType = property.getType();
         }
         if(null == wrapperType) {
-            throw new RuntimeException("The following SDO type could not be found:  " + qName);
+            throw SDOException.sdoJaxbNoTypeForClassBySchemaContext(entityClass, qName);
         }
         return wrapperType;
     }
@@ -114,6 +130,9 @@ public class JAXBHelperContext extends SDOHelperContext {
         }
 
         Type wrapperType = getType(entity.getClass());
+        if(null == wrapperType) {
+           throw SDOException.sdoJaxbNoTypeForClass(entity.getClass());
+        }
         wrapperDO = (SDODataObject) getDataFactory().create(wrapperType);
 
         JAXBValueStore jaxbValueStore = new JAXBValueStore(this, entity); 

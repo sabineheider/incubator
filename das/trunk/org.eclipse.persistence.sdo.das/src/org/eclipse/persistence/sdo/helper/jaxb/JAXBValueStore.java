@@ -29,6 +29,7 @@ import java.util.WeakHashMap;
 import javax.xml.namespace.QName;
 
 import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
+import org.eclipse.persistence.exceptions.SDOException;
 import org.eclipse.persistence.internal.helper.DatabaseField;
 import org.eclipse.persistence.internal.oxm.MappingNodeValue;
 import org.eclipse.persistence.internal.oxm.TreeObjectBuilder;
@@ -47,6 +48,7 @@ import org.eclipse.persistence.oxm.mappings.XMLDirectMapping;
 import org.eclipse.persistence.oxm.mappings.XMLObjectReferenceMapping;
 import org.eclipse.persistence.sdo.SDODataObject;
 import org.eclipse.persistence.sdo.SDOProperty;
+import org.eclipse.persistence.sdo.SDOType;
 import org.eclipse.persistence.sdo.ValueStore;
 import org.eclipse.persistence.sdo.helper.ListWrapper;
 
@@ -61,17 +63,21 @@ public class JAXBValueStore implements ValueStore {
     private SDODataObject dataObject;
     private Map<Property, ListWrapper> listWrappers;
 
-    public JAXBValueStore(JAXBHelperContext aJAXBHelperContext, QName qName) {
+    public JAXBValueStore(JAXBHelperContext aJAXBHelperContext, SDOType sdoType) {
         this.jaxbHelperContext = aJAXBHelperContext;
+        QName xsdQName = sdoType.getXsdType();
+        if(null == xsdQName) {
+            xsdQName = sdoType.getQName();
+        }
         listWrappers = new WeakHashMap<Property, ListWrapper>();
-        XPathFragment xPathFragment = new XPathFragment(qName.getLocalPart());
-        xPathFragment.setNamespaceURI(qName.getNamespaceURI());
+        XPathFragment xPathFragment = new XPathFragment(xsdQName.getLocalPart());
+        xPathFragment.setNamespaceURI(xsdQName.getNamespaceURI());
         JAXBContext jaxbContext = (JAXBContext) jaxbHelperContext.getJAXBContext();
         this.descriptor = jaxbContext.getXMLContext().getDescriptorByGlobalType(xPathFragment);
         if (null == this.descriptor) {
-            this.descriptor = jaxbContext.getXMLContext().getDescriptor(qName);
+            this.descriptor = jaxbContext.getXMLContext().getDescriptor(xsdQName);
             if (null == this.descriptor) {
-                throw new RuntimeException("A descriptor could not be found for the XML type:  " + qName.toString());
+                throw SDOException.sdoJaxbNoDescriptorForType(sdoType.getQName(), xsdQName);
             }
         }
         this.entity = descriptor.getInstantiationPolicy().buildNewInstance();
@@ -367,7 +373,7 @@ public class JAXBValueStore implements ValueStore {
                 return mappingNodeValue.getMapping();
             }
         }
-        throw new RuntimeException("A mapping could not be found for the XPath:  " + field.getXPath());
+        throw SDOException.sdoJaxbNoMappingForProperty(sdoProperty.getName(), field.getXPath());
     }
 
 }

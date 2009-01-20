@@ -32,7 +32,9 @@ import javax.xml.bind.SchemaOutputResolver;
 import javax.xml.transform.Result;
 import javax.xml.transform.stream.StreamResult;
 
+import org.eclipse.persistence.exceptions.SDOException;
 import org.eclipse.persistence.oxm.XMLContext;
+import org.eclipse.persistence.oxm.XMLDescriptor;
 import org.eclipse.persistence.sdo.SDODataObject;
 import org.eclipse.persistence.sdo.helper.SDODataFactory;
 import org.eclipse.persistence.sdo.helper.SDOXMLHelper;
@@ -178,9 +180,71 @@ public class HelperContextTestCases extends SDOTestCase {
     }
 
     public void testWrapUnknownObject() {
-        Object unknownObject = "FOO";
+        boolean fail = true;
+        try {
+            Object unknownObject = "FOO";
+            jaxbHelperContext.wrap(unknownObject);
+        } catch(SDOException e) {
+            if(e.getErrorCode() == SDOException.SDO_JAXB_NO_TYPE_FOR_CLASS) {
+                fail = false;
+            }
+        }
+        if(fail) {
+            fail();
+        }
+    }
 
-        jaxbHelperContext.wrap(unknownObject);
+    public void testWrapObjectWithoutSchemaReference() {
+        boolean fail = true;
+        try {
+            org.eclipse.persistence.jaxb.JAXBContext jaxbContext = (org.eclipse.persistence.jaxb.JAXBContext) jaxbHelperContext.getJAXBContext();
+            XMLDescriptor xmlDescriptor = (XMLDescriptor) jaxbContext.getXMLContext().getSession(Root.class).getDescriptor(Root.class);
+            xmlDescriptor.setSchemaReference(null);
+            jaxbHelperContext.wrap(new Root());
+        } catch(SDOException e) {
+            if(e.getErrorCode() == SDOException.SDO_JAXB_NO_SCHEMA_REFERENCE) {
+                fail = false;
+            }
+        }
+        if(fail) {
+            fail();
+        }
+    }
+
+    public void testWrapObjectWithoutSchemaContext() {
+        boolean fail = true;
+        try {
+            org.eclipse.persistence.jaxb.JAXBContext jaxbContext = (org.eclipse.persistence.jaxb.JAXBContext) jaxbHelperContext.getJAXBContext();
+            XMLDescriptor xmlDescriptor = (XMLDescriptor) jaxbContext.getXMLContext().getSession(Root.class).getDescriptor(Root.class);
+            xmlDescriptor.getSchemaReference().setSchemaContext(null);
+            xmlDescriptor.getSchemaReference().setSchemaContextAsQName(null);
+            jaxbHelperContext.wrap(new Root());
+        } catch(SDOException e) {
+            if(e.getErrorCode() == SDOException.SDO_JAXB_NO_SCHEMA_CONTEXT) {
+                fail = false;
+            }
+        }
+        if(fail) {
+            fail();
+        }
+    }
+
+    public void testWrapObjectWithIncorrectSchemaContext() {
+        boolean fail = true;
+        try {
+            org.eclipse.persistence.jaxb.JAXBContext jaxbContext = (org.eclipse.persistence.jaxb.JAXBContext) jaxbHelperContext.getJAXBContext();
+            XMLDescriptor xmlDescriptor = (XMLDescriptor) jaxbContext.getXMLContext().getSession(Root.class).getDescriptor(Root.class);
+            xmlDescriptor.getSchemaReference().setSchemaContext("/INVALID");
+            xmlDescriptor.getSchemaReference().setSchemaContextAsQName(null);
+            jaxbHelperContext.wrap(new Root());
+        } catch(SDOException e) {
+            if(e.getErrorCode() == SDOException.SDO_JAXB_NO_TYPE_FOR_CLASS_BY_SCHEMA_CONTEXT) {
+                fail = false;
+            }
+        }
+        if(fail) {
+            fail();
+        }
     }
 
     public void testUnwrap() {
