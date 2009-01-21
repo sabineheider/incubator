@@ -16,9 +16,11 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.containment;
+package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.isset;
 
-public class Child {
-	public String value;
-	public Root container;
+import java.util.Collection;
+
+public class Root {
+	public Child childProperty;
+	public Collection<Child> childCollectionProperty;
 }

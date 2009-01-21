@@ -16,7 +16,7 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.containment;
+package org.eclipse.persistence.testing.sdo.helper.jaxbhelper.isset;
 
 
 import java.util.ArrayList;
@@ -30,9 +30,9 @@ import org.eclipse.persistence.oxm.schema.XMLSchemaClassPathReference;
 import org.eclipse.persistence.platform.xml.XMLSchemaReference;
 import org.eclipse.persistence.sessions.Project;
 
-public class ContainmentProject extends Project {
+public class IsSetProject extends Project {
 
-    public ContainmentProject() {
+    public IsSetProject() {
         super();
         this.addDescriptor(getRootDescriptor());
         this.addDescriptor(getChildDescriptor());
@@ -43,7 +43,7 @@ public class ContainmentProject extends Project {
         xmlDescriptor.setJavaClass(Child.class);
 
         NamespaceResolver namespaceResolver = new NamespaceResolver();
-        namespaceResolver.put("tns", "urn:containment");
+        namespaceResolver.put("tns", "urn:isset");
         xmlDescriptor.setNamespaceResolver(namespaceResolver);
         
         XMLSchemaClassPathReference schemaReference = new XMLSchemaClassPathReference();
@@ -70,7 +70,7 @@ public class ContainmentProject extends Project {
         xmlDescriptor.setSchemaReference(schemaReference);
         
         NamespaceResolver namespaceResolver = new NamespaceResolver();
-        namespaceResolver.put("tns", "urn:containment");
+        namespaceResolver.put("tns", "urn:isset");
         xmlDescriptor.setNamespaceResolver(namespaceResolver);
         
         XMLCompositeObjectMapping mapping = new XMLCompositeObjectMapping();
