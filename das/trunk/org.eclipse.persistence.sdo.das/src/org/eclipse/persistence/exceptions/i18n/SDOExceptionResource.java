@@ -1,15 +1,15 @@
 /*******************************************************************************
  * Copyright (c) 1998, 2008 Oracle. All rights reserved.
- * This program and the accompanying materials are made available under the 
- * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0 
- * which accompanies this distribution. 
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0
+ * which accompanies this distribution.
  * The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
  *     Oracle - initial API and implementation from Oracle TopLink
- ******************************************************************************/  
+ ******************************************************************************/
 package org.eclipse.persistence.exceptions.i18n;
 
 import java.util.ListResourceBundle;
@@ -25,18 +25,18 @@ public class SDOExceptionResource extends ListResourceBundle {
                                            { "45002", "An error occurred processing the include with schemaLocation [{0}] ." },
                                            { "45003", "A referenced property with uri [{0}] and name [{1}] was not found." },
                                            { "45004", "Old sequence was not found in the changesummary." },
-                                           { "45005", "Value of property named [{0}] must be a DataObject" },                                           
-                                           { "45006", "Sequence cannot be null when type.isSequenced() is true." },                         
-                                           { "45007", "A type was not set on the property with name [{0}]" }, 
-                                           { "45008", "An IOException occurred." }, 
-                                           { "45009", "Type not found with uri [{0}] and name [{1}]" },                                          
+                                           { "45005", "Value of property named [{0}] must be a DataObject" },
+                                           { "45006", "Sequence cannot be null when type.isSequenced() is true." },
+                                           { "45007", "A type was not set on the property with name [{0}]" },
+                                           { "45008", "An IOException occurred." },
+                                           { "45009", "Type not found with uri [{0}] and name [{1}]" },
                                            { "45010", "Type not found for interface [{0}]" },
-                                           { "45011", "Could not create a DataObject for type with uri [{0}] and name [{1}] because type.isAbstract() returns true." },                                           
-                                           { "45012", "Could not create a DataObject for interface [{0}], trying to create a DataObject for type with uri [{1}] and name [{2}] " },                                           
-                                           { "45013", "Cannot look up app info for null argument." },                                                                                   
-                                           { "45014", "Could not define type.  Types can only be defined for DataObjects with Type set to commonj.sdo.Type" },                                                                                   
-                                           { "45015", "Could not define type with a null name." },                                                                                
-                                           { "45016", "A modified object in the changesummary XML is missing a ref attribute or the value is not specified." }, 
+                                           { "45011", "Could not create a DataObject for type with uri [{0}] and name [{1}] because type.isAbstract() returns true." },
+                                           { "45012", "Could not create a DataObject for interface [{0}], trying to create a DataObject for type with uri [{1}] and name [{2}] " },
+                                           { "45013", "Cannot look up app info for null argument." },
+                                           { "45014", "Could not define type.  Types can only be defined for DataObjects with Type set to commonj.sdo.Type" },
+                                           { "45015", "Could not define type with a null name." },
+                                           { "45016", "A modified object in the changesummary XML is missing a ref attribute or the value is not specified." },
                                            { "45017", "An error occurred processing xpath [{0}] ." },
                                            { "45018", "Adding a duplicate entry for the complex single setting [{1}] into a sequence at position [{0}] is not supported." },
                                            { "45019", "Adding an attribute property [{0}] to a sequence is not supported." },
@@ -58,15 +58,19 @@ public class SDOExceptionResource extends ListResourceBundle {
                                            { "45035", "The value that corresponds to the 'type' property must be a Type object." },
                                            { "45036", "A global property corresponding to the XML node being loaded was not found." },
                                            { "45037", "The prefix [{0}] is used but not declared in the XML schema." },
-                                           { "45038", "Cannot perform operation on property [{0}] because it is not reachable from the path [{1}]. The path is invalid, or one or more Data Objects on the path are null." }, 
+                                           { "45038", "Cannot perform operation on property [{0}] because it is not reachable from the path [{1}]. The path is invalid, or one or more Data Objects on the path are null." },
                                            { "45039", "An error occurred accessing the externalizableDelegator field [{0}] on the DataObject." },
-                                           { "45100", "SDO/JAXB - An OXM descriptor could not be found that corresponds to the SDO type [{0}], ensure that a Java class is mapped to the XML type [{1}]." },
-                                           { "45101", "SDO/JAXB - An OXM mapping could not be found that corresponds to the SDO property [{0}], ensure that a Java property is mapped to the XML node [{1}]." },
-                                           { "45102", "SDO/JAXB - An SDO type could not be found that corresponds to the Java class [{0}]." },
-                                           { "45103", "SDO/JAXB - A schema reference must be set on the descriptor for the Java class [{0}]." },
-                                           { "45104", "SDO/JAXB - A schema context must be set on the schema reference on the descriptor for the Java class [{0}]." },
-                                           { "45105", "SDO/JAXB - An SDO type could not be found that corresponds to the Java class [{0}], ensure that an SDO type corresponds to the XML type [{1}]." },
-                                           { "45106", "SDO/JAXB - An error occured creating a JAXB Unmarshaller." }
+                                           { "45100", "An error occurred attempting to return the requested SDOHelperContext.  In an active WebLogic instance the application name is required for helper context cache lookups.  The application name could not be determined because {0} lookup failed." },
+                                           { "45101", "An error occurred attempting to return the requested SDOHelperContext.  In an active WebLogic instance the application name is required for helper context cache lookups.  The application name could not be determined because {0} could not be invoked reflectively on {1}." },
+                                           { "45102", "An error occurred attempting to return the requested SDOHelperContext.  In an active WebLogic instance the application name is required for helper context cache lookups.  The application name could not be determined because an ObjectName could not be created/returned for {0}." },
+                                           { "45103", "An error occurred attempting to return the requested SDOHelperContext.  In an active WebLogic instance the application name is required for helper context cache lookups.  The application name could not be determined because an InitialContext could not be instantiated." },
+                                           { "45200", "SDO/JAXB - An OXM descriptor could not be found that corresponds to the SDO type [{0}], ensure that a Java class is mapped to the XML type [{1}]." },
+                                           { "45201", "SDO/JAXB - An OXM mapping could not be found that corresponds to the SDO property [{0}], ensure that a Java property is mapped to the XML node [{1}]." },
+                                           { "45202", "SDO/JAXB - An SDO type could not be found that corresponds to the Java class [{0}]." },
+                                           { "45203", "SDO/JAXB - A schema reference must be set on the descriptor for the Java class [{0}]." },
+                                           { "45204", "SDO/JAXB - A schema context must be set on the schema reference on the descriptor for the Java class [{0}]." },
+                                           { "45205", "SDO/JAXB - An SDO type could not be found that corresponds to the Java class [{0}], ensure that an SDO type corresponds to the XML type [{1}]." },
+                                           { "45206", "SDO/JAXB - An error occured creating a JAXB Unmarshaller." }
     };
 
     /**

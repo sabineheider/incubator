@@ -1,15 +1,15 @@
 /*******************************************************************************
  * Copyright (c) 1998, 2008 Oracle. All rights reserved.
- * This program and the accompanying materials are made available under the 
- * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0 
- * which accompanies this distribution. 
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0
+ * which accompanies this distribution.
  * The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
  *     Oracle - initial API and implementation from Oracle TopLink
- ******************************************************************************/  
+ ******************************************************************************/
 package org.eclipse.persistence.exceptions;
 
 import java.io.IOException;
@@ -31,10 +31,10 @@ import org.eclipse.persistence.exceptions.i18n.ExceptionMessageGenerator;
  * @since Oracle TopLink 11.1.1.0.0
  */
 public class SDOException extends EclipseLinkException {
-	/*
-	 * The following ID's are expanded to Strings in org.eclipse.persistence.exceptions.i18n.SDOExceptionResource
-	 * 
-	 */
+    /*
+     * The following ID's are expanded to Strings in org.eclipse.persistence.exceptions.i18n.SDOExceptionResource
+     *
+     */
     public static final int NO_ID_SPECIFIED = 45000;
     public static final int ERROR_PROCESSING_IMPORT = 45001;
     public static final int ERROR_PROCESSING_INCLUDE = 45002;
@@ -48,14 +48,14 @@ public class SDOException extends EclipseLinkException {
     public static final int TYPE_NOT_FOUND_FOR_INTERFACE = 45010;
     public static final int ERROR_CREATING_DATAOBJECT_FOR_TYPE = 45011;
     public static final int ERROR_CREATING_DATAOBJECT_FOR_CLASS = 45012;
-    public static final int NO_APP_INFO_FOR_NULL = 45013;    
-    public static final int ERROR_DEFINING_TYPE = 45014;    
-    public static final int ERROR_DEFINING_TYPE_NO_NAME = 45015;    
-    public static final int MISSING_REF_ATTRIBUTE = 45016;    
-    public static final int ERROR_PROCESSING_XPATH = 45017;    
-    public static final int SEQUENCE_DUPLICATE_ADD_NOT_SUPPORTED = 45018;    
-    public static final int SEQUENCE_ERROR_PROPERTY_IS_ATTRIBUTE = 45019;    
-    public static final int SEQUENCE_ERROR_NO_PATH_FOUND = 45020;    
+    public static final int NO_APP_INFO_FOR_NULL = 45013;
+    public static final int ERROR_DEFINING_TYPE = 45014;
+    public static final int ERROR_DEFINING_TYPE_NO_NAME = 45015;
+    public static final int MISSING_REF_ATTRIBUTE = 45016;
+    public static final int ERROR_PROCESSING_XPATH = 45017;
+    public static final int SEQUENCE_DUPLICATE_ADD_NOT_SUPPORTED = 45018;
+    public static final int SEQUENCE_ERROR_PROPERTY_IS_ATTRIBUTE = 45019;
+    public static final int SEQUENCE_ERROR_NO_PATH_FOUND = 45020;
     public static final int SEQUENCE_ERROR_DATAOBJECT_IS_NULL = 45021;
     public static final int SEQUENCE_NOT_SUPPORTED_FOR_PROPERTY = 45022;
     public static final int WRONG_VALUE_FOR_PROPERTY = 45023;
@@ -75,20 +75,83 @@ public class SDOException extends EclipseLinkException {
     public static final int PREFIX_USED_BUT_NOT_DEFINED = 45037;
     public static final int CANNOT_PERFORM_OPERATION_ON_PROPERTY = 45038;
     public static final int ERROR_ACCESSING_EXTERNALIZABLEDELEGATOR = 45039;
-    public static final int SDO_JAXB_NO_DESCRIPTOR_FOR_TYPE = 45100;
-    public static final int SDO_JAXB_NO_MAPPING_FOR_PROPERTY = 45101;
-    public static final int SDO_JAXB_NO_TYPE_FOR_CLASS = 45102;
-    public static final int SDO_JAXB_NO_SCHEMA_REFERENCE = 45103;
-    public static final int SDO_JAXB_NO_SCHEMA_CONTEXT = 45104;
-    public static final int SDO_JAXB_NO_TYPE_FOR_CLASS_BY_SCHEMA_CONTEXT = 45105;
-    public static final int SDO_JAXB_ERROR_CREATING_JAXB_UNMARSHALLER = 45106;
-    
+    public static final int ERROR_PERFORMING_WLS_LOOKUP = 45100;
+    public static final int ERROR_MAKING_WLS_REFLECTIVE_CALL = 45101;
+    public static final int ERROR_GETTING_OBJECTNAME = 45102;
+    public static final int ERROR_CREATING_INITIAL_CONTEXT = 45103;
+    public static final int SDO_JAXB_NO_DESCRIPTOR_FOR_TYPE = 45200;
+    public static final int SDO_JAXB_NO_MAPPING_FOR_PROPERTY = 45201;
+    public static final int SDO_JAXB_NO_TYPE_FOR_CLASS = 45202;
+    public static final int SDO_JAXB_NO_SCHEMA_REFERENCE = 45203;
+    public static final int SDO_JAXB_NO_SCHEMA_CONTEXT = 45204;
+    public static final int SDO_JAXB_NO_TYPE_FOR_CLASS_BY_SCHEMA_CONTEXT = 45205;
+    public static final int SDO_JAXB_ERROR_CREATING_JAXB_UNMARSHALLER = 45206;
+
     protected SDOException(String message) {
         super(message);
     }
 
     protected SDOException(String message, Exception internalException) {
         super(message, internalException);
+    }
+
+    /**
+     * INTERNAL:
+     * Exception when acquiring the SDOHelperContext cache key for WLS.  This method should be
+     * used when a lookup fails.  The lookup strings would typically be:
+     *   - "java:comp/jmx/runtime"
+     *   - "java:comp/env/jmx/runtime"
+     */
+    public static SDOException errorPerformingWLSLookup(String failedLookup, Exception nestedException) {
+        Object[] args = { failedLookup };
+        SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(//
+                SDOException.class, ERROR_PERFORMING_WLS_LOOKUP, args), nestedException);
+        exception.setErrorCode(ERROR_PERFORMING_WLS_LOOKUP);
+        return exception;
+    }
+
+    /**
+     * INTERNAL:
+     * Exception when acquiring the SDOHelperContext cache key for WLS.  This method should be
+     * used when a reflective call fails.  The method names would typically be:
+     *   - "getExecuteThread"
+     *   - "getApplicationName"
+     */
+    public static SDOException errorInvokingWLSMethodReflectively(String methodName, String theClass, Exception nestedException) {
+        Object[] args = { methodName, theClass };
+        SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(//
+                SDOException.class, ERROR_MAKING_WLS_REFLECTIVE_CALL, args), nestedException);
+        exception.setErrorCode(ERROR_MAKING_WLS_REFLECTIVE_CALL);
+        return exception;
+    }
+
+    /**
+     * INTERNAL:
+     * Exception when acquiring the SDOHelperContext cache key for WLS.  This method should be
+     * used when an attempt to get an ObjectName fails.  The object names would typically be:
+     *   - "com.bea:Name=RuntimeService,Type=weblogic.management.mbeanservers.runtime.RuntimeServiceMBean"
+     *   - "ServerRuntime"
+     *   - "ThreadPoolRuntime"
+     */
+    public static SDOException errorGettingWLSObjectName(String objectName, Exception nestedException) {
+        Object[] args = { objectName };
+        SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(//
+                SDOException.class, ERROR_GETTING_OBJECTNAME, args), nestedException);
+        exception.setErrorCode(ERROR_GETTING_OBJECTNAME);
+        return exception;
+    }
+
+    /**
+     * INTERNAL:
+     * Exception when acquiring the SDOHelperContext cache key for WLS.  This method should be
+     * used when an attempt to create an InitialContext fails.
+     */
+    public static SDOException errorCreatingWLSInitialContext(Exception nestedException) {
+        Object[] args = {};
+        SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(//
+                SDOException.class, ERROR_CREATING_INITIAL_CONTEXT, args), nestedException);
+        exception.setErrorCode(ERROR_CREATING_INITIAL_CONTEXT);
+        return exception;
     }
 
     /**
@@ -109,7 +172,7 @@ public class SDOException extends EclipseLinkException {
     public static SDOException errorProcessingImport(String schemaLocation, String namespace, Exception nestedException) {
         Object[] args = { schemaLocation, namespace };
         SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(//
-        		SDOException.class, ERROR_PROCESSING_IMPORT, args), nestedException);
+                SDOException.class, ERROR_PROCESSING_IMPORT, args), nestedException);
         exception.setErrorCode(ERROR_PROCESSING_IMPORT);
         return exception;
     }
@@ -121,7 +184,7 @@ public class SDOException extends EclipseLinkException {
     public static SDOException errorProcessingInclude(String schemaLocation, Exception nestedException) {
         Object[] args = { schemaLocation };
         SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(//
-        		SDOException.class, ERROR_PROCESSING_INCLUDE, args), nestedException);
+                SDOException.class, ERROR_PROCESSING_INCLUDE, args), nestedException);
         exception.setErrorCode(ERROR_PROCESSING_INCLUDE);
         return exception;
     }
@@ -136,18 +199,18 @@ public class SDOException extends EclipseLinkException {
         exception.setErrorCode(REFERENCED_PROPERTY_NOT_FOUND);
         return exception;
     }
-    
+
     /**
      * INTERNAL:
      * Exception when trying to find a global property during an unmarshal
      */
     public static SDOException globalPropertyNotFound() {
         Object[] args = { };
-        SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(SDOException.class, GLOBAL_PROPERTY_NOT_FOUND, args));        
+        SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(SDOException.class, GLOBAL_PROPERTY_NOT_FOUND, args));
         exception.setErrorCode(GLOBAL_PROPERTY_NOT_FOUND);
         return exception;
     }
-        
+
     /**
      * INTERNAL:
      * Exception when old sequence is not found in the changesummary
@@ -213,7 +276,7 @@ public class SDOException extends EclipseLinkException {
         exception.setErrorCode(XMLMARSHAL_EXCEPTION_OCCURRED);
         return exception;
     }
-    
+
     /**
       * INTERNAL:
       * Exception trying to lookup a type with the given uri and name
@@ -396,40 +459,40 @@ public class SDOException extends EclipseLinkException {
         exception.setErrorCode(CONVERSION_ERROR);
         return exception;
     }
-    
+
    /**
     * INTERNAL:
     * Exception when trying to find a property at an invalid index
     */
     public static SDOException propertyNotFoundAtIndex(Exception e, int propIndex) {
         Object[] args = { new Integer(propIndex) };
-        SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(SDOException.class, PROPERTY_NOT_FOUND_AT_INDEX, args), e);        
+        SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(SDOException.class, PROPERTY_NOT_FOUND_AT_INDEX, args), e);
         exception.setErrorCode(PROPERTY_NOT_FOUND_AT_INDEX);
         return exception;
     }
-    
+
     /**
     * INTERNAL:
     * Exception when trying to perform an operation with a null argument
     */
     public static SDOException cannotPerformOperationOnNullArgument(String methodName) {
         Object[] args = { methodName};
-        SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(SDOException.class, CANNOT_PERFORM_OPERATION_ON_NULL_ARGUMENT, args));        
+        SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(SDOException.class, CANNOT_PERFORM_OPERATION_ON_NULL_ARGUMENT, args));
         exception.setErrorCode(CANNOT_PERFORM_OPERATION_ON_NULL_ARGUMENT);
         return exception;
     }
- 
+
     /**
      * INTERNAL:
      * Exception when trying to set a property via path based access.
      */
      public static SDOException cannotPerformOperationOnProperty(String propertyName, String path) {
          Object[] args = { propertyName, path };
-         SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(SDOException.class, CANNOT_PERFORM_OPERATION_ON_PROPERTY, args));        
+         SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(SDOException.class, CANNOT_PERFORM_OPERATION_ON_PROPERTY, args));
          exception.setErrorCode(CANNOT_PERFORM_OPERATION_ON_PROPERTY);
          return exception;
      }
-     
+
     /**
      * INTERNAL:
      * Exception trying to load the instance class for a given type
@@ -440,8 +503,8 @@ public class SDOException extends EclipseLinkException {
         exception.setErrorCode(CLASS_NOT_FOUND);
         return exception;
     }
-    
-     
+
+
    /**
      * INTERNAL:
      * Exception trying to set a type to be both open and dataType
@@ -452,7 +515,7 @@ public class SDOException extends EclipseLinkException {
         exception.setErrorCode(TYPE_CANNOT_BE_OPEN_AND_DATATYPE);
         return exception;
     }
-    
+
     /**
      * INTERNAL:
      * Exception trying to pass an invalid index to a method
@@ -463,10 +526,10 @@ public class SDOException extends EclipseLinkException {
         exception.setErrorCode(INVALID_INDEX);
         return exception;
     }
-    
+
     /**
      * INTERNAL:
-     * thrown from InstanceClassConverter 
+     * thrown from InstanceClassConverter
      */
      public static SDOException noConstructorWithString(Exception nestedException, String className) {
         Object[] args = {className };
@@ -484,11 +547,11 @@ public class SDOException extends EclipseLinkException {
       public static SDOException propertyTypeAnnotationTargetCannotBeDataTypeTrue(String targetTypeName, String sourcePropertyName) {
           Object[] args = { targetTypeName, sourcePropertyName};
           SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(//
-        		  SDOException.class, CANNOT_SET_PROPERTY_TYPE_ANNOTATION_IF_TARGET_DATATYPE_TRUE, args));        
+                  SDOException.class, CANNOT_SET_PROPERTY_TYPE_ANNOTATION_IF_TARGET_DATATYPE_TRUE, args));
           exception.setErrorCode(CANNOT_SET_PROPERTY_TYPE_ANNOTATION_IF_TARGET_DATATYPE_TRUE);
           return exception;
       }
-      
+
       public static SDOException typeReferencedButNotDefined(String namespaceUri, String typeName) {
           Object[] args = {namespaceUri, typeName};
           SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(
@@ -496,10 +559,10 @@ public class SDOException extends EclipseLinkException {
           exception.setErrorCode(TYPE_REFERENCED_BUT_NEVER_DEFINED);
           return exception;
       }
-      
+
     /**
      * INTERNAL:
-     * thrown from SDOXMLHelperDelegate 
+     * thrown from SDOXMLHelperDelegate
      */
      public static SDOException optionsMustBeADataObject(Exception nestedException, String uri, String name) {
         Object[] args = {uri, name};
@@ -507,10 +570,10 @@ public class SDOException extends EclipseLinkException {
         exception.setErrorCode(OPTIONS_MUST_BE_A_DATAOBJECT);
         return exception;
     }
-    
+
       /**
      * INTERNAL:
-     * thrown from SDOXMLHelperDelegate 
+     * thrown from SDOXMLHelperDelegate
      */
      public static SDOException typePropertyMustBeAType(Exception nestedException) {
         Object[] args = {};
@@ -518,10 +581,10 @@ public class SDOException extends EclipseLinkException {
         exception.setErrorCode(TYPE_PROPERTY_MUST_BE_A_TYPE);
         return exception;
     }
-    
+
     /**
      * INTERNAL:
-     * thrown from SDOTypesGenerator 
+     * thrown from SDOTypesGenerator
      */
      public static SDOException prefixUsedButNotDefined(String prefix) {
         Object[] args = {prefix};
@@ -531,7 +594,7 @@ public class SDOException extends EclipseLinkException {
     }
      /**
       * INTERNAL:
-      */     								  
+      */
      public static SDOException errorAccessingExternalizableDelegator(String fieldName, Exception nestedException) {
          Object[] args = { fieldName };
          SDOException exception = new SDOException(ExceptionMessageGenerator.buildMessage(SDOException.class, ERROR_ACCESSING_EXTERNALIZABLEDELEGATOR, args), nestedException);
