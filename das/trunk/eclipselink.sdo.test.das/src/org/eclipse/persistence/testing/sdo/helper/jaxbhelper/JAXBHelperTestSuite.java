@@ -28,6 +28,7 @@ import org.eclipse.persistence.testing.sdo.helper.jaxbhelper.containment.Contain
 import org.eclipse.persistence.testing.sdo.helper.jaxbhelper.copyhelper.CopyHelperTestCases;
 import org.eclipse.persistence.testing.sdo.helper.jaxbhelper.datafactory.DataFactoryTestCases;
 import org.eclipse.persistence.testing.sdo.helper.jaxbhelper.helpercontext.HelperContextTestCases;
+import org.eclipse.persistence.testing.sdo.helper.jaxbhelper.isset.IsSetAndUnsetTestCases;
 import org.eclipse.persistence.testing.sdo.helper.jaxbhelper.jaxb.JAXBTestCases;
 import org.eclipse.persistence.testing.sdo.helper.jaxbhelper.mappings.MappingsTestCases;
 import org.eclipse.persistence.testing.sdo.helper.jaxbhelper.oppositeproperty.OppositePropertyTestCases;
@@ -47,6 +48,7 @@ public class JAXBHelperTestSuite extends TestCase {
         suite.addTestSuite(XSDHelperTestCases.class);
         suite.addTestSuite(DataFactoryTestCases.class);
         suite.addTestSuite(ContainmentTestCases.class);
+        suite.addTestSuite(IsSetAndUnsetTestCases.class);
         return suite;
     }
 
