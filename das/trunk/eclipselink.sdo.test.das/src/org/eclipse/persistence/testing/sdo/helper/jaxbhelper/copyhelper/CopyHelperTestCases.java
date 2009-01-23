@@ -48,7 +48,7 @@ public class CopyHelperTestCases extends SDOTestCase {
         jaxbHelperContext.getXSDHelper().define(xsd, null);
     }
 
-    public void testCopy() {
+    public void testCopy1() {
         DataObject rootDO = jaxbHelperContext.getDataFactory().create("urn:copy", "root");
         DataObject child1DO = rootDO.createDataObject("child1");
         DataObject child2DO = rootDO.createDataObject("child2");
@@ -66,6 +66,31 @@ public class CopyHelperTestCases extends SDOTestCase {
         assertNotSame(root.getChild1(), rootCopy.getChild1());
         assertNotNull(rootCopy.getChild1());
         
+        assertNotSame(root.getChild2(), rootCopy.getChild2());
+        assertNotNull(rootCopy.getChild2());
+    }
+
+    public void testCopy2() {
+        Root root = new Root();
+        Child1 child1 = new Child1();
+        root.setChild1(child1);
+        Child2 child2 = new Child2();
+        root.setChild2(child2);
+
+        DataObject rootDO = jaxbHelperContext.wrap(root);
+
+        DataObject rootDOCopy = jaxbHelperContext.getCopyHelper().copy(rootDO);
+
+        Root rootCopy = (Root) jaxbHelperContext.unwrap(rootDOCopy);
+
+        assertTrue(jaxbHelperContext.getEqualityHelper().equal(rootDO, rootDOCopy));
+
+        assertNotSame(root, rootCopy);
+        assertNotNull(rootCopy);
+
+        assertNotSame(root.getChild1(), rootCopy.getChild1());
+        assertNotNull(rootCopy.getChild1());
+
         assertNotSame(root.getChild2(), rootCopy.getChild2());
         assertNotNull(rootCopy.getChild2());
     }
