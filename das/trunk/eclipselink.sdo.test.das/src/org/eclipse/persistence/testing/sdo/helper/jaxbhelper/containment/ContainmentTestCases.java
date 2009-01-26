@@ -164,7 +164,7 @@ public class ContainmentTestCases extends SDOTestCase {
 
         DataObject root1DO = jaxbHelperContext.wrap(root1);
         DataObject root2DO = jaxbHelperContext.wrap(root2);
-        DataObject childDO = jaxbHelperContext.wrap(child);
+        DataObject childDO = (DataObject) root1DO.getList(childManyProperty).get(0);
 
         root2DO.getList(childManyProperty).add(childDO);
         assertTrue(root1DO.getList(childManyProperty).isEmpty());

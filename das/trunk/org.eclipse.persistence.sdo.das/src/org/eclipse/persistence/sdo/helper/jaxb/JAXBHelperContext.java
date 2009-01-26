@@ -114,9 +114,10 @@ public class JAXBHelperContext extends SDOHelperContext {
     }
 
     /**
-     * Return a DataObject that wraps the JPA entity.
-     * Multiple calls to wrap for the same instance entity return the same
-     * instance of DataObject, in other words the following is always true:
+     * Return a DataObject that wraps the JPA entity.  This call should be 
+     * made on the root entity. Multiple calls to wrap for the same instance 
+     * entity return the same instance of DataObject, in other words the 
+     * following is always true:
      * jpaHelper.wrap(customer123) == jpaHelper.wrap(customer123)
      * jpaHelper.wrap(customer123) != jpaHelper.wrap(customer456)
      */
@@ -155,12 +156,16 @@ public class JAXBHelperContext extends SDOHelperContext {
     }
 
     public List<DataObject> wrap(Collection<Object> entities) {
+        return wrap(entities, null, null);
+    }
+
+    List<DataObject> wrap(Collection<Object> entities, Property containmentProperty, DataObject container) {
         if(null == entities) {
             return new ArrayList<DataObject>(0);
         }
         List<DataObject> dataObjects = new ArrayList<DataObject>(entities.size());
         for(Object entity: entities) {
-            dataObjects.add(wrap(entity));
+            dataObjects.add(wrap(entity, containmentProperty, container));
         }
         return dataObjects;
     }

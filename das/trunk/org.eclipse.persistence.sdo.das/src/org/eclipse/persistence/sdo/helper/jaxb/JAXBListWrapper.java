@@ -143,7 +143,11 @@ public class JAXBListWrapper extends ListWrapper {
         if(property.getType().isDataType()) {
             return containerPolicy.vectorFor(elements, session);
         } else {
-            return jaxbValueStore.getJAXBHelperContext().wrap(containerPolicy.vectorFor(elements, session));
+            if(property.isContainment()) {
+                return jaxbValueStore.getJAXBHelperContext().wrap(containerPolicy.vectorFor(elements, session), property, jaxbValueStore.getDataObject());
+            } else {
+                return jaxbValueStore.getJAXBHelperContext().wrap(containerPolicy.vectorFor(elements, session));
+            }
         }
     }
 
@@ -318,7 +322,11 @@ public class JAXBListWrapper extends ListWrapper {
     public Object get(int index) {
         Object toReturn = containerPolicy.vectorFor(elements, session).elementAt(index);
         if(!(property.getType().isDataType())) {
-            toReturn = jaxbValueStore.getJAXBHelperContext().wrap(toReturn);
+            if(property.isContainment()) {
+                toReturn = jaxbValueStore.getJAXBHelperContext().wrap(toReturn, property, jaxbValueStore.getDataObject());
+            } else {
+                toReturn = jaxbValueStore.getJAXBHelperContext().wrap(toReturn);                
+            }
         }
         return toReturn;
     }
