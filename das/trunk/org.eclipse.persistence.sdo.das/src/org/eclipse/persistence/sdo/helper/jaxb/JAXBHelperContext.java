@@ -143,6 +143,17 @@ public class JAXBHelperContext extends SDOHelperContext {
         return wrapperDO;
     }
 
+    DataObject wrap(Object entity, Property containmentProperty, DataObject container) {
+        SDODataObject sdoDataObject = (SDODataObject) wrap(entity);
+        if(null == container) {
+            sdoDataObject._setContainmentPropertyName(null);            
+        } else {
+            sdoDataObject._setContainmentPropertyName(containmentProperty.getName());            
+        }
+        sdoDataObject._setContainer(container);
+        return sdoDataObject;
+    }
+
     public List<DataObject> wrap(Collection<Object> entities) {
         if(null == entities) {
             return new ArrayList<DataObject>(0);

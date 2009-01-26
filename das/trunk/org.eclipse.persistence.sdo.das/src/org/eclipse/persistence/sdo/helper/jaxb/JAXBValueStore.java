@@ -134,7 +134,11 @@ public class JAXBValueStore implements ValueStore {
             listWrappers.put(declaredProperty, listWrapper);
             return listWrapper;
         } else {
-            return jaxbHelperContext.wrap(value);
+            if(declaredProperty.isContainment()) {
+                return jaxbHelperContext.wrap(value, declaredProperty, dataObject);
+            } else {
+                return jaxbHelperContext.wrap(value);
+            }
         }
     }
 

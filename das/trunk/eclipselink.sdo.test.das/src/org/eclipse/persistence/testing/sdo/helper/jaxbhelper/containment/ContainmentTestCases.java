@@ -171,6 +171,48 @@ public class ContainmentTestCases extends SDOTestCase {
         assertFalse(root2DO.getList(childManyProperty).isEmpty());
     }
 
+    public void testGetContainer() {
+        Root root = new Root();
+        Child child = new Child();
+        root.setChildProperty(child);
+
+        Type rootType = jaxbHelperContext.getTypeHelper().getType("urn:containment", "root");
+        Property childProperty = rootType.getProperty("child");
+
+        DataObject rootDO = jaxbHelperContext.wrap(root);
+        DataObject childDO = rootDO.getDataObject(childProperty);
+        
+        DataObject containerDO = childDO.getContainer();
+        assertNotNull(containerDO);
+        assertSame(rootDO, containerDO);
+
+        Property containmentProperty = childDO.getContainmentProperty();
+        assertNotNull(containmentProperty);
+        assertSame(childProperty, containmentProperty);
+    }
+
+    public void testGetManyContainer() {
+        Root root = new Root();
+        Child child = new Child();
+        ArrayList children = new ArrayList(1);
+        children.add(child);
+        root.setChildCollectionProperty(children);
+
+        Type rootType = jaxbHelperContext.getTypeHelper().getType("urn:containment", "root");
+        Property childManyProperty = rootType.getProperty("child-many");
+
+        DataObject rootDO = jaxbHelperContext.wrap(root);
+        DataObject childDO = (DataObject) rootDO.getList(childManyProperty).get(0);
+
+        DataObject containerDO = childDO.getContainer();
+        assertNotNull(containerDO);
+        assertSame(rootDO, containerDO);
+
+        Property containmentProperty = childDO.getContainmentProperty();
+        assertNotNull(containmentProperty);
+        assertSame(childManyProperty, containmentProperty);
+    }
+
     public void tearDown() {
     }
 
