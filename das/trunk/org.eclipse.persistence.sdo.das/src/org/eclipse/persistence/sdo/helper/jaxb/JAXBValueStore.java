@@ -56,7 +56,10 @@ import commonj.sdo.DataObject;
 import commonj.sdo.Property;
 
 /**
- * 
+ * The JAXBValueStore enables a DataObject to access data from a POJO.
+ * The link between an SDO property and a POJO property is through their
+ * XML representation.  For the POJO property this corresponds to its
+ * JAXB mapping.
  */
 public class JAXBValueStore implements ValueStore {
 
@@ -116,16 +119,23 @@ public class JAXBValueStore implements ValueStore {
         return descriptor;
     }
 
+    /**
+     * Return the JAXBHelperContext.  This is the JAXBHelperContext
+     * used to create the DataObject.  
+     */
     JAXBHelperContext getJAXBHelperContext() {
         return jaxbHelperContext;
     }
 
+    /**
+     * Initialize the value store with its associated DataObject.
+     */
     public void initialize(DataObject aDataObject) {
         this.dataObject = (SDODataObject) aDataObject;
     }
 
     /**
-     * Get the value from the wrapped JPA entity, wrapping in DataObjects as
+     * Get the value from the wrapped POJO, wrapping in DataObjects as
      * necessary.
      */
     public Object getDeclaredProperty(int propertyIndex) {
@@ -156,7 +166,7 @@ public class JAXBValueStore implements ValueStore {
     }
 
     /**
-     * Set the value on the underlying entity, unwrapping values as necessary.
+     * Set the value on the underlying POJO, unwrapping values as necessary.
      */
     public void setDeclaredProperty(int propertyIndex, Object value) {
         SDOProperty declaredProperty = (SDOProperty) dataObject.getType().getDeclaredProperties().get(propertyIndex);
@@ -217,7 +227,6 @@ public class JAXBValueStore implements ValueStore {
 
         // If the target entity is using attribute change tracking then we need
         // to force the property event to be fired
-        // TODO: Ensure that if the container accessor is used its property event is fired as well
         if (entity instanceof ChangeTracker) {
             PropertyChangeListener listener = ((ChangeTracker) entity)._persistence_getPropertyChangeListener();
             if (listener != null) {
@@ -227,7 +236,7 @@ public class JAXBValueStore implements ValueStore {
     }
 
     /**
-     * For isMany=false properties always return true. For collection properties
+     * For isMany=false properties return true if not null. For collection properties
      * return true if the collection is not empty.
      */
     public boolean isSetDeclaredProperty(int propertyIndex) {
@@ -344,6 +353,10 @@ public class JAXBValueStore implements ValueStore {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Return the JAXB mapping for the SDO property.  They are matched
+     * on their XML schema representation. 
+     */
     DatabaseMapping getJAXBMappingForProperty(SDOProperty sdoProperty) {
         DatabaseMapping sdoMapping = sdoProperty.getXmlMapping();
         XMLField field;
