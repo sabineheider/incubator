@@ -28,7 +28,15 @@ import commonj.sdo.helper.HelperContext;
 
 /**
  * This implementation of commonj.sdo.helper.DataFactory is responsible for 
- * ensuring that newly created DataObjects are assigned a JAXB aware value store. 
+ * ensuring that newly created DataObjects are assigned a JAXB aware value store.
+ * <pre>
+ * Type customerType = jaxbHelperContext.getType(Customer.class);
+ * DataObject customerDO = jaxbHelperContext.getDataFactory().create(customerType);
+ * customerDO.set("first-name", "Jane");
+ * 
+ * Customer customer = jaxbHelperContext.unwrap(customerDO);
+ * customer.getFirstName();  // returns "Jane" 
+ * </pre> 
  */
 public class JAXBDataFactory extends SDODataFactoryDelegate {
 

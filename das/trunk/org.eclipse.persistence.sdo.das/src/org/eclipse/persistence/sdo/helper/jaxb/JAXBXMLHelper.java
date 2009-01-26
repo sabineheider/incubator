@@ -41,7 +41,14 @@ import commonj.sdo.helper.XMLDocument;
 /**
  * This implementation of commonj.sdo.helper.XMLHelper is responsible for 
  * ensuring that newly unmarshalled DataObjects are assigned a JAXB aware 
- * value store. 
+ * value store.
+ * <pre>
+ * XMLHelper xmlHelper = jaxbHelperContext.getXMLHelper();
+ * XMLDocument xmlDocument = xmlHelper.load(xml);
+ * DataObject customerDO = xmlDocument.getRootObject();
+ * 
+ * Customer customer = jaxbHelperContext.unwrap(customerDO);
+ * </pre> 
  */
 public class JAXBXMLHelper extends SDOXMLHelperDelegate {
 
