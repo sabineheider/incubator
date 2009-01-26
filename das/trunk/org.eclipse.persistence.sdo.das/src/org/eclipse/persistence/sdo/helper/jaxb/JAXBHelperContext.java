@@ -43,8 +43,64 @@ import commonj.sdo.Property;
 import commonj.sdo.Type;
 
 /**
- * This helper is responsible for converting between JAXB objects and SDO
- * DataObjects.  The DataObject wraps the JAXB object.
+ * <p>The JAXBHelperContext is a bridge between POJOs and SDO DataObjects.  The bridge
+ * is based on their corresponding XML representations.  For the POJOs the XML
+ * representation is specified using JAXB annotations or object-to-XML mappings.</p>
+ * 
+ * <p>The following steps are required to create the JAXBHelperContext.  The XML schema
+ * used in step #3 is the same one that the POJOs are mapped to.  This step has been 
+ * separated so that SDO annotations could be added to the XML schema.  
+ * <p>Step #1 - Create the JAXBContext</p>
+ * <pre>
+ * JAXBContext jaxbContext = JAXBContext.newInstance("com.example.customer");
+ * </pre>
+ * <p>Step #2 - Create the JAXBHelperContext</p>
+ * <pre>
+ * JAXBHelperContext jaxbHelperContext = new JAXBHelperContext(jaxbContext);
+ * </pre>
+ * <p>Step #3 - Create the SDO Metadata from an XML Schema</p>
+ * <pre>
+ * jaxbHelperContext.getXSDHelper().define(xmlSchema);
+ * </pre>
+ * </p>
+ * 
+ * <p>
+ * The JAXBHelperContext allows you to convert between POJOs and DataObjects using
+ * a wrap operation.
+ * <pre>
+ * Customer customer = new Customer();
+ * Address address new Address();
+ * address.setStreet("123 Any Street");
+ * customer.set(address);
+ * 
+ * DataObject customerDO = jaxbHelperContext.wrap(customer);
+ * customerDO.getString("address/street");  // returns "123 Any Street"
+ * </pre> 
+ * </p>
+ * 
+ * <p>
+ * The JAXBHelperContext allows you to convert between DataObjects and POJOs using
+ * an unwrap operation.
+ * <pre>
+ * Type customerType = jaxbHelperContext.getType(Customer.class);
+ * DataObject customerDO = jaxbHelperContext.getDataFactory().create(customerType);
+ * customerDO.set("first-name", "Jane");
+ * 
+ * Customer customer = jaxbHelperContext.unwrap(customerDO);
+ * customer.getFirstName();  // returns "Jane"
+ * </pre>
+ * </p>
+ * 
+ * <p>
+ * Of course the POJOs may be JPA entities.  Below is an example of wrapping the 
+ * results of a JPA query.
+ * <pre>
+ * EntityManagerFactory emf = Persistence.createEntityManagerFactory("CustomerExample");      
+ * EntityManager em = emf.createEntityManager();
+ * List<MyEntity> entities = em.createQuery("SELECT e FROM MyEntity e WHERE ...").getResultList();
+ * List<DataObject> dataObjects = hc.wrap(entities);
+ * </pre> 
+ * </p>
  */
 public class JAXBHelperContext extends SDOHelperContext {
 
