@@ -51,16 +51,30 @@ public class JAXBHelperContext extends SDOHelperContext {
     private org.eclipse.persistence.jaxb.JAXBContext jaxbContext;
     private Map<Object, SDODataObject> wrapperDataObjects;
 
+    /**
+     * Create a new instance of JAXBHelperContext  
+     * @param aJAXBContext - The JAXBContext representing the class to XML schema mapping.
+     */
     public JAXBHelperContext(JAXBContext aJAXBContext) {
         this(aJAXBContext, Thread.currentThread().getContextClassLoader());
     }
 
+    /**
+     * Create a new instance of JAXBHelperContext  
+     * @param aJAXBContext - The JAXBContext representing the class to XML schema mapping.
+     * @param aClassLoader - The ClassLoader containing the generated SDO classes/interfaces (if any).
+     */
     public JAXBHelperContext(JAXBContext aJAXBContext, ClassLoader aClassLoader) {
         super(aClassLoader);
         wrapperDataObjects = new WeakHashMap<Object, SDODataObject>();
         jaxbContext = (org.eclipse.persistence.jaxb.JAXBContext) aJAXBContext;
     }
 
+    /**
+     * Override the default helpers/factories, replacing them
+     * with JAXB aware ones where necessary.
+     */
+    @Override
     protected void initialize(ClassLoader aClassLoader)  {
         copyHelper = new SDOCopyHelper(this);
         dataFactory = new JAXBDataFactory(this);
@@ -71,12 +85,20 @@ public class JAXBHelperContext extends SDOHelperContext {
         xsdHelper = new SDOXSDHelperDelegate(this);
     }
 
+    /**
+     * Return the JAXBContext.  The JAXBContext represents the Java 
+     * class to XML schema information for the POJOs. 
+     */
     public JAXBContext getJAXBContext() {
         return jaxbContext;
     }
 
     /**
      * Return the SDO type corresponding to the wrapped class. 
+     * <pre>
+     * Type customerType = jaxbHelperContext.getType(Customer.class);
+     * DataObject customerDO = jaxbHelperContext.getDataFactory().create(customerType);
+     * </pre>
      */
     public Type getType(Class entityClass) {
         if(null == entityClass) {
@@ -114,12 +136,24 @@ public class JAXBHelperContext extends SDOHelperContext {
     }
 
     /**
-     * Return a DataObject that wraps the JPA entity.  This call should be 
-     * made on the root entity. Multiple calls to wrap for the same instance 
-     * entity return the same instance of DataObject, in other words the 
-     * following is always true:
-     * jpaHelper.wrap(customer123) == jpaHelper.wrap(customer123)
-     * jpaHelper.wrap(customer123) != jpaHelper.wrap(customer456)
+     * Return a DataObject that wraps a POJO.  This call should be 
+     * made on the root POJO.
+     * <pre>
+     * Customer customer = new Customer();
+     * Address address new Address();
+     * address.setStreet("123 Any Street");
+     * customer.set(address);
+     * 
+     * DataObject customerDO = jaxbHelperContext.wrap(customer);
+     * customerDO.getString("address/street");  // returns "123 Any Street"
+     * </pre> 
+     * Multiple calls to wrap for the same instance POJO return the 
+     * same instance of DataObject, in other words the following is 
+     * always true:
+     * <pre>
+     * jaxbHelperContext.wrap(customer123) == jaxbHelperContext.wrap(customer123)
+     * jaxbHelperContext.wrap(customer123) != jaxbHelperContext.wrap(customer456)
+     * </pre>
      */
     public DataObject wrap(Object entity) {
         if(null == entity) {
@@ -144,6 +178,9 @@ public class JAXBHelperContext extends SDOHelperContext {
         return wrapperDO;
     }
 
+    /**
+     * Helper method that configures container information. 
+     */
     DataObject wrap(Object entity, Property containmentProperty, DataObject container) {
         SDODataObject sdoDataObject = (SDODataObject) wrap(entity);
         if(null == container) {
@@ -155,10 +192,17 @@ public class JAXBHelperContext extends SDOHelperContext {
         return sdoDataObject;
     }
 
+    /**
+     * Perform the wrap operation on each of the POJOs in the collection,
+     * and return the results as a List.
+     */
     public List<DataObject> wrap(Collection<Object> entities) {
         return wrap(entities, null, null);
     }
 
+    /**
+     * Helper method that configures container information. 
+     */
     List<DataObject> wrap(Collection<Object> entities, Property containmentProperty, DataObject container) {
         if(null == entities) {
             return new ArrayList<DataObject>(0);
@@ -171,12 +215,23 @@ public class JAXBHelperContext extends SDOHelperContext {
     }
 
     /**
-     * Return the JPA entity that is wrapped by the DataObject.
-     * Multiple calls to unwrap for the same entity instance must return the 
+     * Return the POJO that is wrapped by the DataObject.
+     * <pre>
+     * Type customerType = jaxbHelperContext.getType(Customer.class);
+     * DataObject customerDO = jaxbHelperContext.getDataFactory().create(customerType);
+     * DataObject addressDO = customerDO.create("address");
+     * addressDO.set("street", "123 Any Street");
+     * 
+     * Customer customer = (Customer) jaxbHelperContext.unwrap(customerDO);
+     * customer.getAddress().getStreet();  // returns "123 Any Street"
+     * </pre>
+     * Multiple calls to unwrap for the same POJO must return the 
      * same instance of DataObject, in other words the following is always true:
-     * jpaHelper.unwrap(customerDO123) == jpaHelper.wrap(customerDO123)
-     * jpaHelper.unwrap(customerDO123) != jpaHelper.wrap(customerDO456)
-     * customer123 == jpaHelper.unwrap(jpaHelper.wrap(customer123))
+     * <pre>
+     * jaxbHelperContext.unwrap(customerDO123) == jaxbHelperContext.unwrap(customerDO123)
+     * jaxbHelperContext.unwrap(customerDO123) != jaxbHelperContext.unwrap(customerDO456)
+     * customer123 == jaxbHelperContext.unwrap(jaxbHelperContext.wrap(customer123))
+     * </pre>
      */
     public Object unwrap(DataObject dataObject) {
         try {
@@ -191,6 +246,10 @@ public class JAXBHelperContext extends SDOHelperContext {
         }
     }
 
+    /**
+     * Perform the unwrap operation on each of the DataObjects in the collection,
+     * and return the results as a List.
+     */
     public List<Object> unwrap(Collection<DataObject> dataObjects) {
         if(null == dataObjects) {
             return new ArrayList<Object>(0);
@@ -202,6 +261,9 @@ public class JAXBHelperContext extends SDOHelperContext {
         return entities;
     }
 
+    /**
+     * Maintain an association between this POJO and DataObject. 
+     */
     void putWrapperDataObject(Object anObject, SDODataObject aDataObject) {
         wrapperDataObjects.put(anObject, aDataObject);
     }

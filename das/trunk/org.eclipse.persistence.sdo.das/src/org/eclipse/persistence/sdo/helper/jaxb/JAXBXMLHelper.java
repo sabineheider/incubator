@@ -45,14 +45,24 @@ import commonj.sdo.helper.XMLDocument;
  */
 public class JAXBXMLHelper extends SDOXMLHelperDelegate {
 
+    /**
+     * Create a new instance of JAXBXMLHelper
+     * @param helperContext - The HelperContext used to get this XMLHelper.
+     */
     public JAXBXMLHelper(HelperContext helperContext) {
         super(helperContext);
     }
 
+    /**
+     * Create a new instance of JAXBXMLHelper
+     * @param helperContext - The HelperContext used to get this XMLHelper.
+     * @param classLoader - The ClassLoader containing the generated SDO classes/interfaces (if any).
+     */
     public JAXBXMLHelper(HelperContext helperContext, ClassLoader classLoader) {
         super(helperContext, classLoader);
     }
 
+    @Override
     public JAXBHelperContext getHelperContext() {
         return (JAXBHelperContext) super.getHelperContext();
     }
@@ -141,6 +151,9 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
         }
     }
 
+    /**
+     * Convert between an XMLRoot and an SDO  XMLDocument. 
+     */
     private XMLDocument wrap(XMLRoot xmlRoot) {
         DataObject dataObject = getHelperContext().wrap(xmlRoot.getObject());
         XMLDocument xmlDocument =  getHelperContext().getXMLHelper().createDocument(dataObject, xmlRoot.getNamespaceURI(), xmlRoot.getLocalName());
@@ -151,6 +164,9 @@ public class JAXBXMLHelper extends SDOXMLHelperDelegate {
         return xmlDocument;
     }
 
+    /**
+     * Convert the exception so that it is compatible with SDO. 
+     */
     private XMLDocument handleLoadException(XMLMarshalException xmlMarshalException) throws IOException {
         if(xmlMarshalException.getCause() instanceof IOException) {
             throw (IOException) xmlMarshalException.getCause();

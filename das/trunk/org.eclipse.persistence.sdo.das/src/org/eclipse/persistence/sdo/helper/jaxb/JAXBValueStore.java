@@ -55,6 +55,9 @@ import org.eclipse.persistence.sdo.helper.ListWrapper;
 import commonj.sdo.DataObject;
 import commonj.sdo.Property;
 
+/**
+ * 
+ */
 public class JAXBValueStore implements ValueStore {
 
     private JAXBHelperContext jaxbHelperContext;
@@ -91,14 +94,24 @@ public class JAXBValueStore implements ValueStore {
         this.entity = anEntity;
     }
 
+    /**
+     * Return the DataObject associated with this value store.
+     */
     SDODataObject getDataObject() {
         return dataObject;
     }
 
+    /**
+     * Return the POJO associated with this value store. 
+     */
     Object getEntity() {
         return entity;
     }
 
+    /**
+     * Return the XMLDescriptor associated with this value store.
+     * This is the XMLDescriptor for the associated POJO. 
+     */
     XMLDescriptor getEntityDescriptor() {
         return descriptor;
     }

@@ -18,8 +18,6 @@
  ******************************************************************************/
 package org.eclipse.persistence.sdo.helper.jaxb;
 
-import javax.xml.namespace.QName;
-
 import org.eclipse.persistence.sdo.SDODataObject;
 import org.eclipse.persistence.sdo.SDOType;
 import org.eclipse.persistence.sdo.helper.delegates.SDODataFactoryDelegate;
@@ -38,10 +36,17 @@ public class JAXBDataFactory extends SDODataFactoryDelegate {
         super(helperContext);
     }
  
+    @Override
     public JAXBHelperContext getHelperContext() {
         return (JAXBHelperContext) super.getHelperContext();
     }
 
+    /**
+     * Return a new DataObject of the specified Type.  If a corresponding
+     * class (based on XML schema information) exists in the JAXBContext,
+     * then the returned DataObject will wrap an instance of that class.
+     */
+    @Override
     public DataObject create(Type type) {
         if(null == type) {
             return super.create(type);
