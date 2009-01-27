@@ -294,7 +294,7 @@ public class JAXBValueStore implements ValueStore {
                         if (oldValue instanceof ChangeTracker) {
                             PropertyChangeListener listener = ((ChangeTracker) oldValue)._persistence_getPropertyChangeListener();
                             if (listener != null) {
-                                Object oldValueOldContainer = compositeMapping.getContainerAccessor(); 
+                                Object oldValueOldContainer = compositeMapping.getContainerAccessor().getAttributeValueFromObject(oldValue); 
                                 listener.propertyChange(new PropertyChangeEvent(oldValue, compositeMapping.getContainerAttributeName(), null, oldValueOldContainer));
                             }
                         }

@@ -407,7 +407,7 @@ public class JAXBListWrapper extends ListWrapper {
                     PropertyChangeListener listener = ((ChangeTracker) itemEntity)._persistence_getPropertyChangeListener();
                     if (listener != null) {
                         Object itemEntityOldContainer = compositeMapping.getContainerAccessor().getAttributeValueFromObject(itemEntity);
-                        listener.propertyChange(new PropertyChangeEvent(itemEntity, mapping.getAttributeName(), jaxbValueStore.getEntity(), itemEntityOldContainer));
+                        listener.propertyChange(new PropertyChangeEvent(itemEntity, compositeMapping.getContainerAttributeName(), jaxbValueStore.getEntity(), itemEntityOldContainer));
                     }
                 }
                 compositeMapping.getContainerAccessor().setAttributeValueInObject(itemEntity, jaxbValueStore.getEntity());
