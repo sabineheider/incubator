@@ -32,6 +32,9 @@ public class Address implements Serializable {
 	private String province;
 	private String postalCode;
 	private String street; 
+	
+	@OneToOne(mappedBy="address")
+	private Employee owner;
 
 	public Address() {
 	}
@@ -82,5 +85,13 @@ public class Address implements Serializable {
 
 	public void setStreet(String street) {
 		this.street = street;
+	}
+	
+	public Employee getOwner() {
+		return this.owner;
+	}
+	
+	public void setOwner(Employee owner) {
+		this.owner = owner;
 	}
 }

@@ -5,6 +5,7 @@ import model.*;
 import org.eclipse.persistence.descriptors.*;
 import org.eclipse.persistence.mappings.converters.ObjectTypeConverter;
 import org.eclipse.persistence.oxm.mappings.XMLCompositeCollectionMapping;
+import org.eclipse.persistence.oxm.mappings.XMLCompositeObjectMapping;
 import org.eclipse.persistence.oxm.mappings.XMLDirectMapping;
 
 public class MOXyDescriptorCustomizers {
@@ -21,6 +22,9 @@ public class MOXyDescriptorCustomizers {
 		
 		XMLCompositeCollectionMapping phoneMapping = (XMLCompositeCollectionMapping) descriptor.getMappingForAttributeName("phoneNumbers");
 		phoneMapping.setContainerAttributeName("owner");
+		
+		XMLCompositeObjectMapping addressMapping = (XMLCompositeObjectMapping) descriptor.getMappingForAttributeName("address");
+		addressMapping.setContainerAttributeName("owner");
 		
 		descriptor.getDescriptorEventManager().addListener(new FixPhonesListener());
 	}

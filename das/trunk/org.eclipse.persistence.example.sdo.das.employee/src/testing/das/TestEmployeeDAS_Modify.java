@@ -20,7 +20,9 @@ package testing.das;
 
 import static junit.framework.Assert.*;
 
+import model.Address;
 import model.Employee;
+import model.PhoneNumber;
 
 import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
 import org.eclipse.persistence.internal.descriptors.changetracking.AttributeChangeListener;
@@ -117,5 +119,57 @@ public class TestEmployeeDAS_Modify extends TestEmployeeDAS {
 		}
 		fail("No NullPOinterException throws accessing ChangeSummary from dataObject");
 	}
+	
+	@Test
+	public void testModifyAddress() {
+		int empId = findMinimumEmployeeId();
+		int maxId = findMaximumEmployeeId();
+		DataObject emp1DO = getDAS().findEmployee(empId);
+		DataObject emp2DO = getDAS().findEmployee(maxId);
+		
+		Employee emp = (Employee)getSDOContext().unwrap(emp1DO);
+		Employee emp2 = (Employee)getSDOContext().unwrap(emp2DO);
+		//Address addrx = emp2.getAddress();
+		
+		DataObject addrDO = (DataObject)emp2DO.get("address");
+		Address addr = (Address)getSDOContext().unwrap(addrDO);
+		
+		if (emp instanceof ChangeTracker && ((ChangeTracker) emp)._persistence_getPropertyChangeListener() != null && ((ChangeTracker) emp)._persistence_getPropertyChangeListener() instanceof AttributeChangeListener) {
+			assertFalse(JpaHelper.getEntityManager(getDAS().getEntityManager()).getUnitOfWork().hasChanges());
+		}
+		
+		emp1DO.set("address", addrDO);
+		if (emp instanceof ChangeTracker && ((ChangeTracker) emp)._persistence_getPropertyChangeListener() != null && ((ChangeTracker) emp)._persistence_getPropertyChangeListener() instanceof AttributeChangeListener) {
+			assertTrue(JpaHelper.getEntityManager(getDAS().getEntityManager()).getUnitOfWork().getCurrentChanges().getObjectChangeSetForClone(emp).hasChangeFor("address"));
+			assertTrue(JpaHelper.getEntityManager(getDAS().getEntityManager()).getUnitOfWork().getCurrentChanges().getObjectChangeSetForClone(emp2).hasChangeFor("address"));
+			assertTrue(JpaHelper.getEntityManager(getDAS().getEntityManager()).getUnitOfWork().getCurrentChanges().getObjectChangeSetForClone(addr).hasChangeFor("owner"));
+		}
+	}
+	
+	@Test
+	public void testModifyPhoneNumbers() {
+		int empId = findMinimumEmployeeId();
+		int maxId = findMaximumEmployeeId();
+		DataObject emp1DO = getDAS().findEmployee(empId);
+		DataObject emp2DO = getDAS().findEmployee(maxId);
+		
+		Employee emp = (Employee)getSDOContext().unwrap(emp1DO);
+		Employee emp2 = (Employee)getSDOContext().unwrap(emp2DO);
+		
+		DataObject phoneDO = (DataObject)emp1DO.getList("phone-number").get(0);
+		PhoneNumber phone = (PhoneNumber)getSDOContext().unwrap(phoneDO);
+		
+		if (emp instanceof ChangeTracker && ((ChangeTracker) emp)._persistence_getPropertyChangeListener() != null && ((ChangeTracker) emp)._persistence_getPropertyChangeListener() instanceof AttributeChangeListener) {
+			assertFalse(JpaHelper.getEntityManager(getDAS().getEntityManager()).getUnitOfWork().hasChanges());
+		}
+
+		emp2DO.getList("phone-number").add(phoneDO);
+		assertFalse(emp.getPhoneNumbers().contains(phone));
+		if (emp instanceof ChangeTracker && ((ChangeTracker) emp)._persistence_getPropertyChangeListener() != null && ((ChangeTracker) emp)._persistence_getPropertyChangeListener() instanceof AttributeChangeListener) {
+			assertTrue(JpaHelper.getEntityManager(getDAS().getEntityManager()).getUnitOfWork().getCurrentChanges().getObjectChangeSetForClone(emp).hasChangeFor("phoneNumbers"));
+			assertTrue(JpaHelper.getEntityManager(getDAS().getEntityManager()).getUnitOfWork().getCurrentChanges().getObjectChangeSetForClone(emp2).hasChangeFor("phoneNumbers"));
+			assertTrue(JpaHelper.getEntityManager(getDAS().getEntityManager()).getUnitOfWork().getCurrentChanges().getObjectChangeSetForClone(phone).hasChangeFor("owner"));
+		}
+	}	
 
 }
