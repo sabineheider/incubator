@@ -26,7 +26,6 @@ import javax.xml.namespace.QName;
 
 import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
 import org.eclipse.persistence.exceptions.SDOException;
-import org.eclipse.persistence.indirection.ValueHolder;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.indirection.WeavedAttributeValueHolderInterface;
 import org.eclipse.persistence.internal.helper.DatabaseField;
@@ -69,6 +68,10 @@ public class JAXBValueStore implements ValueStore {
     private SDODataObject dataObject;
     private Map<Property, ListWrapper> listWrappers;
     private Map<Property, ValueHolderInterface> valueHolders;
+    
+    private static String VALUEHOLDER_ATTRIBUTE_PREFIX = "_persistence_";
+    private static String VALUEHOLDER_ATTRIBUTE_SUFFIX = "_vh";
+    private static String VALUEHOLDER_INIT_METHOD_NAME = "initialize_";
 
     public JAXBValueStore(JAXBHelperContext aJAXBHelperContext, SDOType sdoType) {
         this.jaxbHelperContext = aJAXBHelperContext;
@@ -427,9 +430,9 @@ public class JAXBValueStore implements ValueStore {
         throw SDOException.sdoJaxbNoMappingForProperty(sdoProperty.getName(), field.getXPath());
     }
     
-    public void triggerValueHolderIfRequired(Object entity, SDOProperty property, DatabaseMapping mapping) {
+    private void triggerValueHolderIfRequired(Object entity, SDOProperty property, DatabaseMapping mapping) {
     	String propertyName = property.getName();
-    	String vhAttribute = "_persistence_" + propertyName + "_vh";
+    	String vhAttribute = VALUEHOLDER_ATTRIBUTE_PREFIX + propertyName + VALUEHOLDER_ATTRIBUTE_SUFFIX;
     	WeavedAttributeValueHolderInterface vh = (WeavedAttributeValueHolderInterface)this.valueHolders.get(property);
     	if(vh == null) {
     		try { 
@@ -437,9 +440,8 @@ public class JAXBValueStore implements ValueStore {
     			vh = (WeavedAttributeValueHolderInterface)PrivilegedAccessHelper.getValueFromField(field, entity);
     			this.valueHolders.put(property, vh);
     		} catch(Exception ex) {
-    			if(property.getName().equals("address")) {
-    				ex.printStackTrace();
-    			}
+    			//If the valueholder field doesn't exist on this object, then don't worry about
+    			//tiggering it.
     		}
     		//trigger the vh
     	}
@@ -450,7 +452,7 @@ public class JAXBValueStore implements ValueStore {
     		
     }
     
-    public void setValueInValueHolder(SDOProperty property, Object value) {
+    private void setValueInValueHolder(SDOProperty property, Object value) {
     	//See if there's a valueholder for this property:
     	WeavedAttributeValueHolderInterface vh = (WeavedAttributeValueHolderInterface)this.valueHolders.get(property);
     	if(vh != null) {
@@ -458,8 +460,8 @@ public class JAXBValueStore implements ValueStore {
     		vh.setIsCoordinatedWithProperty(true);
     	} else {
     		//may need to initialize the valueholder and set the value
-    		String vhAttributeName = "_persistence_" + property.getName() + "_vh";
-    		String initMethodName = "_persistence_initialize_" + property.getName() + "_vh";
+    		String vhAttributeName = VALUEHOLDER_ATTRIBUTE_PREFIX + property.getName() + VALUEHOLDER_ATTRIBUTE_SUFFIX;
+    		String initMethodName = VALUEHOLDER_ATTRIBUTE_PREFIX + VALUEHOLDER_INIT_METHOD_NAME + property.getName() + VALUEHOLDER_ATTRIBUTE_SUFFIX;
     		try {
     			Field field = PrivilegedAccessHelper.getDeclaredField(entity.getClass(), vhAttributeName, true);
     			Method initMethod = PrivilegedAccessHelper.getDeclaredMethod(entity.getClass(), initMethodName, new Class[]{});
@@ -472,7 +474,10 @@ public class JAXBValueStore implements ValueStore {
     				vh.setIsCoordinatedWithProperty(true);
     				this.valueHolders.put(property, vh);
     			}
-    		} catch(Exception ex) {}
+    		} catch(Exception ex) {
+    			//if the valueholder field and/or associated init method don't exist, then this
+    			//class wasn't woven, so we don't need to worry about the valueholder.
+    		}
     	}
     	
     }
