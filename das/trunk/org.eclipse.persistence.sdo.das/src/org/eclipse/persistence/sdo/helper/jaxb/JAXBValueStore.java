@@ -68,6 +68,8 @@ public class JAXBValueStore implements ValueStore {
     private SDODataObject dataObject;
     private Map<Property, ListWrapper> listWrappers;
     private Map<Property, ValueHolderInterface> valueHolders;
+    private Field[] valueHolderFields;
+    private Method[] valueHolderInitMethods;
     
     private static String VALUEHOLDER_ATTRIBUTE_PREFIX = "_persistence_";
     private static String VALUEHOLDER_ATTRIBUTE_SUFFIX = "_vh";
@@ -138,6 +140,7 @@ public class JAXBValueStore implements ValueStore {
      */
     public void initialize(DataObject aDataObject) {
         this.dataObject = (SDODataObject) aDataObject;
+        initValueHolderFields((SDOType)aDataObject.getType(), this.entity.getClass());
     }
 
     /**
@@ -146,8 +149,9 @@ public class JAXBValueStore implements ValueStore {
      */
     public Object getDeclaredProperty(int propertyIndex) {
         SDOProperty declaredProperty = (SDOProperty) dataObject.getType().getDeclaredProperties().get(propertyIndex);
+        System.out.println("BLAHBLAHBLAH");
         DatabaseMapping mapping = this.getJAXBMappingForProperty(declaredProperty);
-        if(!(mapping.getAttributeAccessor().isMethodAttributeAccessor()) &&!declaredProperty.isMany() && !declaredProperty.getType().isDataType()) {
+        if(this.valueHolderFields[propertyIndex] != null) {
         	triggerValueHolderIfRequired(this.entity, declaredProperty, mapping);
         }
         Object value = mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
@@ -180,9 +184,8 @@ public class JAXBValueStore implements ValueStore {
     public void setDeclaredProperty(int propertyIndex, Object value) {
         SDOProperty declaredProperty = (SDOProperty) dataObject.getType().getDeclaredProperties().get(propertyIndex);
         DatabaseMapping mapping = this.getJAXBMappingForProperty(declaredProperty);
-        boolean shouldTriggerVH = !(declaredProperty.isMany() || declaredProperty.getType().isDataType() || mapping.getAttributeAccessor().isMethodAttributeAccessor()); 
         Object newValue = value;
-        if(shouldTriggerVH) {
+        if(this.valueHolderFields[propertyIndex] != null) {
             triggerValueHolderIfRequired(this.entity, declaredProperty, mapping);
         }
         Object oldValue = mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
@@ -222,7 +225,7 @@ public class JAXBValueStore implements ValueStore {
             // NEW VALUE
             newValue = jaxbHelperContext.unwrap((DataObject) value);
             mapping.getAttributeAccessor().setAttributeValueInObject(entity, newValue);
-            if(shouldTriggerVH) {
+            if(valueHolderFields[propertyIndex] != null) {
             	this.setValueInValueHolder(declaredProperty, newValue);
             }
             if (mapping.isAbstractCompositeObjectMapping()) {
@@ -264,7 +267,7 @@ public class JAXBValueStore implements ValueStore {
             }
             return !collection.isEmpty();
         } else {
-        	if(!(declaredProperty.getType().isDataType())) {
+        	if(this.valueHolderFields[propertyIndex] != null) {
         		//trigger the valueholder
         		this.triggerValueHolderIfRequired(entity, declaredProperty, mapping);
         	}
@@ -305,8 +308,7 @@ public class JAXBValueStore implements ValueStore {
             mapping.getAttributeAccessor().setAttributeValueInObject(entity, container);
         } else {
             // OLD VALUE
-            boolean shouldTriggerVH = !(declaredProperty.isMany() || declaredProperty.getType().isDataType() || mapping.getAttributeAccessor().isMethodAttributeAccessor()); 
-            if(shouldTriggerVH) {
+            if(this.valueHolderFields[propertyIndex] != null) {
             	triggerValueHolderIfRequired(this.entity, declaredProperty, mapping);
             }
             Object oldValue = mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
@@ -459,27 +461,53 @@ public class JAXBValueStore implements ValueStore {
     		vh.setValue(value);
     		vh.setIsCoordinatedWithProperty(true);
     	} else {
-    		//may need to initialize the valueholder and set the value
-    		String vhAttributeName = VALUEHOLDER_ATTRIBUTE_PREFIX + property.getName() + VALUEHOLDER_ATTRIBUTE_SUFFIX;
-    		String initMethodName = VALUEHOLDER_ATTRIBUTE_PREFIX + VALUEHOLDER_INIT_METHOD_NAME + property.getName() + VALUEHOLDER_ATTRIBUTE_SUFFIX;
-    		try {
-    			Field field = PrivilegedAccessHelper.getDeclaredField(entity.getClass(), vhAttributeName, true);
-    			Method initMethod = PrivilegedAccessHelper.getDeclaredMethod(entity.getClass(), initMethodName, new Class[]{});
-    			if(initMethod != null) {
-    				PrivilegedAccessHelper.invokeMethod(initMethod, entity);
+    			Field field = this.valueHolderFields[property.getIndexInType()];
+    			Method initMethod = this.valueHolderInitMethods[property.getIndexInType()];
+    			try {
+    				if(initMethod != null) {
+    					PrivilegedAccessHelper.invokeMethod(initMethod, entity);
+    				}
+    				vh = (WeavedAttributeValueHolderInterface)PrivilegedAccessHelper.getValueFromField(field, entity);
+    			} catch(Exception ex) {
+    				//unable to invoke method and/or try to get VH from object
+    				//throw exception
     			}
-    			vh = (WeavedAttributeValueHolderInterface)PrivilegedAccessHelper.getValueFromField(field, entity);
     			if(vh != null) {
     				vh.setValue(value);
     				vh.setIsCoordinatedWithProperty(true);
     				this.valueHolders.put(property, vh);
     			}
-    		} catch(Exception ex) {
-    			//if the valueholder field and/or associated init method don't exist, then this
-    			//class wasn't woven, so we don't need to worry about the valueholder.
-    		}
     	}
     	
+    }
+    
+    private void initValueHolderFields(SDOType type, Class entityType) {
+    	List properties = type.getDeclaredProperties();
+    	this.valueHolderFields = new Field[properties.size()];
+    	this.valueHolderInitMethods = new Method[properties.size()];
+
+    	for(int i = 0; i < properties.size(); i++) {
+    		SDOProperty next = (SDOProperty)properties.get(i);
+            DatabaseMapping mapping = this.getJAXBMappingForProperty(next);
+    		if(next.getType().isDataType() || next.isMany() || mapping.getAttributeAccessor().isMethodAttributeAccessor()) {
+    			valueHolderFields[next.getIndexInType()] = null;
+    			valueHolderInitMethods[next.getIndexInType()] = null;
+    		} else {
+    			//check for the value holder field
+        		String vhAttributeName = VALUEHOLDER_ATTRIBUTE_PREFIX + next.getName() + VALUEHOLDER_ATTRIBUTE_SUFFIX;
+        		String initMethodName = VALUEHOLDER_ATTRIBUTE_PREFIX + VALUEHOLDER_INIT_METHOD_NAME + next.getName() + VALUEHOLDER_ATTRIBUTE_SUFFIX;
+        		Method initMethod = null;
+        		Field field = null;
+        		try {
+        			field = PrivilegedAccessHelper.getDeclaredField(entity.getClass(), vhAttributeName, true);
+        			initMethod = PrivilegedAccessHelper.getDeclaredMethod(entity.getClass(), initMethodName, new Class[]{});
+        		} catch(Exception ex) {
+        			//if we don't find an associated vh field, then weaving wasn't turned on.
+        		}
+        		valueHolderFields[next.getIndexInType()] = field;
+        		valueHolderInitMethods[next.getIndexInType()] = initMethod;
+    		}
+    	}
     }
 
 }
