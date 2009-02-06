@@ -27,6 +27,9 @@ import model.Employee;
 import model.persistence.PersistenceHelper;
 
 import org.eclipse.persistence.internal.helper.SerializationHelper;
+import org.eclipse.persistence.internal.jpa.EntityManagerFactoryImpl;
+import org.eclipse.persistence.jaxb.JAXBContext;
+import org.eclipse.persistence.jaxb.JAXBContextFactory;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.sdo.helper.jaxb.JAXBHelperContext;
 import org.junit.*;
@@ -124,6 +127,8 @@ public abstract class TestEmployeeDAS {
 		emf = PersistenceHelper.createEMF(null);
 		context = PersistenceHelper.createJAXBHelperContext();
 
+		JAXBContext  jaxbContext = (JAXBContext)context.getJAXBContext();
+		jaxbContext.applyORMMetadata(((EntityManagerFactoryImpl)emf).getServerSession());
 		QuerySQLTracker.install(JpaHelper.getServerSession(emf));
 	}
 
