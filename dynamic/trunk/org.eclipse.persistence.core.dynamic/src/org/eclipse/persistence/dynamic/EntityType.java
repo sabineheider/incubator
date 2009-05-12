@@ -16,29 +16,39 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package org.eclipse.persistence.internal.dynamic;
+package org.eclipse.persistence.dynamic;
 
-import org.eclipse.persistence.internal.jpa.metadata.MetadataLogger;
-import org.eclipse.persistence.internal.jpa.metadata.accessors.objects.MetadataAccessibleObject;
+import java.util.Set;
 
-public class DynamicField extends MetadataAccessibleObject {
-    
-    private String name;
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 
-	public DynamicField(String name, Class attributeType, MetadataLogger logger) {
-		super(null, logger);
-		this.name = name;
-	}
+/**
+ * An EntityType provides a metadata facade into the EclipseLink
+ * object-relational metadata (descriptors & mappings) with specific knowledge
+ * of the entity types being dynamic.
+ * 
+ * @author dclarke
+ * @since EclipseLink 1.1
+ */
+public interface EntityType {
 
-	@Override
-	public Object getElement() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	public ClassDescriptor getDescriptor();
 
-    @Override
-    public String getAttributeName() {
-        return this.name;
-    }
+	public String getName();
 
+	public int getPropertiesSize();
+
+	public Set<String> getPropertiesNames();
+
+	public boolean containsProperty(String propertyName);
+
+	public EntityProperty getProperty(String propertyName);
+
+	public EntityProperty getProperty(int propertyIndex);
+
+	public int getPropertyIndex(String propertyName);
+
+	public Class getJavaClass();
+
+	public DynamicEntity newInstance();
 }

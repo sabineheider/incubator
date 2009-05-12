@@ -16,29 +16,20 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package org.eclipse.persistence.internal.dynamic;
+package org.eclipse.persistence.dynamic;
 
-import org.eclipse.persistence.internal.jpa.metadata.MetadataLogger;
-import org.eclipse.persistence.internal.jpa.metadata.accessors.objects.MetadataAccessibleObject;
+import org.eclipse.persistence.mappings.ForeignReferenceMapping;
 
-public class DynamicField extends MetadataAccessibleObject {
-    
-    private String name;
+/**
+ * 
+ * @author dlarke
+ * @since EclipseLink 1.1
+ */
+public interface EntityReferenceProperty extends EntityProperty {
 
-	public DynamicField(String name, Class attributeType, MetadataLogger logger) {
-		super(null, logger);
-		this.name = name;
-	}
+	public ForeignReferenceMapping getReferenceMapping();
 
-	@Override
-	public Object getElement() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-    @Override
-    public String getAttributeName() {
-        return this.name;
-    }
-
+	public EntityType getReferenceType();
+	
+	public boolean isCollection();
 }

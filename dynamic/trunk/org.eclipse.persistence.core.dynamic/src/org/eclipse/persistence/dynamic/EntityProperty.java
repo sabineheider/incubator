@@ -16,29 +16,38 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package org.eclipse.persistence.internal.dynamic;
+package org.eclipse.persistence.dynamic;
 
-import org.eclipse.persistence.internal.jpa.metadata.MetadataLogger;
-import org.eclipse.persistence.internal.jpa.metadata.accessors.objects.MetadataAccessibleObject;
+import org.eclipse.persistence.mappings.DatabaseMapping;
 
-public class DynamicField extends MetadataAccessibleObject {
-    
-    private String name;
+/**
+ * <b>Purpose</b>: Metadata model for persistent property of a dynamic entity.
+ * <p>
+ * The property is used within the EntityType metadata model to represent a
+ * persistent property wrapping the underlying TopLink mapping. It can be used
+ * by an application to access the structure of the dynamic entity model as well
+ * as provide more optimal access to data values within an entity.
+ * <p>
+ * 
+ * @author dclarke
+ * @since EclipseLink 1.1
+ */
+public interface EntityProperty {
 
-	public DynamicField(String name, Class attributeType, MetadataLogger logger) {
-		super(null, logger);
-		this.name = name;
-	}
+	public EntityType getType();
 
-	@Override
-	public Object getElement() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	public String getName();
 
-    @Override
-    public String getAttributeName() {
-        return this.name;
-    }
+	public Class getAttributeType();
+
+	public DatabaseMapping getMapping();
+
+	public int getIndex();
+
+	public boolean isPrimaryKey();
+
+	public boolean isLazy();
+
+	public boolean isReference();
 
 }
