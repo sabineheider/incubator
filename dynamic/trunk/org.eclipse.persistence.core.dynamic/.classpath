@@ -2,10 +2,7 @@
 <classpath>
 	<classpathentry excluding="**/.svn/**" kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.jpa"/>
-	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.core"/>
-	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.oracle"/>
-	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.asm"/>
-	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/javax.persistence 1.99"/>
+	<classpathentry exported="true" kind="var" path="ECLIPSELINK_1.1.X_JAR" sourcepath="/ECLIPSELINK_1.1.X_SRC"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/javax.persistence"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
