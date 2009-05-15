@@ -18,7 +18,7 @@
  ******************************************************************************/
 package org.eclipse.persistence.dynamic;
 
-import org.eclipse.persistence.internal.dynamic.EntityPropertyImpl;
+import org.eclipse.persistence.mappings.DatabaseMapping;
 
 /**
  * This abstract class is used to represent an entity which typically is not
@@ -42,27 +42,38 @@ import org.eclipse.persistence.internal.dynamic.EntityPropertyImpl;
  */
 public interface DynamicEntity {
 
-	public EntityType getType();
+    public EntityType getType();
 
-	public Object get(String propertyName);
-	
-	public <T> T get(String propertyName, Class<T> type);
+    public Object get(String propertyName);
 
-	public Object get(int propertyIndex);
+    public <T> T get(String propertyName, Class<T> type);
 
-	public Object get(EntityProperty property);
+    public Object get(int propertyIndex);
 
-	public DynamicEntity set(int propertyIndex, Object value);
+    public <T> T get(int propertyIndex, Class<T> type);
 
-	public DynamicEntity set(String propertyName, Object value);
+    public Object get(DatabaseMapping mapping);
 
-	public DynamicEntity set(EntityProperty property, Object value);
+    public <T> T get(DatabaseMapping mapping, Class<T> type);
 
-	public Object add(String propertyName, Object value);
+    public DynamicEntity set(int propertyIndex, Object value);
 
-	public Object remove(String propertyName, Object value);
+    public DynamicEntity set(String propertyName, Object value);
 
-	public Object get(String mapPropertyName, Object key);
+    public DynamicEntity set(DatabaseMapping property, Object value);
 
-	public Object put(String mapPropertyName, Object key, Object value);
+    public Object add(String propertyName, Object value);
+
+    public Object remove(String propertyName, Object value);
+
+    public Object get(String mapPropertyName, Object key);
+
+    public Object put(String mapPropertyName, Object key, Object value);
+
+    public boolean isSet(String propertyName);
+
+    public boolean isSet(int propertyIndex);
+
+    public boolean isSet(DatabaseMapping mapping);
+
 }

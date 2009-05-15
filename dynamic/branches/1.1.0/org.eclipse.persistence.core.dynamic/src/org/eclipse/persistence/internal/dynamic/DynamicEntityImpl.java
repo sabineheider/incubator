@@ -20,14 +20,17 @@ package org.eclipse.persistence.internal.dynamic;
 
 import java.beans.PropertyChangeListener;
 import java.io.StringWriter;
-import java.util.Vector;
+import java.util.*;
 
 import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
 import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.exceptions.DescriptorException;
+import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.internal.descriptors.PersistenceEntity;
 import org.eclipse.persistence.internal.identitymaps.CacheKey;
 import org.eclipse.persistence.internal.localization.ExceptionLocalization;
 import org.eclipse.persistence.internal.weaving.PersistenceWeavedLazy;
+import org.eclipse.persistence.mappings.*;
 import org.eclipse.persistence.queries.*;
 import org.eclipse.persistence.sessions.Session;
 
@@ -55,234 +58,285 @@ import org.eclipse.persistence.sessions.Session;
  * @since EclipseLink 1.1
  */
 public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker, PersistenceEntity, FetchGroupTracker, PersistenceWeavedLazy, Cloneable {
-	/**
-	 * The persistent values indexed by the descriptor's mappings and the
-	 * EntityType's corresponding property list.
-	 */
-	protected Object[] values;
-	private EntityTypeImpl type;
-	/**
-	 * ChangeListener used for attribute change tracking processed in the
-	 * property
-	 */
-	private PropertyChangeListener changeListener = null;
+    /**
+     * The persistent values indexed by the descriptor's mappings and the
+     * EntityType's corresponding property list.
+     */
+    protected Object[] values;
 
-	/**
-	 * State required for fetch group support
-	 * 
-	 * @see FetchGroupTracker
-	 */
-	private FetchGroup fetchGroup;
-	private Session session;
-	private boolean refreshFetchGroup = false;
+    private EntityTypeImpl type;
 
-	/**
-	 * Cache the CacheKey within the entity
-	 * 
-	 * @see PersistenceEntity
-	 */
-	private CacheKey cacheKey;
+    /**
+     * ChangeListener used for attribute change tracking processed in the
+     * property
+     */
+    private PropertyChangeListener changeListener = null;
 
-	/**
-	 * Cache the primary key within the entity
-	 * 
-	 * @see PersistenceEntity
-	 */
-	private Vector primaryKey;
+    /**
+     * State required for fetch group support
+     * 
+     * @see FetchGroupTracker
+     */
+    private FetchGroup fetchGroup;
+    private Session session;
+    private boolean refreshFetchGroup = false;
 
-	protected DynamicEntityImpl(EntityTypeImpl type) {
-		this.type = type;
-		this.values = new Object[type.getPropertiesSize()];
-	}
+    /**
+     * Cache the CacheKey within the entity
+     * 
+     * @see PersistenceEntity
+     */
+    private CacheKey cacheKey;
 
-	public EntityTypeImpl getType() {
-		return this.type;
-	}
+    /**
+     * Cache the primary key within the entity
+     * 
+     * @see PersistenceEntity
+     */
+    private Vector primaryKey;
 
-	public Object get(String propertyName) {
-		return get(getType().getProperty(propertyName));
-	}
+    protected DynamicEntityImpl(EntityTypeImpl type) {
+        this.type = type;
+        this.values = new Object[type.getNumberOfProperties()];
+    }
 
-	public <T> T get(String propertyName, Class<T> type) {
-		return (T) get(propertyName);
-	}
+    public EntityType getType() {
+        return this.type;
+    }
 
-	public Object get(int propertyIndex) {
-		return get(getType().getProperty(propertyIndex));
-	}
+    public Object get(String propertyName) {
+        return get(getType().getMapping(propertyName));
+    }
 
-	public Object get(EntityProperty property) {
-		return ((EntityPropertyImpl) property).getFromEntity(this);
-	}
+    public <T> T get(String propertyName, Class<T> type) {
+        return (T) get(propertyName);
+    }
 
-	public DynamicEntityImpl set(int propertyIndex, Object value) {
-		return set(getType().getProperty(propertyIndex), value);
-	}
+    public Object get(int propertyIndex) {
+        return get(getType().getMapping(propertyIndex));
+    }
 
-	public DynamicEntityImpl set(String propertyName, Object value) {
-		return set(getType().getProperty(propertyName), value);
-	}
+    public <T> T get(int propertyIndex, Class<T> type) {
+        return (T) get(propertyIndex);
+    }
 
-	public DynamicEntityImpl set(EntityProperty property, Object value) {
-		return ((EntityPropertyImpl) property).putInEntity(this, value);
-	}
+    public Object get(DatabaseMapping mapping) {
+        return mapping.getAttributeValueFromObject(this);
+    }
 
-	private EntityReferencePropertyImpl getReferenceProperty(String propertyName) {
-		EntityPropertyImpl property = getType().getProperty(propertyName);
-		if (!property.isReference()) {
-			throw DynamicEntityException.propertyNotReference(property);
-		}
-		return (EntityReferencePropertyImpl) property;
-	}
+    public <T> T get(DatabaseMapping mapping, Class<T> type) {
+        return (T) mapping.getAttributeValueFromObject(this);
+    }
 
-	private EntityCollectionPropertyImpl getCollectionProperty(String propertyName) {
-		EntityReferencePropertyImpl property = getReferenceProperty(propertyName);
-		if (property.isMap()) {
-			throw DynamicEntityException.propertyNotCollection(property);
-		}
-		return (EntityCollectionPropertyImpl) property;
-	}
+    public DynamicEntity set(int propertyIndex, Object value) {
+        return set(getType().getMapping(propertyIndex), value);
+    }
 
-	private EntityCollectionPropertyImpl getMapProperty(String propertyName) {
-		EntityReferencePropertyImpl property = getReferenceProperty(propertyName);
-		if (!property.isMap()) {
-			throw DynamicEntityException.propertyNotCollection(property);
-		}
-		return (EntityCollectionPropertyImpl) property;
-	}
+    public DynamicEntity set(String propertyName, Object value) {
+        return set(getType().getMapping(propertyName), value);
+    }
 
-	public Object add(String propertyName, Object value) {
-		EntityCollectionPropertyImpl prop = getCollectionProperty(propertyName);
-		return prop.addToCollection(this, value);
-	}
+    // TODO: Ensure value is appropriate for mapping type?
+    public DynamicEntity set(DatabaseMapping mapping, Object value) {
+        mapping.setAttributeValueInObject(this, value);
+        return this;
+    }
 
-	/**
-	 * 
-	 */
-	public Object remove(String propertyName, Object value) {
-		EntityCollectionPropertyImpl prop = getCollectionProperty(propertyName);
+    private Collection getCollection(DatabaseMapping mapping) {
+        if (!mapping.isCollectionMapping() || Collection.class.isAssignableFrom(((CollectionMapping) mapping).getContainerPolicy().getContainerClass())) {
+            throw DynamicEntityException.propertyNotCollection(mapping);
+        }
+        return (Collection) get(mapping);
+    }
 
-		if (prop.isMap()) {
-			return prop.removeKeyFromMap(this, value);
-		}
+    private Map getMap(DatabaseMapping mapping) {
+        if (!mapping.isCollectionMapping() || Map.class.isAssignableFrom(((CollectionMapping) mapping).getContainerPolicy().getContainerClass())) {
+            throw DynamicEntityException.propertyNotCollection(mapping);
+        }
+        return (Map) get(mapping);
+    }
 
-		return prop.removeFromCollection(this, value);
-	}
+    public Object add(String propertyName, Object value) {
+        Collection collection = getCollection(getType().getMapping(propertyName));
+        return collection.add(value);
+    }
 
-	public Object get(String propertyName, Object key) {
-		EntityCollectionPropertyImpl prop = getCollectionProperty(propertyName);
-		return prop.getFromMap(this, key);
-	}
+    public Object remove(String propertyName, Object value) {
+        Collection collection = getCollection(getType().getMapping(propertyName));
+        return collection.remove(value);
+    }
 
-	public Object put(String propertyName, Object key, Object value) {
-		EntityCollectionPropertyImpl prop = getMapProperty(propertyName);
-		return prop.putInMap(this, key, value);
-	}
+    public Object get(String propertyName, Object key) {
+        Map map = getMap(getType().getMapping(propertyName));
+        return map.get(key);
+    }
 
-	public PropertyChangeListener _persistence_getPropertyChangeListener() {
-		return this.changeListener;
-	}
+    public Object put(String propertyName, Object key, Object value) {
+        Map map = getMap(getType().getMapping(propertyName));
+        return map.put(key, value);
+    }
 
-	public void _persistence_setPropertyChangeListener(PropertyChangeListener listener) {
-		this.changeListener = listener;
-	}
+    public PropertyChangeListener _persistence_getPropertyChangeListener() {
+        return this.changeListener;
+    }
 
-	/**
-	 * String representation of the dynamic entity using the entity type name
-	 * and the primary key values.
-	 */
-	public String toString() {
-		StringWriter writer = new StringWriter();
+    public void _persistence_setPropertyChangeListener(PropertyChangeListener listener) {
+        this.changeListener = listener;
+    }
 
-		writer.write(getType().getName());
-		writer.write("(");
+    /**
+     * String representation of the dynamic entity using the entity type name
+     * and the primary key values.
+     */
+    public String toString() {
+        StringWriter writer = new StringWriter();
 
-		for (EntityPropertyImpl prop : getType().getProperties()) {
-			if (prop.isPrimaryKey()) {
-				writer.write(prop.getName());
-				writer.write("=" + prop.getRawFromEntity(this));
-			}
-		}
+        writer.write(getType().getName());
+        writer.write("(");
 
-		writer.write(")");
-		return writer.toString();
-	}
+        for (DatabaseMapping mapping : getType().getMappings()) {
+            if (getType().getDescriptor().getObjectBuilder().getPrimaryKeyMappings().contains(mapping)) {
+                writer.write(mapping.getAttributeName());
+                writer.write("=" + mapping.getAttributeValueFromObject(this));
+            }
+        }
 
-	public FetchGroup _persistence_getFetchGroup() {
-		return this.fetchGroup;
-	}
+        writer.write(")");
+        return writer.toString();
+    }
 
-	public Session _persistence_getSession() {
-		return this.session;
-	}
+    public FetchGroup _persistence_getFetchGroup() {
+        return this.fetchGroup;
+    }
 
-	public boolean _persistence_isAttributeFetched(String attribute) {
-		return this.fetchGroup == null || this.fetchGroup.containsAttribute(attribute);
-	}
+    public Session _persistence_getSession() {
+        return this.session;
+    }
 
-	public void _persistence_resetFetchGroup() {
-		// TODO: What do we do here?
-		this.refreshFetchGroup = true;
-	}
+    public boolean _persistence_isAttributeFetched(String attribute) {
+        return this.fetchGroup == null || this.fetchGroup.containsAttribute(attribute);
+    }
 
-	public void _persistence_setFetchGroup(FetchGroup group) {
-		this.fetchGroup = group;
-	}
+    public void _persistence_resetFetchGroup() {
+        // TODO: What do we do here?
+        this.refreshFetchGroup = true;
+    }
 
-	public void _persistence_setSession(Session session) {
-		this.session = session;
-	}
+    public void _persistence_setFetchGroup(FetchGroup group) {
+        this.fetchGroup = group;
+    }
 
-	public void _persistence_setShouldRefreshFetchGroup(boolean shouldRefreshFetchGroup) {
-		this.refreshFetchGroup = shouldRefreshFetchGroup;
-	}
+    public void _persistence_setSession(Session session) {
+        this.session = session;
+    }
 
-	public boolean _persistence_shouldRefreshFetchGroup() {
-		return this.refreshFetchGroup;
-	}
+    public void _persistence_setShouldRefreshFetchGroup(boolean shouldRefreshFetchGroup) {
+        this.refreshFetchGroup = shouldRefreshFetchGroup;
+    }
 
-	/**
-	 * 
-	 * @param attribute
-	 */
-	protected void _persistence_checkFetched(String attribute) {
-		if (!_persistence_isAttributeFetched(attribute)) {
-			ReadObjectQuery query = new ReadObjectQuery(this);
-			query.setShouldUseDefaultFetchGroup(false);
-			Object result = _persistence_getSession().executeQuery(query);
-			if (result == null) {
-				Object[] args = { query.getSelectionKey() };
-				String message = ExceptionLocalization.buildMessage("no_entities_retrieved_for_get_reference", args);
-				throw new javax.persistence.EntityNotFoundException(message);
-			}
-		}
-	}
+    public boolean _persistence_shouldRefreshFetchGroup() {
+        return this.refreshFetchGroup;
+    }
 
-	// Methods for PersistenceEntity
-	public CacheKey _persistence_getCacheKey() {
-		return this.cacheKey;
-	}
+    /**
+     * 
+     * @param attribute
+     */
+    protected void _persistence_checkFetched(String attribute) {
+        if (!_persistence_isAttributeFetched(attribute)) {
+            ReadObjectQuery query = new ReadObjectQuery(this);
+            query.setShouldUseDefaultFetchGroup(false);
+            Object result = _persistence_getSession().executeQuery(query);
+            if (result == null) {
+                Object[] args = { query.getSelectionKey() };
+                String message = ExceptionLocalization.buildMessage("no_entities_retrieved_for_get_reference", args);
+                throw new javax.persistence.EntityNotFoundException(message);
+            }
+        }
+    }
 
-	public void _persistence_setCacheKey(CacheKey key) {
-		this.cacheKey = key;
-	}
+    // Methods for PersistenceEntity
+    public CacheKey _persistence_getCacheKey() {
+        return this.cacheKey;
+    }
 
-	public Vector _persistence_getPKVector() {
-		return this.primaryKey;
-	}
+    public void _persistence_setCacheKey(CacheKey key) {
+        this.cacheKey = key;
+    }
 
-	public void _persistence_setPKVector(Vector pk) {
-		this.primaryKey = pk;
-	}
+    public Vector _persistence_getPKVector() {
+        return this.primaryKey;
+    }
 
-	public Object _persistence_shallow_clone() {
-		try {
-			return super.clone();
-		} catch (CloneNotSupportedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new RuntimeException("DynamicEntity._persistence_shallow_clone failed on super.clone", e);
-		}
-	}
+    public void _persistence_setPKVector(Vector pk) {
+        this.primaryKey = pk;
+    }
 
+    public Object _persistence_shallow_clone() {
+        try {
+            return super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException("DynamicEntity._persistence_shallow_clone failed on super.clone", e);
+        }
+    }
+
+    protected static class ValuesAccessor extends AttributeAccessor {
+
+        protected final static Object NULL_ENTRY = new Object();
+
+        private DatabaseMapping mapping;
+
+        private int index;
+
+        public ValuesAccessor(DatabaseMapping mapping, int index) {
+            super();
+            this.mapping = mapping;
+            this.index = index;
+        }
+
+        public DatabaseMapping getMapping() {
+            return this.mapping;
+        }
+
+        public int getIndex() {
+            return this.index;
+        }
+
+        private Object[] getValues(Object entity) {
+            return ((DynamicEntityImpl) entity).values;
+        }
+
+        public Object getAttributeValueFromObject(Object entity) throws DescriptorException {
+            Object[] values = getValues(entity);
+            Object value = values[getIndex()];
+
+            if (value == NULL_ENTRY) {
+                value = null;
+            }
+            return value;
+        }
+
+        public void setAttributeValueInObject(Object entity, Object value) throws DescriptorException {
+            Object[] values = getValues(entity);
+            values[getIndex()] = value == null ? NULL_ENTRY : value;
+        }
+
+        @Override
+        public Class getAttributeClass() {
+            if (getMapping().isForeignReferenceMapping()) {
+                ForeignReferenceMapping refMapping = (ForeignReferenceMapping) getMapping();
+
+                if (refMapping.isCollectionMapping()) {
+                    return ((CollectionMapping) refMapping).getContainerPolicy().getContainerClass();
+                }
+                if (refMapping.usesIndirection()) {
+                    return ValueHolderInterface.class;
+                }
+                return refMapping.getReferenceClass();
+            } else {
+                return getMapping().getAttributeClassification();
+            }
+        }
+
+    }
 }

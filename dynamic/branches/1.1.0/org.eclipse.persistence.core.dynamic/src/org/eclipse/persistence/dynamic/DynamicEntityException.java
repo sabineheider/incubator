@@ -19,6 +19,7 @@
 package org.eclipse.persistence.dynamic;
 
 import org.eclipse.persistence.exceptions.EclipseLinkException;
+import org.eclipse.persistence.mappings.DatabaseMapping;
 
 /**
  * Custom exception type that provides information about failure cases
@@ -65,14 +66,14 @@ public class DynamicEntityException extends EclipseLinkException {
 	}
 
 	public static DynamicEntityException propertyNotReference(
-			EntityProperty property) {
+			DatabaseMapping mapping) {
 		return new DynamicEntityException(
-				"DynamicEntity:: Cannot return reference for: " + property);
+				"DynamicEntity:: Cannot return reference for: " + mapping);
 	}
 
 	public static DynamicEntityException propertyNotCollection(
-			EntityProperty property) {
+			DatabaseMapping mapping) {
 		return new DynamicEntityException(
-				"DynamicEntity:: Cannot return collection for: " + property);
+				"DynamicEntity:: Cannot return collection for: " + mapping);
 	}
 }

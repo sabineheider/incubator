@@ -18,9 +18,11 @@
  ******************************************************************************/
 package org.eclipse.persistence.dynamic;
 
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.mappings.DatabaseMapping;
 
 /**
  * An EntityType provides a metadata facade into the EclipseLink
@@ -28,7 +30,7 @@ import org.eclipse.persistence.descriptors.ClassDescriptor;
  * of the entity types being dynamic.
  * 
  * @author dclarke
- * @since EclipseLink 1.1
+ * @since EclipseLink 1.1.1
  */
 public interface EntityType {
 
@@ -36,15 +38,17 @@ public interface EntityType {
 
 	public String getName();
 
-	public int getPropertiesSize();
+	public int getNumberOfProperties();
 
 	public Set<String> getPropertiesNames();
 
 	public boolean containsProperty(String propertyName);
+	
+	public List<DatabaseMapping> getMappings();
 
-	public EntityProperty getProperty(String propertyName);
+	public DatabaseMapping getMapping(String propertyName);
 
-	public EntityProperty getProperty(int propertyIndex);
+	public DatabaseMapping getMapping(int propertyIndex);
 
 	public int getPropertyIndex(String propertyName);
 

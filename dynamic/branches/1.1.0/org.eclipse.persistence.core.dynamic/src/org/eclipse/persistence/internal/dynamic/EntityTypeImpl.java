@@ -26,11 +26,14 @@ import org.eclipse.persistence.config.DescriptorCustomizer;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.descriptors.changetracking.AttributeChangeTrackingPolicy;
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicEntityException;
+import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.exceptions.DescriptorException;
+import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl.ValuesAccessor;
 import org.eclipse.persistence.internal.security.PrivilegedAccessHelper;
 import org.eclipse.persistence.mappings.*;
 import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.tools.schemaframework.TableDefinition;
 
 /**
  * An EntityType provides a metadata facade into the EclipseLink
@@ -41,308 +44,286 @@ import org.eclipse.persistence.sessions.DatabaseSession;
  * @since EclipseLink 1.0
  */
 public class EntityTypeImpl implements EntityType {
-	/**
-	 * Property name used to store the singleton EntityType on each descriptor.
-	 */
-	private static final String DESCRIPTOR_PROPERTY = "ENTITY_TYPE";
-	/**
-	 * Method name on EntityType used to by the descriptor's instantiation
-	 * policy. The EntityType instance functions as the factory object in the
-	 * policy.
-	 */
-	private static String FACTORY_METHOD = "newInstance";
+    /**
+     * Property name used to store the singleton EntityType on each descriptor.
+     */
+    private static final String DESCRIPTOR_PROPERTY = "ENTITY_TYPE";
+    /**
+     * Method name on EntityType used to by the descriptor's instantiation
+     * policy. The EntityType instance functions as the factory object in the
+     * policy.
+     */
+    private static String FACTORY_METHOD = "newInstance";
 
-	private ClassDescriptor descriptor;
-	/**
-	 * Map of properties keyed by name.
-	 */
-	private Map<String, EntityPropertyImpl> propertiesMap;
-	/**
-	 * List of properties. This is the same properties as the propertiesMap but
-	 * is used to match the order of the mappings and aligns with the values[]
-	 * in the DynamicEntity instances. This allows the values to be accessed by
-	 * index as well as by property name/instance.
-	 */
-	private ArrayList<EntityPropertyImpl> properties;
-	/**
-	 * These properties require initialization when a new instance is created.
-	 * This includes properties that are primitives as well as relationships
-	 * requiring indirection ValueHolders or collections.
-	 */
-	private List<EntityPropertyImpl> propertiesRequiringInitialization;
+    private ClassDescriptor descriptor;
 
-	/**
-	 * Creation of an EntityTypeImpl for an existing Descriptor with mappings.
-	 * 
-	 * @param descriptor
-	 */
-	public EntityTypeImpl(ClassDescriptor descriptor) {
-		if (descriptor.isAggregateDescriptor()) {
-			throw DynamicEntityException.featureNotSupported("AggregateObjectMapping - " + descriptor.getAlias());
-		}
-		if (descriptor.hasInheritance()) {
-			throw DynamicEntityException.featureNotSupported("Inheritance - " + descriptor.getAlias());
-		}
+    /**
+     * These properties require initialization when a new instance is created.
+     * This includes properties that are primitives as well as relationships
+     * requiring indirection ValueHolders or collections.
+     */
+    private List<DatabaseMapping> mappingsRequiringInitialization;
 
-		this.descriptor = descriptor;
-		buildProperties();
+    /**
+     * Creation of an EntityTypeImpl for an existing Descriptor with mappings.
+     * 
+     * @param descriptor
+     */
+    public EntityTypeImpl(ClassDescriptor descriptor) {
+        if (descriptor.isAggregateDescriptor()) {
+            throw DynamicEntityException.featureNotSupported("AggregateObjectMapping - " + descriptor.getAlias());
+        }
+        if (descriptor.hasInheritance()) {
+            throw DynamicEntityException.featureNotSupported("Inheritance - " + descriptor.getAlias());
+        }
 
-		descriptor.setObjectChangePolicy(new AttributeChangeTrackingPolicy());
-		descriptor.getInstantiationPolicy().useFactoryInstantiationPolicy(this, FACTORY_METHOD);
-	}
+        this.descriptor = descriptor;
+        buildProperties();
 
-	/**
-	 * 
-	 * @param className
-	 * @param tableName
-	 */
-	public EntityTypeImpl(Class dynamicClass, String tableName) {
-		this.descriptor = new RelationalDescriptor();
+        descriptor.setObjectChangePolicy(new AttributeChangeTrackingPolicy());
+        descriptor.getInstantiationPolicy().useFactoryInstantiationPolicy(this, FACTORY_METHOD);
+    }
 
-		getDescriptor().setJavaClass(dynamicClass);
-		getDescriptor().setTableName(tableName);
-		getDescriptor().setObjectChangePolicy(new AttributeChangeTrackingPolicy());
-		getDescriptor().getInstantiationPolicy().useFactoryInstantiationPolicy(this, FACTORY_METHOD);
+    /**
+     * 
+     * @param className
+     * @param tableName
+     */
+    public EntityTypeImpl(Class dynamicClass, String tableName) {
+        this.descriptor = new RelationalDescriptor();
 
-		this.properties = new ArrayList<EntityPropertyImpl>();
-		this.propertiesMap = new HashMap<String, EntityPropertyImpl>();
-		this.propertiesRequiringInitialization = new ArrayList<EntityPropertyImpl>();
-	}
+        getDescriptor().setJavaClass(dynamicClass);
+        getDescriptor().setTableName(tableName);
+        getDescriptor().setObjectChangePolicy(new AttributeChangeTrackingPolicy());
+        getDescriptor().getInstantiationPolicy().useFactoryInstantiationPolicy(this, FACTORY_METHOD);
 
-	public static EntityTypeImpl getType(ClassDescriptor descriptor) {
-		EntityTypeImpl type = (EntityTypeImpl) descriptor.getProperty(DESCRIPTOR_PROPERTY);
+        this.mappingsRequiringInitialization = new ArrayList<DatabaseMapping>();
+    }
 
-		if (type == null) {
-			synchronized (descriptor) {
-				type = (EntityTypeImpl) descriptor.getProperty(DESCRIPTOR_PROPERTY);
-				if (type == null) {
-					type = new EntityTypeImpl(descriptor);
-					descriptor.setProperty(DESCRIPTOR_PROPERTY, type);
-				}
-			}
-		}
+    public static EntityTypeImpl getType(ClassDescriptor descriptor) {
+        EntityTypeImpl type = (EntityTypeImpl) descriptor.getProperty(DESCRIPTOR_PROPERTY);
 
-		return type;
-	}
+        if (type == null) {
+            synchronized (descriptor) {
+                type = (EntityTypeImpl) descriptor.getProperty(DESCRIPTOR_PROPERTY);
+                if (type == null) {
+                    type = new EntityTypeImpl(descriptor);
+                    descriptor.setProperty(DESCRIPTOR_PROPERTY, type);
+                }
+            }
+        }
 
-	public static boolean isDynamicType(ClassDescriptor descriptor) {
-		return descriptor.getProperties().containsKey(DESCRIPTOR_PROPERTY);
-	}
+        return type;
+    }
 
-	public ClassDescriptor getDescriptor() {
-		return this.descriptor;
-	}
+    public static boolean isDynamicType(ClassDescriptor descriptor) {
+        return descriptor.getProperties().containsKey(DESCRIPTOR_PROPERTY);
+    }
 
-	protected Map<String, EntityPropertyImpl> getPropertiesMap() {
-		return this.propertiesMap;
-	}
+    public ClassDescriptor getDescriptor() {
+        return this.descriptor;
+    }
 
-	protected List<EntityPropertyImpl> getProperties() {
-		return this.properties;
-	}
+    public List<DatabaseMapping> getMappings() {
+        return getDescriptor().getMappings();
+    }
 
-	public Iterator<EntityPropertyImpl> getPropertiesIterator() {
-		return getProperties().iterator();
-	}
+    public String getName() {
+        return getDescriptor().getAlias();
+    }
 
-	public String getName() {
-		return getDescriptor().getAlias();
-	}
+    public int getNumberOfProperties() {
+        return getMappings().size();
+    }
 
-	public int getPropertiesSize() {
-		return getProperties().size();
-	}
+    protected List<DatabaseMapping> getMappingsRequiringInitialization() {
+        return this.mappingsRequiringInitialization;
+    }
 
-	public Set<String> getPropertiesNames() {
-		return getPropertiesMap().keySet();
-	}
+    /**
+     * Build properties for the mappings on the descriptor.
+     */
+    private void buildProperties() {
+        int numProperties = getDescriptor().getMappings().size();
+        this.mappingsRequiringInitialization = new ArrayList<DatabaseMapping>();
 
-	public boolean containsProperty(String propertyName) {
-		return getPropertiesMap().containsKey(propertyName);
-	}
+        for (int index = 0; index < numProperties; index++) {
+            DatabaseMapping mapping = (DatabaseMapping) getDescriptor().getMappings().get(index);
+            buildProperty(mapping, index);
+        }
+    }
 
-	public EntityPropertyImpl getProperty(String propertyName) {
-		EntityPropertyImpl prop = getPropertiesMap().get(propertyName);
+    private void buildProperty(DatabaseMapping mapping, int index) {
+        mapping.setAttributeAccessor(new ValuesAccessor(mapping, index));
 
-		if (prop == null) {
-			throw DynamicEntityException.invalidPropertyName(this, propertyName);
-		}
-		return prop;
-	}
+        if (requiresInitialization(mapping)) {
+            getMappingsRequiringInitialization().add(mapping);
+        }
+    }
 
-	public EntityPropertyImpl getProperty(int propertyIndex) {
-		if (propertyIndex < 0 || propertyIndex > getProperties().size()) {
-			throw DynamicEntityException.invalidPropertyIndex(this, propertyIndex);
-		}
-		return getProperties().get(propertyIndex);
-	}
+    private boolean requiresInitialization(DatabaseMapping mapping) {
+        // TODO Auto-generated method stub
+        return false;
+    }
 
-	public int getPropertyIndex(String propertyName) {
-		return getProperty(propertyName).getIndex();
-	}
+    /**
+     * 
+     * @return new DynamicEntity with initialized attributes
+     */
+    public DynamicEntityImpl newInstance() {
+        DynamicEntityImpl entity = buildNewInstance(this);
 
-	public Class getJavaClass() {
-		return getDescriptor().getJavaClass();
-	}
+        for (DatabaseMapping mapping : getMappingsRequiringInitialization()) {
+            initializeValue(mapping, entity);
+        }
 
-	public List<EntityPropertyImpl> getPropertiesRequiringInitialization() {
-		if (this.propertiesRequiringInitialization == null) {
-			this.propertiesRequiringInitialization = new ArrayList<EntityPropertyImpl>();
-		}
-		return this.propertiesRequiringInitialization;
-	}
+        return entity;
+    }
 
-	/**
-	 * Build properties for the mappings on the descriptor.
-	 */
-	private void buildProperties() {
-		int numProperties = getDescriptor().getMappings().size();
-		this.properties = new ArrayList<EntityPropertyImpl>(numProperties);
-		this.propertiesMap = new HashMap<String, EntityPropertyImpl>(numProperties);
-		this.propertiesRequiringInitialization = new ArrayList<EntityPropertyImpl>();
+    private void initializeValue(DatabaseMapping mapping, DynamicEntityImpl entity) {
+        // TODO Auto-generated method stub
 
-		for (int index = 0; index < numProperties; index++) {
-			DatabaseMapping mapping = (DatabaseMapping) getDescriptor().getMappings().get(index);
-			buildProperty(mapping, index);
-		}
-	}
+    }
 
-	private EntityPropertyImpl buildProperty(DatabaseMapping mapping, int index) {
-		EntityPropertyImpl property = null;
+    private Constructor defaultConstructor = null;
 
-		if (mapping.isForeignReferenceMapping()) {
-			ForeignReferenceMapping frMapping = (ForeignReferenceMapping) mapping;
+    /**
+     * Return the default (zero-argument) constructor for the descriptor class.
+     */
+    protected Constructor getTypeConstructor() throws DescriptorException {
+        // Lazy initialize, because the constructor cannot be serialized
+        if (defaultConstructor == null) {
+            buildTypeConstructorFor(getDescriptor().getJavaClass());
+        }
+        return defaultConstructor;
+    }
 
-			if (frMapping.isCollectionMapping()) {
-				property = new EntityCollectionPropertyImpl(this, (CollectionMapping) mapping);
-			}
-			property = new EntityReferencePropertyImpl(this, (OneToOneMapping) mapping);
-		} else {
-			property = new EntityPropertyImpl(this, mapping);
-		}
+    /**
+     * Build and return the default (zero-argument) constructor for the
+     * specified class.
+     */
+    protected void buildTypeConstructorFor(Class javaClass) throws DescriptorException {
+        try {
+            this.defaultConstructor = PrivilegedAccessHelper.getDeclaredConstructorFor(javaClass, new Class[] { EntityTypeImpl.class }, true);
+            this.defaultConstructor.setAccessible(true);
+        } catch (NoSuchMethodException exception) {
+            throw DescriptorException.noSuchMethodWhileInitializingInstantiationPolicy(javaClass.getName() + ".<Default Constructor>", getDescriptor(), exception);
+        }
+    }
 
-		this.properties.add(property);
-		this.propertiesMap.put(property.getName(), property);
+    protected DynamicEntityImpl buildNewInstance(EntityTypeImpl type) throws DescriptorException {
+        try {
+            return (DynamicEntityImpl) PrivilegedAccessHelper.invokeConstructor(this.getTypeConstructor(), new Object[] { type });
+        } catch (InvocationTargetException exception) {
+            throw DescriptorException.targetInvocationWhileConstructorInstantiation(this.getDescriptor(), exception);
+        } catch (IllegalAccessException exception) {
+            throw DescriptorException.illegalAccessWhileConstructorInstantiation(this.getDescriptor(), exception);
+        } catch (InstantiationException exception) {
+            throw DescriptorException.instantiationWhileConstructorInstantiation(this.getDescriptor(), exception);
+        } catch (NoSuchMethodError exception) {
+            // This exception is not documented but gets thrown.
+            throw DescriptorException.noSuchMethodWhileConstructorInstantiation(this.getDescriptor(), exception);
+        } catch (NullPointerException exception) {
+            // Some JVMs will throw a NULL pointer exception here
+            throw DescriptorException.nullPointerWhileConstructorInstantiation(this.getDescriptor(), exception);
+        }
+    }
 
-		if (property.requiresInitialization()) {
-			getPropertiesRequiringInitialization().add(property);
-		}
+    public boolean isInitialized() {
+        return getDescriptor().isFullyInitialized();
+    }
 
-		return property;
-	}
+    /**
+     * Add the dynamically created EntityType to the provided session. If the
+     * session is already initialized then the descriptor will also be
+     * initialized.
+     * 
+     * @param session
+     */
+    public void initialize(DatabaseSession session) {
+        Class javaClass = DynamicClassLoader.getLoader(session).createDynamicClass(getDescriptor().getJavaClassName());
+        getDescriptor().setJavaClass(javaClass);
+        session.addDescriptor(getDescriptor());
+    }
 
-	/**
-	 * Add a new Property with underlying direct mapping to the EntityType.
-	 * 
-	 * @param name
-	 * @param columnName
-	 * @return
-	 */
-	public EntityProperty addProperty(String name, String columnName, Class attributeType, boolean primaryKey) {
-		if (isInitialized()) {
-			// TODO: Proper validation exception stating that an
-			// ENtityType/Descriptor cannot be modified after it is initialized.
-			throw new IllegalStateException("Cannot add property (mappings) EntityType (Descriptor) initialized.");
-		}
-		EntityPropertyImpl property = new EntityPropertyImpl(this, name, columnName, attributeType, primaryKey);
+    public String toString() {
+        return "DynamicEntity(" + getName() + ")";
+    }
 
-		this.properties.add(property);
-		this.propertiesMap.put(property.getName(), property);
-
-		if (property.requiresInitialization()) {
-			getPropertiesRequiringInitialization().add(property);
-		}
-
-		return property;
-	}
-
-	/**
-	 * 
-	 * @return new DynamicEntity with initialized attributes
-	 */
-	public DynamicEntityImpl newInstance() {
-		DynamicEntityImpl entity = buildNewInstance(this);
-
-		for (EntityPropertyImpl property : getPropertiesRequiringInitialization()) {
-			property.initializeValue(entity);
-		}
-
-		return entity;
-	}
-
-	private Constructor defaultConstructor = null;
-
-	/**
-	 * Return the default (zero-argument) constructor for the descriptor class.
-	 */
-	protected Constructor getTypeConstructor() throws DescriptorException {
-		// Lazy initialize, because the constructor cannot be serialized
-		if (defaultConstructor == null) {
-			buildTypeConstructorFor(getDescriptor().getJavaClass());
-		}
-		return defaultConstructor;
-	}
-
-	/**
-	 * Build and return the default (zero-argument) constructor for the
-	 * specified class.
-	 */
-	protected void buildTypeConstructorFor(Class javaClass) throws DescriptorException {
-		try {
-			this.defaultConstructor = PrivilegedAccessHelper.getDeclaredConstructorFor(javaClass, new Class[] { EntityTypeImpl.class }, true);
-			this.defaultConstructor.setAccessible(true);
-		} catch (NoSuchMethodException exception) {
-			throw DescriptorException.noSuchMethodWhileInitializingInstantiationPolicy(javaClass.getName() + ".<Default Constructor>", getDescriptor(), exception);
-		}
-	}
-
-	protected DynamicEntityImpl buildNewInstance(EntityTypeImpl type) throws DescriptorException {
-		try {
-			return (DynamicEntityImpl) PrivilegedAccessHelper.invokeConstructor(this.getTypeConstructor(), new Object[] { type });
-		} catch (InvocationTargetException exception) {
-			throw DescriptorException.targetInvocationWhileConstructorInstantiation(this.getDescriptor(), exception);
-		} catch (IllegalAccessException exception) {
-			throw DescriptorException.illegalAccessWhileConstructorInstantiation(this.getDescriptor(), exception);
-		} catch (InstantiationException exception) {
-			throw DescriptorException.instantiationWhileConstructorInstantiation(this.getDescriptor(), exception);
-		} catch (NoSuchMethodError exception) {
-			// This exception is not documented but gets thrown.
-			throw DescriptorException.noSuchMethodWhileConstructorInstantiation(this.getDescriptor(), exception);
-		} catch (NullPointerException exception) {
-			// Some JVMs will throw a NULL pointer exception here
-			throw DescriptorException.nullPointerWhileConstructorInstantiation(this.getDescriptor(), exception);
-		}
-	}
-
-	public boolean isInitialized() {
-		return getDescriptor().isFullyInitialized();
-	}
-
-	/**
-	 * Add the dynamically created EntityType to the provided session. If the
-	 * session is already initialized then the descriptor will also be
-	 * initialized.
-	 * 
-	 * @param session
-	 */
-	public void initialize(DatabaseSession session) {
-		Class javaClass = DynamicClassLoader.getLoader(session).createDynamicClass(getDescriptor().getJavaClassName());
-		getDescriptor().setJavaClass(javaClass);
-		session.addDescriptor(getDescriptor());
-	}
-
-	public String toString() {
-		return "DynamicEntity(" + getName() + ")";
-	}
-
-	/**
+    /**
 	 * 
 	 */
-	public static class ConfigCustomizer implements DescriptorCustomizer {
+    public static class ConfigCustomizer implements DescriptorCustomizer {
 
-		public void customize(ClassDescriptor descriptor) throws Exception {
-			EntityTypeImpl.getType(descriptor);
-		}
+        public void customize(ClassDescriptor descriptor) throws Exception {
+            EntityTypeImpl.getType(descriptor);
+        }
 
-	}
+    }
+
+    public boolean containsProperty(String propertyName) {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    public Class getJavaClass() {
+        return getDescriptor().getJavaClass();
+    }
+
+    public DatabaseMapping getMapping(String propertyName) {
+        DatabaseMapping mapping = getDescriptor().getMappingForAttributeName(propertyName);
+
+        if (mapping == null) {
+            throw DynamicEntityException.invalidPropertyName(this, propertyName);
+        }
+
+        return mapping;
+    }
+
+    public DatabaseMapping getMapping(int propertyIndex) {
+        if (propertyIndex < 0 || propertyIndex >= getMappings().size()) {
+            throw DynamicEntityException.invalidPropertyIndex(this, propertyIndex);
+        }
+
+        DatabaseMapping mapping = getMappings().get(propertyIndex);
+
+        return mapping;
+    }
+
+    public Set<String> getPropertiesNames() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public int getPropertyIndex(String propertyName) {
+        return getMappings().indexOf(getMapping(propertyName));
+    }
+
+    public DirectToFieldMapping addDirectMapping(String name, Class javaType, String fieldName) {
+        DirectToFieldMapping mapping = (DirectToFieldMapping) getDescriptor().addDirectMapping(name, fieldName);
+        mapping.setAttributeClassification(javaType);
+        mapping.setAttributeAccessor(new ValuesAccessor(mapping, getDescriptor().getMappings().indexOf(mapping)));
+        return mapping;
+    }
+
+    public OneToOneMapping addOneToOneMapping(String name, Class refType, String fieldName) {
+        OneToOneMapping mapping = new OneToOneMapping();
+        mapping.setAttributeName(name);
+        mapping.setReferenceClass(refType); // TODO
+        mapping.addForeignKeyFieldName(fieldName, "?");
+        descriptor.addMapping(mapping);
+        mapping.setAttributeAccessor(new ValuesAccessor(mapping, getDescriptor().getMappings().indexOf(mapping)));
+
+        return mapping;
+    }
+
+    public TableDefinition getTableDefinition() {
+        TableDefinition tableDef = new TableDefinition();
+
+        tableDef.setName(getDescriptor().getTableName());
+        tableDef.addPrimaryKeyField("ID", Integer.class);
+
+        return tableDef;
+    }
+
 }
