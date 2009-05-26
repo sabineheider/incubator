@@ -45,8 +45,9 @@ import org.eclipse.persistence.sessions.Session;
 public class DynamicClassLoader extends ClassLoader {
 	private ClassLoader delegateLoader;
 	private Class parentClass;
-
 	private Map<String, Class> dynamicEntityClasses = new HashMap<String, Class>();
+    private static final String INIT = "<init>";
+    private static final String WRITE_REPLACE = "writeReplace";
 
 	public DynamicClassLoader(ClassLoader delegate, Class parentClass) {
 		this.parentClass = parentClass;
@@ -55,10 +56,6 @@ public class DynamicClassLoader extends ClassLoader {
 		} else {
 			this.delegateLoader = delegate;
 		}
-	}
-
-	public DynamicClassLoader(ClassLoader delegate) {
-		this(delegate, DynamicEntityImpl.class);
 	}
 
 	public ClassLoader getDelegateLoader() {
@@ -138,9 +135,6 @@ public class DynamicClassLoader extends ClassLoader {
 		return javaClass;
 	}
 
-	private static final String INIT = "<init>";
-	private static final String WRITE_REPLACE = "writeReplace";
-
 	public byte[] buildClassBytes(Class parentClass, String className) {
 		if (parentClass == null || parentClass.isPrimitive() || parentClass.isArray() || parentClass.isEnum() || parentClass.isInterface()) {
 			throw new IllegalArgumentException("DynamicEntityClassWriter can not create " + "subclass for class: " + parentClass);
@@ -205,10 +199,14 @@ public class DynamicClassLoader extends ClassLoader {
 			} catch (NoSuchMethodException e) {
 				return;
 			}
-			CodeVisitor mv = cw.visitMethod(4, method.getName(), Type.getMethodDescriptor(method), new String[] { Type.getType(ObjectStreamException.class).getInternalName() }, null);
-			mv.visitVarInsn(25, 0);
-			mv.visitMethodInsn(183, Type.getInternalName(parentClass), method.getName(), Type.getMethodDescriptor(method));
-			mv.visitInsn(176);
+			
+			String methodDesc = Type.getMethodDescriptor(method);
+			String[] exceptionsDesc = new String[] {Type.getType(ObjectStreamException.class).getInternalName()};
+			
+			CodeVisitor mv = cw.visitMethod(ACC_PROTECTED, method.getName(), methodDesc, exceptionsDesc, null);
+			mv.visitVarInsn(ALOAD, 0);
+			mv.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(parentClass), method.getName(), methodDesc);
+			mv.visitInsn(ARETURN);
 			mv.visitMaxs(0, 0);
 		}
 	}
@@ -217,12 +215,15 @@ public class DynamicClassLoader extends ClassLoader {
 	 * Retrieve the dynamic class loader out of the session. If the loader be
 	 * used is not a DynamicClassLoader then create a new one wrapping the
 	 * current one.
+	 * 
+	 * @param session
+	 * @param parentClass
 	 */
-	public static DynamicClassLoader getLoader(Session session) {
+	public static DynamicClassLoader getLoader(Session session, Class parentClass) {
 		ClassLoader platformLoader = session.getPlatform().getConversionManager().getLoader();
 
 		if (platformLoader.getClass() != DynamicClassLoader.class) {
-			platformLoader = new DynamicClassLoader(platformLoader);
+			platformLoader = new DynamicClassLoader(platformLoader, parentClass);
 			session.getPlatform().getConversionManager().setLoader(platformLoader);
 		}
 		return (DynamicClassLoader) platformLoader;

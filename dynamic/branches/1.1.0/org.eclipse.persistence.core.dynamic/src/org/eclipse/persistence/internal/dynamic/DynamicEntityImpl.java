@@ -337,6 +337,21 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
                 return getMapping().getAttributeClassification();
             }
         }
-
     }
+
+    public boolean isSet(DatabaseMapping mapping) {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    public boolean isSet(int propertyIndex) {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    public boolean isSet(String propertyName) {
+        // TODO Auto-generated method stub
+        return false;
+    }
+    
 }

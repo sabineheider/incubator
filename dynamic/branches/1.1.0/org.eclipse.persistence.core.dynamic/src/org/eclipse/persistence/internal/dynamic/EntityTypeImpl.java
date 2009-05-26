@@ -241,7 +241,9 @@ public class EntityTypeImpl implements EntityType {
      * @param session
      */
     public void initialize(DatabaseSession session) {
-        Class javaClass = DynamicClassLoader.getLoader(session).createDynamicClass(getDescriptor().getJavaClassName());
+        DynamicClassLoader loader = DynamicClassLoader.getLoader(session, DynamicEntityImpl.class);
+        Class javaClass = loader.createDynamicClass(getDescriptor().getJavaClassName());
+        
         getDescriptor().setJavaClass(javaClass);
         session.addDescriptor(getDescriptor());
     }
