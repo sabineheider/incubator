@@ -16,7 +16,7 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package example.dynamic;
+package example;
 
 import java.util.Map;
 
@@ -29,6 +29,10 @@ import org.eclipse.persistence.mappings.DatabaseMapping;
  * its Map interface. Since it is used in a dynamic case its attributeClass must
  * also be specified for schema generation to work.
  * 
+ * This accessor must be configured on all mappings which access values out of a
+ * DynamicEntity. Without this accessor EclipseLink will attempt to look for a
+ * field on the class causing a validation exception to be thrown.
+ * 
  * @author dclarke
  * @since EclipseLink 1.1.1
  */
@@ -37,7 +41,10 @@ public class ValueAccessor extends AttributeAccessor {
     /** Owning mapping. Used to access attributeName */
     private DatabaseMapping mapping;
 
-    /** The attribute's type. Required for conversion out of result set and schema generation */
+    /**
+     * The attribute's type. Required for conversion out of result set and
+     * schema generation
+     */
     private Class attributeClass;
 
     public ValueAccessor(DatabaseMapping mapping, Class attributeClass) {

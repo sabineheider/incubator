@@ -18,49 +18,141 @@
  ******************************************************************************/
 package testing;
 
-import junit.framework.Assert;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
+import static junit.framework.Assert.assertTrue;
 
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.expressions.ExpressionBuilder;
+import org.eclipse.persistence.mappings.DirectToFieldMapping;
+import org.eclipse.persistence.queries.ReportQuery;
+import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.Session;
 import org.junit.Test;
 
 import example.SimpleDynamicMap_NativeExample;
 
 public class SimpleDynamicMap_NativeExample_Tests {
 
-    private SimpleDynamicMap_NativeExample example = new SimpleDynamicMap_NativeExample();
+    private static SimpleDynamicMap_NativeExample example = new SimpleDynamicMap_NativeExample();
+
+    private static DatabaseSession session;
+
+    private static DatabaseSession getSession() {
+        if (session == null) {
+            session = example.createSession();
+        }
+        assertNotNull("No session returned from createSession", session);
+        return session;
+    }
+
+    private static ClassDescriptor getDescriptor(String alias) {
+        ClassDescriptor descriptor = getSession().getClassDescriptorForAlias(alias);
+        assertNotNull("No descriptor found for alias: " + alias, descriptor);
+        return descriptor;
+    }
 
     @Test
-    public void createEMF() {
-        Assert.fail("NOT YET IMPLEMENTED");
+    public void createSession() {
+        DatabaseSession session = getSession();
+
+        assertNotNull(session);
+        assertTrue(session.isConnected());
+        assertEquals(0, session.getDescriptors().size());
     }
 
     @Test
     public void createSimpleType() {
-        Assert.fail("NOT YET IMPLEMENTED");
+        ClassDescriptor descriptor = example.createDynamicType(getSession());
+
+        assertNotNull(descriptor);
+        assertEquals(1, session.getDescriptors().size());
+        assertEquals("model.SimpleType", descriptor.getJavaClassName());
+        assertEquals("SimpleType", descriptor.getAlias());
+        assertEquals("DYNAMIC_SIMPLE", descriptor.getTableName());
+        assertEquals(1, descriptor.getPrimaryKeyFieldNames().size());
+        assertEquals("DYNAMIC_SIMPLE.ID", descriptor.getPrimaryKeyFieldNames().get(0));
+        assertEquals(2, descriptor.getMappings().size());
+        
+        DirectToFieldMapping mapping = (DirectToFieldMapping) descriptor.getMappingForAttributeName("id");
+        assertNotNull(mapping);
+        assertEquals("DYNAMIC_SIMPLE.ID", mapping.getFieldName());
+        assertEquals(Integer.class, mapping.getAttributeClassification());
+        
+        mapping = (DirectToFieldMapping) descriptor.getMappingForAttributeName("value");
+        assertNotNull(mapping);
+        assertEquals("DYNAMIC_SIMPLE.VALUE", mapping.getFieldName());
+        assertEquals(String.class, mapping.getAttributeClassification());
     }
 
     @Test
     public void persistSimpleTypeInstances() {
-        Assert.fail("NOT YET IMPLEMENTED");
+        ClassDescriptor descriptor = getDescriptor("SimpleType");
+
+        Map newEntity = example.persistDynamicInstances(getSession(), descriptor);
+
+        assertNotNull(newEntity);
+
+        Session session = getSession();
+
+        ReportQuery rq = new ReportQuery(descriptor.getJavaClass(), new ExpressionBuilder());
+        rq.addCount();
+        rq.setShouldReturnSingleValue(true);
+        int count = ((Number) session.executeQuery(rq)).intValue();
+        assertEquals(1, count);
     }
 
     @Test
     public void querySimpleTypeInstances() {
-        Assert.fail("NOT YET IMPLEMENTED");
+        ClassDescriptor descriptor = getDescriptor("SimpleType");
+
+        List<Map> entities = example.queryDynamicInstances(getSession(), descriptor);
+        
+        assertNotNull(entities);
+        assertEquals(1, entities.size());
+        assertEquals(1, entities.get(0).get("id"));
+        assertEquals("value-1", entities.get(0).get("value"));
     }
 
     @Test
     public void updateSimpleTypeInstances() {
-        Assert.fail("NOT YET IMPLEMENTED");
+        ClassDescriptor descriptor = getDescriptor("SimpleType");
+
+        Map entity = example.updateDyanmicInstances(getSession(), descriptor);
+        
+        assertNotNull(entity);
+        assertEquals(1, entity.get("id"));
+        assertEquals("value-1+", entity.get("value"));
     }
 
     @Test
     public void deleteSimpleTypeInstances() {
-        Assert.fail("NOT YET IMPLEMENTED");
-    }
+        ClassDescriptor descriptor = getDescriptor("SimpleType");
+
+        example.deleteDynamicInstances(getSession(), descriptor);
+
+        Session session = getSession();
+
+        ReportQuery rq = new ReportQuery(descriptor.getJavaClass(), new ExpressionBuilder());
+        rq.addCount();
+        rq.setShouldReturnSingleValue(true);
+        int count = ((Number) session.executeQuery(rq)).intValue();
+        assertEquals(0, count);
+}
 
     @Test
     public void removeSimpleType() {
-        Assert.fail("NOT YET IMPLEMENTED");
+        ClassDescriptor descriptor = getDescriptor("SimpleType");
+
+        example.removeDynamicType(getSession(), descriptor);
+
+        descriptor = getSession().getDescriptorForAlias("SimpleType");
+        assertNull(descriptor);
+        assertEquals(0, getSession().getDescriptors().size());
     }
 
 }

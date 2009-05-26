@@ -16,11 +16,9 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package example.dynamic;
+package example;
 
-import java.util.AbstractMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
 
 /**
  * 
@@ -37,12 +35,5 @@ import java.util.Set;
  * @author dclarke
  * @since EclipseLink 1.1.1
  */
-public abstract class DynamicEntity extends AbstractMap<String, Object> {
-
-    private Set<java.util.Map.Entry<String, Object>> values= new HashSet<Entry<String, Object>>();
-
-    @Override
-    public Set<java.util.Map.Entry<String, Object>> entrySet() {
-        return this.values;
-    }
+public abstract class DynamicMapEntity extends HashMap<String, Object> {
 }

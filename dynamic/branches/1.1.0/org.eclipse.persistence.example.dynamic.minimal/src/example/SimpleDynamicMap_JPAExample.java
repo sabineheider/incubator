@@ -32,15 +32,13 @@ import javax.persistence.Persistence;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 
-import example.dynamic.DynamicClassLoader;
-import example.dynamic.DynamicEntity;
-import example.dynamic.ValueAccessor;
 
 public class SimpleDynamicMap_JPAExample {
 
@@ -86,7 +84,7 @@ public class SimpleDynamicMap_JPAExample {
      */
     public ClassDescriptor createDynamicType(EntityManagerFactory emf) {
         Server session = JpaHelper.getServerSession(emf);
-        DynamicClassLoader loader = DynamicClassLoader.getLoader(session, DynamicEntity.class);
+        DynamicClassLoader loader = DynamicClassLoader.getLoader(session, DynamicMapEntity.class);
 
         Class javaClass = loader.createDynamicClass("model.SimpleType");
 
@@ -108,7 +106,7 @@ public class SimpleDynamicMap_JPAExample {
         return descriptor;
     }
 
-    public void persistDynamicInstances(EntityManagerFactory emf, ClassDescriptor descriptor) {
+    public Map persistDynamicInstances(EntityManagerFactory emf, ClassDescriptor descriptor) {
         EntityManager em = emf.createEntityManager();
 
         em.getTransaction().begin();
@@ -121,6 +119,8 @@ public class SimpleDynamicMap_JPAExample {
 
         em.getTransaction().commit();
         em.close();
+        
+        return entity;
     }
 
     public List<Map> queryDynamicInstances(EntityManagerFactory emf, ClassDescriptor descriptor) {
@@ -133,7 +133,7 @@ public class SimpleDynamicMap_JPAExample {
         }
     }
 
-    public void updateDyanmicInstances(EntityManagerFactory emf, ClassDescriptor descriptor) {
+    public Map updateDyanmicInstances(EntityManagerFactory emf, ClassDescriptor descriptor) {
         EntityManager em = emf.createEntityManager();
 
         em.getTransaction().begin();
@@ -147,6 +147,8 @@ public class SimpleDynamicMap_JPAExample {
 
         em.getTransaction().commit();
         em.close();
+        
+        return entity;
     }
 
     public void deleteDynamicInstances(EntityManagerFactory emf, ClassDescriptor descriptor) {
@@ -210,6 +212,6 @@ public class SimpleDynamicMap_JPAExample {
             }
         }
 
-        return Persistence.createEntityManagerFactory("dynamic", testProps);
+        return Persistence.createEntityManagerFactory("dynamic-simple-map", testProps);
     }
 }

@@ -29,6 +29,7 @@ import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.queries.ReadAllQuery;
@@ -39,9 +40,6 @@ import org.eclipse.persistence.sessions.Project;
 import org.eclipse.persistence.sessions.UnitOfWork;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 
-import example.dynamic.DynamicClassLoader;
-import example.dynamic.DynamicEntity;
-import example.dynamic.ValueAccessor;
 
 public class SimpleDynamicMap_NativeExample {
 
@@ -86,7 +84,7 @@ public class SimpleDynamicMap_NativeExample {
      * </code>
      */
     public ClassDescriptor createDynamicType(DatabaseSession session) {
-        DynamicClassLoader loader = DynamicClassLoader.getLoader(session, DynamicEntity.class);
+        DynamicClassLoader loader = DynamicClassLoader.getLoader(session, DynamicMapEntity.class);
 
         Class javaClass = loader.createDynamicClass("model.SimpleType");
 
@@ -108,7 +106,7 @@ public class SimpleDynamicMap_NativeExample {
         return descriptor;
     }
 
-    public void persistDynamicInstances(DatabaseSession session, ClassDescriptor descriptor) {
+    public Map persistDynamicInstances(DatabaseSession session, ClassDescriptor descriptor) {
         UnitOfWork uow = session.acquireUnitOfWork();
 
         Map entity = (Map) uow.newInstance(descriptor.getJavaClass());
@@ -117,6 +115,7 @@ public class SimpleDynamicMap_NativeExample {
 
         uow.commit();
 
+        return entity;
     }
 
     public List<Map> queryDynamicInstances(DatabaseSession session, ClassDescriptor descriptor) {
@@ -127,7 +126,7 @@ public class SimpleDynamicMap_NativeExample {
         return (List<Map>) session.executeQuery(query);
     }
 
-    public void updateDyanmicInstances(DatabaseSession session, ClassDescriptor descriptor) {
+    public Map updateDyanmicInstances(DatabaseSession session, ClassDescriptor descriptor) {
         UnitOfWork uow = session.acquireUnitOfWork();
 
         ReadObjectQuery query = new ReadObjectQuery(descriptor.getJavaClass());
@@ -139,6 +138,8 @@ public class SimpleDynamicMap_NativeExample {
         entity.put("value", "value-1+");
 
         uow.commit();
+        
+        return entity;
     }
 
     public void deleteDynamicInstances(DatabaseSession session, ClassDescriptor descriptor) {
