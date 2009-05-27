@@ -39,7 +39,6 @@ import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 
-
 public class SimpleDynamicMap_JPAExample {
 
     /**
@@ -101,6 +100,8 @@ public class SimpleDynamicMap_JPAExample {
 
         session.addDescriptor(descriptor);
 
+        // Create the underlying table on the database. Drop it if it already
+        // exists
         new SchemaManager(session).replaceDefaultTables();
 
         return descriptor;
@@ -119,7 +120,7 @@ public class SimpleDynamicMap_JPAExample {
 
         em.getTransaction().commit();
         em.close();
-        
+
         return entity;
     }
 
@@ -147,7 +148,7 @@ public class SimpleDynamicMap_JPAExample {
 
         em.getTransaction().commit();
         em.close();
-        
+
         return entity;
     }
 

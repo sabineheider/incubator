@@ -101,6 +101,8 @@ public class SimpleDynamicMap_NativeExample {
 
         session.addDescriptor(descriptor);
 
+        // Create the underlying table on the database. Drop it if it already
+        // exists
         new SchemaManager(session).replaceDefaultTables();
 
         return descriptor;
