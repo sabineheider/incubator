@@ -32,6 +32,7 @@ import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.queries.ReportQuery;
 import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.sessions.Session;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 import example.SimpleDynamicMap_NativeExample;
@@ -42,9 +43,22 @@ public class SimpleDynamicMap_NativeExample_Tests {
 
     private static DatabaseSession session;
 
+    @AfterClass
+    public static void logoutSession() {
+        if (session != null && session.isConnected()) {
+            session.logout();
+        }
+    }
+
     private static DatabaseSession getSession() {
         if (session == null) {
             session = example.createSession();
+
+            assertNotNull(session);
+            assertTrue(session.isConnected());
+            assertEquals(0, session.getDescriptors().size());
+
+            createSimpleType();
         }
         assertNotNull("No session returned from createSession", session);
         return session;
@@ -56,17 +70,7 @@ public class SimpleDynamicMap_NativeExample_Tests {
         return descriptor;
     }
 
-    @Test
-    public void createSession() {
-        DatabaseSession session = getSession();
-
-        assertNotNull(session);
-        assertTrue(session.isConnected());
-        assertEquals(0, session.getDescriptors().size());
-    }
-
-    @Test
-    public void createSimpleType() {
+    private static void createSimpleType() {
         ClassDescriptor descriptor = example.createDynamicType(getSession());
 
         assertNotNull(descriptor);
@@ -77,12 +81,12 @@ public class SimpleDynamicMap_NativeExample_Tests {
         assertEquals(1, descriptor.getPrimaryKeyFieldNames().size());
         assertEquals("DYNAMIC_SIMPLE.ID", descriptor.getPrimaryKeyFieldNames().get(0));
         assertEquals(2, descriptor.getMappings().size());
-        
+
         DirectToFieldMapping mapping = (DirectToFieldMapping) descriptor.getMappingForAttributeName("id");
         assertNotNull(mapping);
         assertEquals("DYNAMIC_SIMPLE.ID", mapping.getFieldName());
         assertEquals(Integer.class, mapping.getAttributeClassification());
-        
+
         mapping = (DirectToFieldMapping) descriptor.getMappingForAttributeName("value");
         assertNotNull(mapping);
         assertEquals("DYNAMIC_SIMPLE.VALUE", mapping.getFieldName());
@@ -111,7 +115,7 @@ public class SimpleDynamicMap_NativeExample_Tests {
         ClassDescriptor descriptor = getDescriptor("SimpleType");
 
         List<Map> entities = example.queryDynamicInstances(getSession(), descriptor);
-        
+
         assertNotNull(entities);
         assertEquals(1, entities.size());
         assertEquals(1, entities.get(0).get("id"));
@@ -123,7 +127,7 @@ public class SimpleDynamicMap_NativeExample_Tests {
         ClassDescriptor descriptor = getDescriptor("SimpleType");
 
         Map entity = example.updateDyanmicInstances(getSession(), descriptor);
-        
+
         assertNotNull(entity);
         assertEquals(1, entity.get("id"));
         assertEquals("value-1+", entity.get("value"));
@@ -142,7 +146,7 @@ public class SimpleDynamicMap_NativeExample_Tests {
         rq.setShouldReturnSingleValue(true);
         int count = ((Number) session.executeQuery(rq)).intValue();
         assertEquals(0, count);
-}
+    }
 
     @Test
     public void removeSimpleType() {
