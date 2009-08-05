@@ -21,7 +21,6 @@ package org.eclipse.persistence.dynamic;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 
 /**
@@ -30,11 +29,9 @@ import org.eclipse.persistence.mappings.DatabaseMapping;
  * of the entity types being dynamic.
  * 
  * @author dclarke
- * @since EclipseLink 1.1.1
+ * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public interface EntityType {
-
-	public ClassDescriptor getDescriptor();
 
 	public String getName();
 
@@ -43,16 +40,14 @@ public interface EntityType {
 	public Set<String> getPropertiesNames();
 
 	public boolean containsProperty(String propertyName);
-	
+
 	public List<DatabaseMapping> getMappings();
-
-	public DatabaseMapping getMapping(String propertyName);
-
-	public DatabaseMapping getMapping(int propertyIndex);
 
 	public int getPropertyIndex(String propertyName);
 
 	public Class getJavaClass();
 
 	public DynamicEntity newInstance();
+	
+	public <T> T unwrap(Class<T> T);
 }

@@ -30,6 +30,7 @@ import org.eclipse.persistence.dynamic.DynamicEntityException;
 import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.exceptions.DescriptorException;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl.ValuesAccessor;
+import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 import org.eclipse.persistence.internal.security.PrivilegedAccessHelper;
 import org.eclipse.persistence.mappings.*;
 import org.eclipse.persistence.sessions.DatabaseSession;
@@ -40,8 +41,8 @@ import org.eclipse.persistence.tools.schemaframework.TableDefinition;
  * object-relational metadata (descriptors & mappings) with specific knowledge
  * of the entity types being dynamic.
  * 
- * @author Doug Clarke
- * @since EclipseLink 1.0
+ * @author dclarke
+ * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public class EntityTypeImpl implements EntityType {
     /**
@@ -241,9 +242,9 @@ public class EntityTypeImpl implements EntityType {
      * @param session
      */
     public void initialize(DatabaseSession session) {
-        DynamicClassLoader loader = DynamicClassLoader.getLoader(session, DynamicEntityImpl.class);
-        Class javaClass = loader.createDynamicClass(getDescriptor().getJavaClassName());
-        
+        DynamicConversionManager dcm = DynamicConversionManager.getDynamicConversionManager(session);
+        Class javaClass = dcm.createDynamicClass(getDescriptor().getJavaClassName(), DynamicEntityImpl.class);
+
         getDescriptor().setJavaClass(javaClass);
         session.addDescriptor(getDescriptor());
     }
@@ -301,7 +302,7 @@ public class EntityTypeImpl implements EntityType {
         return getMappings().indexOf(getMapping(propertyName));
     }
 
-    public DirectToFieldMapping addDirectMapping(String name, Class javaType, String fieldName) {
+    public DirectToFieldMapping addDirectMapping(String name, Class javaType, String fieldName, boolean isPrimaryKey) {
         DirectToFieldMapping mapping = (DirectToFieldMapping) getDescriptor().addDirectMapping(name, fieldName);
         mapping.setAttributeClassification(javaType);
         mapping.setAttributeAccessor(new ValuesAccessor(mapping, getDescriptor().getMappings().indexOf(mapping)));
@@ -319,6 +320,7 @@ public class EntityTypeImpl implements EntityType {
         return mapping;
     }
 
+    // TODO: Not used yet but should be
     public TableDefinition getTableDefinition() {
         TableDefinition tableDef = new TableDefinition();
 
@@ -326,6 +328,15 @@ public class EntityTypeImpl implements EntityType {
         tableDef.addPrimaryKeyField("ID", Integer.class);
 
         return tableDef;
+    }
+
+    public <T> T unwrap(Class<T> T) {
+        if (ClassDescriptor.class.isAssignableFrom(T)) {
+            return (T) getDescriptor();
+        }
+
+        // TODO: Better exception required
+        throw new RuntimeException("Cannot unwrap " + this + " as: " + T);
     }
 
 }

@@ -28,7 +28,7 @@ import org.eclipse.persistence.mappings.DatabaseMapping;
  * exceptions.
  * 
  * @author dclarke
- * @since EclipseLink 1.0
+ * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public class DynamicEntityException extends EclipseLinkException {
 	public static final String ILLEGAL_MODIFY_SHARED = "Illegal attempt to modify shared cache instance on: ";

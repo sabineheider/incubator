@@ -38,7 +38,7 @@ import org.eclipse.persistence.mappings.DatabaseMapping;
  * accessing the Java class needed for JPA and EclipseLink native API calls.
  * 
  * @author dclarke
- * @since EclipseLink 1.1
+ * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public interface DynamicEntity {
 

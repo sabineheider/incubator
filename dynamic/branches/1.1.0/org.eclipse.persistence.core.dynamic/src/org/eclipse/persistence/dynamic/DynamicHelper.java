@@ -41,7 +41,7 @@ import org.eclipse.persistence.tools.schemaframework.TableDefinition;
  * will assist in the writing of TopLink enabled applications.
  * 
  * @author dclarke
- * @since EclipseLink - Dynamic Incubator
+ * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public class DynamicHelper {
 
@@ -97,7 +97,10 @@ public class DynamicHelper {
 
         if (type != null) {
             session.getIdentityMapAccessor().initializeIdentityMap(type.getJavaClass());
-            session.getProject().getOrderedDescriptors().remove(type.getDescriptor());
+            
+            ClassDescriptor descriptor = type.unwrap(ClassDescriptor.class);
+            
+            session.getProject().getOrderedDescriptors().remove(descriptor);
             session.getProject().getDescriptors().remove(type.getJavaClass());
         }
     }
@@ -120,14 +123,14 @@ public class DynamicHelper {
      * @param session
      */
     public static TableDefinition createTable(EntityType type, Session session) {
-        ClassDescriptor desc = type.getDescriptor();
+        ClassDescriptor descriptor = type.unwrap(ClassDescriptor.class);
         TableDefinition tblDef = new TableDefinition();
-        DatabaseTable dbTbl = desc.getTables().get(0);
+        DatabaseTable dbTbl = descriptor.getTables().get(0);
         tblDef.setName(dbTbl.getName());
         tblDef.setQualifier(dbTbl.getTableQualifier());
 
         // build each field definition and figure out which table it goes
-        Iterator fieldIter = desc.getFields().iterator();
+        Iterator fieldIter = descriptor.getFields().iterator();
         DatabaseField dbField = null;
 
         while (fieldIter.hasNext()) {
@@ -136,11 +139,11 @@ public class DynamicHelper {
             boolean isPKField = false;
 
             // first check if the filed is a pk field in the default table.
-            isPKField = desc.getPrimaryKeyFields().contains(dbField);
+            isPKField = descriptor.getPrimaryKeyFields().contains(dbField);
 
             // then check if the field is a pk field in the secondary table(s),
             // this is only applied to the multiple tables case.
-            Map secondaryKeyMap = desc.getAdditionalTablePrimaryKeyFields().get(dbField.getTable());
+            Map secondaryKeyMap = descriptor.getAdditionalTablePrimaryKeyFields().get(dbField.getTable());
 
             if (secondaryKeyMap != null) {
                 isPKField = isPKField || secondaryKeyMap.containsValue(dbField);
@@ -150,7 +153,7 @@ public class DynamicHelper {
             FieldDefinition fieldDef = getFieldDefFromDBField(dbField, isPKField, session);
             if (isPKField) {
                 // Check if the generation strategy is IDENTITY
-                String sequenceName = desc.getSequenceNumberName();
+                String sequenceName = descriptor.getSequenceNumberName();
                 DatabaseLogin login = session.getProject().getLogin();
                 Sequence seq = login.getSequence(sequenceName);
                 if (seq instanceof DefaultSequence) {

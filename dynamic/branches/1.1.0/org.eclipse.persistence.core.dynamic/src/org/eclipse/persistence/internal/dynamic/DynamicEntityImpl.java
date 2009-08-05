@@ -55,7 +55,7 @@ import org.eclipse.persistence.sessions.Session;
  * @See DynamicAttributeAccessor
  * 
  * @author dclarke
- * @since EclipseLink 1.1
+ * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker, PersistenceEntity, FetchGroupTracker, PersistenceWeavedLazy, Cloneable {
     /**
@@ -100,12 +100,16 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         this.values = new Object[type.getNumberOfProperties()];
     }
 
-    public EntityType getType() {
+    protected EntityTypeImpl getTypeImpl() {
         return this.type;
     }
 
+    public EntityType getType() {
+        return getTypeImpl();
+    }
+
     public Object get(String propertyName) {
-        return get(getType().getMapping(propertyName));
+        return get(getTypeImpl().getMapping(propertyName));
     }
 
     public <T> T get(String propertyName, Class<T> type) {
@@ -113,7 +117,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
     }
 
     public Object get(int propertyIndex) {
-        return get(getType().getMapping(propertyIndex));
+        return get(getTypeImpl().getMapping(propertyIndex));
     }
 
     public <T> T get(int propertyIndex, Class<T> type) {
@@ -129,11 +133,11 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
     }
 
     public DynamicEntity set(int propertyIndex, Object value) {
-        return set(getType().getMapping(propertyIndex), value);
+        return set(getTypeImpl().getMapping(propertyIndex), value);
     }
 
     public DynamicEntity set(String propertyName, Object value) {
-        return set(getType().getMapping(propertyName), value);
+        return set(getTypeImpl().getMapping(propertyName), value);
     }
 
     // TODO: Ensure value is appropriate for mapping type?
@@ -157,22 +161,22 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
     }
 
     public Object add(String propertyName, Object value) {
-        Collection collection = getCollection(getType().getMapping(propertyName));
+        Collection collection = getCollection(getTypeImpl().getMapping(propertyName));
         return collection.add(value);
     }
 
     public Object remove(String propertyName, Object value) {
-        Collection collection = getCollection(getType().getMapping(propertyName));
+        Collection collection = getCollection(getTypeImpl().getMapping(propertyName));
         return collection.remove(value);
     }
 
     public Object get(String propertyName, Object key) {
-        Map map = getMap(getType().getMapping(propertyName));
+        Map map = getMap(getTypeImpl().getMapping(propertyName));
         return map.get(key);
     }
 
     public Object put(String propertyName, Object key, Object value) {
-        Map map = getMap(getType().getMapping(propertyName));
+        Map map = getMap(getTypeImpl().getMapping(propertyName));
         return map.put(key, value);
     }
 
@@ -195,7 +199,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         writer.write("(");
 
         for (DatabaseMapping mapping : getType().getMappings()) {
-            if (getType().getDescriptor().getObjectBuilder().getPrimaryKeyMappings().contains(mapping)) {
+            if (getTypeImpl().getDescriptor().getObjectBuilder().getPrimaryKeyMappings().contains(mapping)) {
                 writer.write(mapping.getAttributeName());
                 writer.write("=" + mapping.getAttributeValueFromObject(this));
             }
