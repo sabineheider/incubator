@@ -29,7 +29,7 @@ import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.queries.ReadAllQuery;
@@ -39,7 +39,6 @@ import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.sessions.Project;
 import org.eclipse.persistence.sessions.UnitOfWork;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
-
 
 public class SimpleDynamicMap_NativeExample {
 
@@ -84,9 +83,9 @@ public class SimpleDynamicMap_NativeExample {
      * </code>
      */
     public ClassDescriptor createDynamicType(DatabaseSession session) {
-        DynamicClassLoader loader = DynamicClassLoader.getLoader(session, DynamicMapEntity.class);
+        DynamicConversionManager dcm = DynamicConversionManager.getDynamicConversionManager(session);
 
-        Class javaClass = loader.createDynamicClass("model.SimpleType");
+        Class javaClass = dcm.createDynamicClass("model.SimpleType");
 
         RelationalDescriptor descriptor = new RelationalDescriptor();
 
@@ -140,7 +139,7 @@ public class SimpleDynamicMap_NativeExample {
         entity.put("value", "value-1+");
 
         uow.commit();
-        
+
         return entity;
     }
 

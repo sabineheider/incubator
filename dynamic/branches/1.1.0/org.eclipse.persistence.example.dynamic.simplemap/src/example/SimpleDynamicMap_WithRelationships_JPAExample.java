@@ -35,7 +35,7 @@ import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.indirection.IndirectList;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 import org.eclipse.persistence.internal.jpa.CMP3Policy;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
@@ -88,10 +88,10 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
      */
     public void createDynamicTypes(EntityManagerFactory emf) {
         ServerSession session = (ServerSession) JpaHelper.getServerSession(emf);
-        DynamicClassLoader loader = DynamicClassLoader.getLoader(session, DynamicMapEntity.class);
+        DynamicConversionManager dcm = DynamicConversionManager.getDynamicConversionManager(session);
 
         // Create SimpleTypeA with direct mappings
-        Class javaClassA = loader.createDynamicClass("model." + TYPE_A);
+        Class javaClassA = dcm.createDynamicClass("model." + TYPE_A);
         RelationalDescriptor descriptorA = new RelationalDescriptor();
         descriptorA.setJavaClass(javaClassA);
         descriptorA.setTableName("DYNAMIC_A");
@@ -103,7 +103,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
         mapping.setAttributeAccessor(new ValueAccessor(mapping, String.class));
 
         // Create SimpleTypeB with direct mappings
-        Class javaClassB = loader.createDynamicClass("model." + TYPE_B);
+        Class javaClassB = dcm.createDynamicClass("model." + TYPE_B);
         RelationalDescriptor descriptorB = new RelationalDescriptor();
         descriptorB.setJavaClass(javaClassB);
         descriptorB.setTableName("DYNAMIC_B");
@@ -115,7 +115,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
         mapping.setAttributeAccessor(new ValueAccessor(mapping, Calendar.class));
 
         // Create SimpleTypeC with direct mappings
-        Class javaClassC = loader.createDynamicClass("model." + TYPE_C);
+        Class javaClassC = dcm.createDynamicClass("model." + TYPE_C);
         RelationalDescriptor descriptorC = new RelationalDescriptor();
         descriptorC.setJavaClass(javaClassC);
         descriptorC.setTableName("DYNAMIC_C");

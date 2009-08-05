@@ -32,7 +32,7 @@ import javax.persistence.Persistence;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.queries.ReadObjectQuery;
@@ -83,9 +83,9 @@ public class SimpleDynamicMap_JPAExample {
      */
     public ClassDescriptor createDynamicType(EntityManagerFactory emf) {
         Server session = JpaHelper.getServerSession(emf);
-        DynamicClassLoader loader = DynamicClassLoader.getLoader(session, DynamicMapEntity.class);
+        DynamicConversionManager dcm = DynamicConversionManager.getDynamicConversionManager(session);
 
-        Class javaClass = loader.createDynamicClass("model.SimpleType");
+        Class javaClass = dcm.createDynamicClass("model.SimpleType");
 
         RelationalDescriptor descriptor = new RelationalDescriptor();
 

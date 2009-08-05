@@ -18,25 +18,24 @@
  ******************************************************************************/
 package testing;
 
-import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertSame;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.internal.helper.ConversionManager;
+import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 import org.junit.Test;
 
 import example.DynamicMapEntity;
 
-public class DynamicClassLoader_Tests {
+public class DynamicConversionManager_Tests {
 
-    private DynamicClassLoader classLoader = new DynamicClassLoader(null, DynamicMapEntity.class);
+    private DynamicConversionManager classLoader = new DynamicConversionManager(ConversionManager.getDefaultManager());
 
     @Test
     public void validateConstructor() {
-        assertNotNull(this.classLoader.getDelegateLoader());
-        assertSame(Thread.currentThread().getContextClassLoader(), this.classLoader.getDelegateLoader());
+        fail("NOT YET IMPLEMENTED");
     }
 
     @Test
@@ -52,18 +51,4 @@ public class DynamicClassLoader_Tests {
         assertSame(dynamicType, dynamicType2);
     }
 
-    /**
-     * Validate that the load of an unknown class throws a CNFE
-     */
-    @Test
-    public void validate_loadClass() {
-        try {
-            this.classLoader.loadClass("model.Blah");
-        } catch (ClassNotFoundException cnfe) {
-            assertEquals("model.Blah", cnfe.getMessage());
-            return;
-        }
-
-        fail("ClassNotFoundException should have been thrown");
-    }
 }

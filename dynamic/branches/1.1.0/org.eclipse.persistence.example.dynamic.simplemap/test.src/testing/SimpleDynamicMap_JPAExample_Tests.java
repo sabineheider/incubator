@@ -32,7 +32,6 @@ import javax.persistence.EntityManagerFactory;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
-import org.eclipse.persistence.sessions.factories.SessionManager;
 import org.eclipse.persistence.sessions.server.Server;
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -57,7 +56,7 @@ public class SimpleDynamicMap_JPAExample_Tests {
             assertNotNull(session);
             assertTrue(session.isConnected());
             assertEquals(0, session.getDescriptors().size());
-            
+
             createSimpleType();
         }
         assertNotNull("No Entitymanagerfactory returned from createEMF", emf);

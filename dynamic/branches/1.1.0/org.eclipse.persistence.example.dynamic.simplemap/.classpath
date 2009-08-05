@@ -3,10 +3,10 @@
 	<classpathentry excluding="**/.svn/**" kind="src" path="src"/>
 	<classpathentry excluding="**/.svn/**" kind="src" path="test.src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="var" path="ECLIPSELINK_1.1.1" sourcepath="/ECLIPSELINK_1.1.1-SRC"/>
-	<classpathentry kind="var" path="JDBC_LIB"/>
-	<classpathentry kind="var" path="JAVAX.PERSISTENCE_1.0"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/org.eclipse.persistence.core.dynamic"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/EclipseLink 1.1.2"/>
+	<classpathentry kind="con" path="org.eclipse.datatools.connectivity.jdt.DRIVERLIBRARY/Oracle Thin Driver"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/javax_persistence_1.0.0"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
