@@ -43,7 +43,7 @@ public class SimpleType {
     }
 
     @Test
-    public void buildCustomTyeFromDB() {
+    public void buildCustomTypeFromDB() {
         emf.close();
         emf = Persistence.createEntityManagerFactory("custom-types");
 
@@ -79,8 +79,8 @@ public class SimpleType {
     public static void setUp() {
         Map properties = new HashMap();
 
-        properties.put("eclipselink.ddl-generation.output-mode", "database");
-        properties.put("eclipselink.ddl-generation", "drop-and-create-tables");
+        //properties.put("eclipselink.ddl-generation.output-mode", "database");
+        //properties.put("eclipselink.ddl-generation", "drop-and-create-tables");
 
         emf = Persistence.createEntityManagerFactory("custom-types", properties);
 
@@ -88,11 +88,11 @@ public class SimpleType {
         simpleType.setName("Simple");
         simpleType.setClassName("model.Simple");
         simpleType.setTableName("CUSTOM_SIMPLE");
-        simpleType.addField("id", int.class, "SID").setId(true);
-        simpleType.addField("value1", String.class, "VAL_1");
-        simpleType.addField("value2", boolean.class, "VAL_2");
-        simpleType.addField("value3", Calendar.class, "VAL_3");
-        simpleType.addField("value4", Character.class, "VAL_4");
+        simpleType.addField("id", int.class.getName(), "SID").setId(true);
+        simpleType.addField("value1", String.class.getName(), "VAL_1");
+        simpleType.addField("value2", boolean.class.getName(), "VAL_2");
+        simpleType.addField("value3", Calendar.class.getName(), "VAL_3");
+        simpleType.addField("value4", Character.class.getName(), "VAL_4");
 
         simpleType.createType(emf, true, true);
 
@@ -100,6 +100,15 @@ public class SimpleType {
 
     @AfterClass
     public static void shutdown() {
+        EntityManager em = emf.createEntityManager();
+        
+        em.getTransaction().begin();
+        em.createQuery("DELETE FROM CustomRelationship").executeUpdate();
+        em.createQuery("DELETE FROM CustomField").executeUpdate();
+        em.createQuery("DELETE FROM CustomType").executeUpdate();
+        em.createNativeQuery("DROP TABLE CUSTOM_SIMPLE CASCADE CONSTRAINTS").executeUpdate();
+        em.getTransaction().commit();
+        
         emf.close();
     }
 }

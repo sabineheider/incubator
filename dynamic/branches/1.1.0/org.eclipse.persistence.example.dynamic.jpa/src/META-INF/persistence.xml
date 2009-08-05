@@ -3,8 +3,8 @@
 	<persistence-unit name="custom-types" transaction-type="RESOURCE_LOCAL">
 		<provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
 		<class>model.meta.CustomType</class>
-		<class>model.meta.CustomField</class>
 		<class>model.meta.CustomRelationship</class>
+		<class>model.meta.CustomField</class>
 		<exclude-unlisted-classes>true</exclude-unlisted-classes>
 		<properties>
 			<property name="eclipselink.jdbc.url" value="jdbc:oracle:thin:@localhost:1521:orcl"/>
@@ -17,7 +17,7 @@
 			<property name="eclipselink.logging.thread" value="false"/>
 			<property name="eclipselink.logging.session" value="false"/>
 			<property name="eclipselink.logging.exceptions" value="false"/>
-			<property name="eclipselink.logging.level" value="FINE"/>
+			<property name="eclipselink.logging.level.sql" value="FINE"/>
 		</properties>
 	</persistence-unit>
 </persistence>

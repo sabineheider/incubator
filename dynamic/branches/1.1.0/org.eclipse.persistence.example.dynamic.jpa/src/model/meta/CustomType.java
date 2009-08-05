@@ -1,15 +1,12 @@
 package model.meta;
 
-import static javax.persistence.CascadeType.ALL;
-
 import java.util.*;
 
 import javax.persistence.*;
 
-import org.eclipse.persistence.annotations.TypeConverter;
 import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 import org.eclipse.persistence.internal.jpa.CMP3Policy;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.sessions.server.Server;
@@ -17,26 +14,25 @@ import org.eclipse.persistence.tools.schemaframework.*;
 
 @Entity
 @Table(name = "CUSTOM_TYPE")
-@TypeConverter(name = "class-string", dataType = String.class, objectType = Class.class)
 public class CustomType {
 
     @Id
-    @Column(name="TYPE_NAME")
+    @Column(name = "TYPE_NAME")
     private String name;
 
-    @Column(name="CLASS_NAME")
+    @Column(name = "CLASS_NAME")
     private String className;
 
     @ManyToOne
     @JoinColumn(name = "PARENT_TYPE")
     private CustomType parentType;
 
-    @OneToMany(mappedBy = "parentType", cascade = ALL)
+    @OneToMany(mappedBy = "parentType", cascade = CascadeType.ALL)
     private List<CustomType> subTypes;
 
     private String typeIndicator;
 
-    @OneToMany(mappedBy = "type", cascade = ALL)
+    @OneToMany(mappedBy = "type", cascade = CascadeType.ALL)
     private List<CustomField> fields;
 
     @Column(name = "TABLE_NAME")
@@ -128,19 +124,20 @@ public class CustomType {
     }
 
     /**
-     * @param tableName the tableName to set
+     * @param tableName
+     *            the tableName to set
      */
     public void setTableName(String tableName) {
         this.tableName = tableName;
     }
 
-    public CustomField addField(String name, Class javaType, String fieldName) {
+    public CustomField addField(String name, String javaType, String fieldName) {
         CustomField field = new CustomField(name, javaType, fieldName, this);
         getFields().add(field);
         return field;
     }
 
-    public CustomField addRelationship(String name, Class javaType, CustomType referenceType, String fieldName) {
+    public CustomField addRelationship(String name, String javaType, CustomType referenceType, String fieldName) {
         CustomField field = new CustomRelationship(name, javaType, referenceType, fieldName, this);
         getFields().add(field);
         return field;
@@ -161,25 +158,25 @@ public class CustomType {
         }
 
         Server session = JpaHelper.getServerSession(emf);
-        DynamicClassLoader loader = DynamicClassLoader.getLoader(session);
-        Class dynamicClass = loader.createDynamicClass(getClassName());
+        DynamicConversionManager dcm = DynamicConversionManager.getDynamicConversionManager(session);
+        Class dynamicClass = dcm.createDynamicClass(getClassName());
 
         EntityTypeImpl entityType = new EntityTypeImpl(dynamicClass, getTableName());
         entityType.getDescriptor().setAlias(getName());
 
         for (CustomField field : getFields()) {
-            field.addToType(entityType);
+            field.addToType(dcm, entityType);
         }
-        
+
         if (entityType.getDescriptor().getCMPPolicy() == null) {
             entityType.getDescriptor().setCMPPolicy(new CMP3Policy());
         }
-        
+
         session.addDescriptor(entityType.getDescriptor());
 
         if (createSchema) {
             TableCreator creator = new DefaultTableGenerator(session.getProject()).generateDefaultTableCreator();
-            
+
             TableDefinition tableDef = null;
             for (Iterator i = creator.getTableDefinitions().iterator(); tableDef == null && i.hasNext();) {
                 TableDefinition td = (TableDefinition) i.next();
@@ -187,10 +184,10 @@ public class CustomType {
                     tableDef = td;
                 }
             }
-            
+
             new SchemaManager(session).replaceObject(tableDef);
         }
-        
+
         return entityType;
     }
 }

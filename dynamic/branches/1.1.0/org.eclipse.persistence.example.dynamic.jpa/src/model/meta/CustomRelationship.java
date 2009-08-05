@@ -3,8 +3,9 @@ package model.meta;
 import javax.persistence.*;
 
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-
+ 
 @Entity
+@Table(name="CUSTOM_REL")
 @DiscriminatorValue("R")
 public class CustomRelationship extends CustomField {
 
@@ -16,7 +17,7 @@ public class CustomRelationship extends CustomField {
         super();
     }
 
-    protected CustomRelationship(String name, Class javaType, CustomType referenceType, String fieldName, CustomType customType) {
+    protected CustomRelationship(String name, String javaType, CustomType referenceType, String fieldName, CustomType customType) {
         super(name, javaType, fieldName, customType);
         this.referenceType = referenceType;
     }
