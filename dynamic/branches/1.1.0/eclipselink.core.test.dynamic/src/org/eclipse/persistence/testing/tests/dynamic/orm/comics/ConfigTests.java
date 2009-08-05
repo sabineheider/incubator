@@ -18,30 +18,34 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.tests.dynamic.orm.comics;
 
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
+
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.sessions.server.Server;
 import org.junit.Test;
-import static junit.framework.Assert.*;
-public class ConfigTests {
-	
-	@Test
-	public void verifyDescriptorClasses() {
-		Server server = SessionHelper.getComicsSession();
-		
-		assertNotNull(server);
-		
-		ClassDescriptor descriptor = server.getClassDescriptorForAlias("Issue");
-		assertNotNull(descriptor);
-		assertTrue(DynamicEntity.class.isAssignableFrom(descriptor.getJavaClass()));
-		
-		descriptor = server.getClassDescriptorForAlias("Publisher");
-		assertNotNull(descriptor);
-		assertTrue(DynamicEntity.class.isAssignableFrom(descriptor.getJavaClass()));
 
-		descriptor = server.getClassDescriptorForAlias("Title");
-		assertNotNull(descriptor);
-		assertTrue(DynamicEntity.class.isAssignableFrom(descriptor.getJavaClass()));
-	}
+
+public class ConfigTests {
+
+    @Test
+    public void verifyDescriptorClasses() {
+        Server server = SessionHelper.getComicsSession();
+
+        assertNotNull(server);
+
+        ClassDescriptor descriptor = server.getClassDescriptorForAlias("Issue");
+        assertNotNull(descriptor);
+        assertTrue(DynamicEntity.class.isAssignableFrom(descriptor.getJavaClass()));
+
+        descriptor = server.getClassDescriptorForAlias("Publisher");
+        assertNotNull(descriptor);
+        assertTrue(DynamicEntity.class.isAssignableFrom(descriptor.getJavaClass()));
+
+        descriptor = server.getClassDescriptorForAlias("Title");
+        assertNotNull(descriptor);
+        assertTrue(DynamicEntity.class.isAssignableFrom(descriptor.getJavaClass()));
+    }
 
 }

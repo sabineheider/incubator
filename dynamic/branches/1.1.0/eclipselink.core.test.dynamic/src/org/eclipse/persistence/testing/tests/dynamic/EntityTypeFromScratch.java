@@ -21,9 +21,12 @@ package org.eclipse.persistence.testing.tests.dynamic;
 import static junit.framework.Assert.assertEquals;
 
 import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.internal.dynamic.*;
+import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
+import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.logging.SessionLog;
-import org.eclipse.persistence.sessions.*;
+import org.eclipse.persistence.sessions.DatabaseLogin;
+import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.Project;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 import org.junit.Test;
 
@@ -34,63 +37,63 @@ import org.junit.Test;
  */
 public class EntityTypeFromScratch {
 
-	@Test
-	public void entityTypeFromDescriptor() throws Exception {
-		EntityTypeImpl entityType = buildMyEntityType();
+    @Test
+    public void entityTypeFromDescriptor() throws Exception {
+        EntityTypeImpl entityType = buildMyEntityType();
 
-		assertEquals(MyEntity.class, entityType.getJavaClass());
+        assertEquals(MyEntity.class, entityType.getJavaClass());
 
-		DatabaseSession session = new Project(buildDatabaseLogin()).createDatabaseSession();
-		session.getSessionLog().setLevel(SessionLog.FINE);
-		session.login();
+        DatabaseSession session = new Project(buildDatabaseLogin()).createDatabaseSession();
+        session.getSessionLog().setLevel(SessionLog.FINE);
+        session.login();
 
-		entityType.initialize(session);
-		new SchemaManager(session).replaceDefaultTables();
+        entityType.initialize(session);
+        new SchemaManager(session).replaceDefaultTables();
 
-		DynamicEntity entity = entityType.newInstance();
-		entity.set("id", 1);
-		entity.set("name", "Name");
+        DynamicEntity entity = entityType.newInstance();
+        entity.set("id", 1);
+        entity.set("name", "Name");
 
-		session.insertObject(entity);
+        session.insertObject(entity);
 
-		session.logout();
+        session.logout();
 
-	}
+    }
 
-	private EntityTypeImpl buildMyEntityType() {
-		EntityTypeImpl entityType = new EntityTypeImpl(MyEntity.class, "MY_ENTITY");
-		entityType.addProperty("id", "ID", int.class, true);
-		entityType.addProperty("name", "NAME", String.class, true);
+    private EntityTypeImpl buildMyEntityType() {
+        EntityTypeImpl entityType = new EntityTypeImpl(MyEntity.class, "MY_ENTITY");
+        entityType.addDirectMapping("id", int.class, "ID", true);
+        entityType.addDirectMapping("name", String.class, "NAME", false);
 
-		return entityType;
-	}
+        return entityType;
+    }
 
-	/**
-	 * Return
-	 */
-	private DatabaseLogin buildDatabaseLogin() {
-		DatabaseLogin login = new DatabaseLogin();
+    /**
+     * Return
+     */
+    private DatabaseLogin buildDatabaseLogin() {
+        DatabaseLogin login = new DatabaseLogin();
 
-		login.useOracleThinJDBCDriver();
-		login.setDatabaseURL("localhost:1521:ORCL");
-		login.setUserName("scott");
-		login.setPassword("tiger");
+        login.useOracleThinJDBCDriver();
+        login.setDatabaseURL("localhost:1521:ORCL");
+        login.setUserName("scott");
+        login.setPassword("tiger");
 
-		// TODO - override with values from system properties
+        // TODO - override with values from system properties
 
-		return login;
-	}
+        return login;
+    }
 
-	/**
-	 * Simple concrete subclass of DynamicEntityImpl to test the functionality
-	 * of EntityType independently of the {@link DynamicClassLoader}
-	 * functionality which typically generates subclasses.
-	 */
-	public static class MyEntity extends DynamicEntityImpl {
+    /**
+     * Simple concrete subclass of DynamicEntityImpl to test the functionality
+     * of EntityType independently of the {@link DynamicClassLoader}
+     * functionality which typically generates subclasses.
+     */
+    public static class MyEntity extends DynamicEntityImpl {
 
-		protected MyEntity(EntityTypeImpl type) {
-			super(type);
-		}
+        protected MyEntity(EntityTypeImpl type) {
+            super(type);
+        }
 
-	}
+    }
 }
