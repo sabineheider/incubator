@@ -1,6 +1,7 @@
 package testing;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.persistence.*;
 
@@ -8,6 +9,7 @@ import junit.framework.Assert;
 import model.meta.CustomType;
 
 import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.junit.*;
 
@@ -70,6 +72,42 @@ public class AB_OneToOne {
     }
 
     @Test
+    public void simpleTypeAwithB() {
+        EntityManager em = emf.createEntityManager();
+
+        Assert.assertNotNull(JpaHelper.getServerSession(emf).getDescriptorForAlias("SimpleB"));
+
+        CustomType simpleType = em.find(CustomType.class, "SimpleB");
+
+        Assert.assertNotNull(simpleType);
+
+        EntityType simpleEntityTypeB = DynamicHelper.getType(JpaHelper.getServerSession(emf), "SimpleB");
+        Assert.assertNotNull(simpleEntityTypeB);
+
+        DynamicEntity simpleInstanceB = simpleEntityTypeB.newInstance();
+        simpleInstanceB.set("id", 1);
+        simpleInstanceB.set("value1", "B1");
+
+        EntityType simpleEntityTypeA = DynamicHelper.getType(JpaHelper.getServerSession(emf), "SimpleA");
+        Assert.assertNotNull(simpleEntityTypeA);
+
+        DynamicEntity simpleInstanceA = simpleEntityTypeA.newInstance();
+        simpleInstanceA.set("id", 1);
+        simpleInstanceA.set("value1", "A1");
+        simpleInstanceA.set("b", simpleInstanceA);
+
+        em.getTransaction().begin();
+        em.persist(simpleInstanceB);
+        em.persist(simpleInstanceA);
+        em.getTransaction().commit();
+
+        int simpleCount = ((Number) em.createQuery("SELECT COUNT(s) FROM SimpleB s").getSingleResult()).intValue();
+        Assert.assertEquals(1, simpleCount);
+
+        em.close();
+    }
+
+    @Test
     public void buildCustomTypesFromDB() {
         emf.close();
         emf = Persistence.createEntityManagerFactory("custom-types");
@@ -118,8 +156,9 @@ public class AB_OneToOne {
     public static void setUp() {
         Map properties = new HashMap();
 
-        //properties.put("eclipselink.ddl-generation.output-mode", "database");
-        //properties.put("eclipselink.ddl-generation", "drop-and-create-tables");
+        // properties.put("eclipselink.ddl-generation.output-mode", "database");
+        // properties.put("eclipselink.ddl-generation",
+        // "drop-and-create-tables");
 
         emf = Persistence.createEntityManagerFactory("custom-types", properties);
 
@@ -138,7 +177,7 @@ public class AB_OneToOne {
         simpleTypeA.setTableName("CUSTOM_SIMPLE_A");
         simpleTypeA.addField("id", int.class.getName(), "SID").setId(true);
         simpleTypeA.addField("value1", String.class.getName(), "VAL_1");
-        simpleTypeA.addRelationship("b", simpleTypeB.getClassName(), simpleTypeB, "B_FK");
+        simpleTypeA.addOneToOne("b", simpleTypeB, "B_FK");
 
         simpleTypeA.createType(emf, true, true);
 
@@ -147,15 +186,22 @@ public class AB_OneToOne {
     @AfterClass
     public static void shutdown() {
         EntityManager em = emf.createEntityManager();
-        
+
         em.getTransaction().begin();
-        em.createQuery("DELETE FROM CustomRelationship").executeUpdate();
         em.createQuery("DELETE FROM CustomField").executeUpdate();
         em.createQuery("DELETE FROM CustomType").executeUpdate();
-        em.createNativeQuery("DROP TABLE CUSTOM_SIMPLE_B CASCADE CONSTRAINTS").executeUpdate();
-        em.createNativeQuery("DROP TABLE CUSTOM_SIMPLE_A CASCADE CONSTRAINTS").executeUpdate();
+        try {
+            em.createNativeQuery("DROP TABLE CUSTOM_SIMPLE_A CASCADE CONSTRAINTS").executeUpdate();
+        } catch (DatabaseException dbe) {
+            // ignore
+        }
+        try {
+            em.createNativeQuery("DROP TABLE CUSTOM_SIMPLE_B CASCADE CONSTRAINTS").executeUpdate();
+        } catch (DatabaseException dbe) {
+            // ignore
+        }
         em.getTransaction().commit();
-        
+
         emf.close();
     }
 }

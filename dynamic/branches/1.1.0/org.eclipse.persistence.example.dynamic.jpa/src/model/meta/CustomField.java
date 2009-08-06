@@ -11,8 +11,8 @@ import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 @IdClass(CustomField.ID.class)
 @Table(name = "CUSTOM_FIELD")
 @Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn(name = "FIELD_TYPE", discriminatorType = DiscriminatorType.CHAR)
-@DiscriminatorValue("F")
+@DiscriminatorColumn(name = "FIELD_TYPE", discriminatorType = DiscriminatorType.STRING, length=10)
+@DiscriminatorValue("FIELD")
 public class CustomField {
 
     @Id
@@ -41,12 +41,10 @@ public class CustomField {
 
     }
 
-    protected CustomField(String name, String javaType, String fieldName, CustomType customType) {
+    protected CustomField(String name, String javaType, String fieldName) {
         this();
         this.name = name;
         this.javaType = javaType;
-        this.type = customType;
-        this.typeName = customType.getName();
         this.fieldName = fieldName;
     }
 
@@ -88,6 +86,11 @@ public class CustomField {
      */
     public void setId(boolean isId) {
         this.isId = isId;
+    }
+
+    protected void setType(CustomType type) {
+        this.type = type;
+        this.typeName = type.getName();
     }
 
     protected void addToType(DynamicConversionManager dcm, EntityTypeImpl entityType) {

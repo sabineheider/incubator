@@ -142,7 +142,13 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
 
     // TODO: Ensure value is appropriate for mapping type?
     public DynamicEntity set(DatabaseMapping mapping, Object value) {
-        mapping.setAttributeValueInObject(this, value);
+        Object currentValue = mapping.getAttributeValueFromObject(this);
+
+        if (currentValue instanceof ValueHolderInterface) {
+            ((ValueHolderInterface) currentValue).setValue(value);
+        } else {
+            mapping.setAttributeValueInObject(this, value);
+        }
         return this;
     }
 
@@ -357,5 +363,5 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         // TODO Auto-generated method stub
         return false;
     }
-    
+
 }

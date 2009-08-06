@@ -29,6 +29,7 @@ import org.eclipse.persistence.descriptors.changetracking.AttributeChangeTrackin
 import org.eclipse.persistence.dynamic.DynamicEntityException;
 import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.exceptions.DescriptorException;
+import org.eclipse.persistence.indirection.ValueHolder;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl.ValuesAccessor;
 import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 import org.eclipse.persistence.internal.security.PrivilegedAccessHelper;
@@ -163,7 +164,11 @@ public class EntityTypeImpl implements EntityType {
     }
 
     private boolean requiresInitialization(DatabaseMapping mapping) {
-        // TODO Auto-generated method stub
+        if (mapping.isForeignReferenceMapping()) {
+            ForeignReferenceMapping frMapping = (ForeignReferenceMapping) mapping;
+            
+            return frMapping.usesIndirection() || frMapping.isCollectionMapping();
+        }
         return false;
     }
 
@@ -182,7 +187,15 @@ public class EntityTypeImpl implements EntityType {
     }
 
     private void initializeValue(DatabaseMapping mapping, DynamicEntityImpl entity) {
-        // TODO Auto-generated method stub
+        if (mapping.isLazy()) {
+            if (mapping.isOneToOneMapping()) {
+                OneToOneMapping otoMapping = (OneToOneMapping) mapping;
+
+                if (otoMapping.usesIndirection()) {
+                    mapping.setAttributeValueInObject(entity, new ValueHolder());
+                }
+            }
+        }
 
     }
 
@@ -309,13 +322,17 @@ public class EntityTypeImpl implements EntityType {
         return mapping;
     }
 
-    public OneToOneMapping addOneToOneMapping(String name, Class refType, String fieldName) {
+    public OneToOneMapping addOneToOneMapping(String name, Class refType, String fkFieldName, String targetField) {
         OneToOneMapping mapping = new OneToOneMapping();
         mapping.setAttributeName(name);
-        mapping.setReferenceClass(refType); // TODO
-        mapping.addForeignKeyFieldName(fieldName, "?");
+        mapping.setReferenceClass(refType);
+        mapping.addForeignKeyFieldName(fkFieldName, targetField);
         descriptor.addMapping(mapping);
         mapping.setAttributeAccessor(new ValuesAccessor(mapping, getDescriptor().getMappings().indexOf(mapping)));
+        
+        if (requiresInitialization(mapping)) {
+            getMappingsRequiringInitialization().add(mapping);
+        }
 
         return mapping;
     }

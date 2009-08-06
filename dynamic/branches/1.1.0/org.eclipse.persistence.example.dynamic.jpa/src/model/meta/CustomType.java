@@ -131,18 +131,30 @@ public class CustomType {
         this.tableName = tableName;
     }
 
+    protected CustomField addField(CustomField field) {
+        getFields().add(field);
+        field.setType(this);
+        return field;
+    }
+    
     public CustomField addField(String name, String javaType, String fieldName) {
-        CustomField field = new CustomField(name, javaType, fieldName, this);
-        getFields().add(field);
-        return field;
+        CustomField field = new CustomField(name, javaType, fieldName);
+        return addField(field);
     }
 
-    public CustomField addRelationship(String name, String javaType, CustomType referenceType, String fieldName) {
-        CustomField field = new CustomRelationship(name, javaType, referenceType, fieldName, this);
-        getFields().add(field);
-        return field;
+    public OneToOneRelationship addOneToOne(String name, CustomType referenceType, String fieldName) {
+        OneToOneRelationship field = new OneToOneRelationship(name, referenceType, fieldName);
+         return (OneToOneRelationship) addField(field);
     }
 
+    public ManyToOneRelationship addManyToOne(String name, CustomType referenceType, String fieldName) {
+        OneToOneRelationship field = new OneToOneRelationship(name, referenceType, fieldName);
+         return (ManyToOneRelationship) addField(field);
+    }
+    public ManyToManyRelationship addManyToMany(String name, CustomType referenceType, String fieldName) {
+        OneToOneRelationship field = new OneToOneRelationship(name, referenceType, fieldName);
+         return (ManyToManyRelationship) addField(field);
+    }
     /**
      * 
      * @param emf
@@ -185,9 +197,18 @@ public class CustomType {
                 }
             }
 
-            new SchemaManager(session).replaceObject(tableDef);
+            new SchemaManager(session).createObject(tableDef);
         }
 
         return entityType;
+    }
+
+    public String getIdFieldName() {
+        for (CustomField field: getFields()) {
+            if (field.isId()) {
+                return field.getFieldName();
+            }
+        }
+        throw new IllegalStateException("No Id field found on class: " + getName());
     }
 }
