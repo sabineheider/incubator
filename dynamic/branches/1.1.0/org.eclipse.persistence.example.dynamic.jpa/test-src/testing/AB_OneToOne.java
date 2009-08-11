@@ -11,6 +11,7 @@ import model.meta.CustomType;
 import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.sessions.server.Server;
 import org.junit.*;
 
 public class AB_OneToOne {
@@ -85,15 +86,15 @@ public class AB_OneToOne {
         Assert.assertNotNull(simpleEntityTypeB);
 
         DynamicEntity simpleInstanceB = simpleEntityTypeB.newInstance();
-        simpleInstanceB.set("id", 1);
-        simpleInstanceB.set("value1", "B1");
+        simpleInstanceB.set("id", 2);
+        simpleInstanceB.set("value1", "B2");
 
         EntityType simpleEntityTypeA = DynamicHelper.getType(JpaHelper.getServerSession(emf), "SimpleA");
         Assert.assertNotNull(simpleEntityTypeA);
 
         DynamicEntity simpleInstanceA = simpleEntityTypeA.newInstance();
-        simpleInstanceA.set("id", 1);
-        simpleInstanceA.set("value1", "A1");
+        simpleInstanceA.set("id", 2);
+        simpleInstanceA.set("value1", "A2");
         simpleInstanceA.set("b", simpleInstanceA);
 
         em.getTransaction().begin();
@@ -102,7 +103,7 @@ public class AB_OneToOne {
         em.getTransaction().commit();
 
         int simpleCount = ((Number) em.createQuery("SELECT COUNT(s) FROM SimpleB s").getSingleResult()).intValue();
-        Assert.assertEquals(1, simpleCount);
+        Assert.assertEquals(2, simpleCount);
 
         em.close();
     }
@@ -156,11 +157,22 @@ public class AB_OneToOne {
     public static void setUp() {
         Map properties = new HashMap();
 
-        // properties.put("eclipselink.ddl-generation.output-mode", "database");
-        // properties.put("eclipselink.ddl-generation",
-        // "drop-and-create-tables");
+        properties.put("eclipselink.ddl-generation.output-mode", "database");
+        properties.put("eclipselink.ddl-generation", "drop-and-create-tables");
 
         emf = Persistence.createEntityManagerFactory("custom-types", properties);
+
+        Server session = JpaHelper.getServerSession(emf);
+        try {
+            session.executeNonSelectingSQL("DROP TABLE CUSTOM_SIMPLE_A CASCADE CONSTRAINTS");
+        } catch (DatabaseException dbe) {
+            // ignore
+        }
+        try {
+            session.executeNonSelectingSQL("DROP TABLE CUSTOM_SIMPLE_B CASCADE CONSTRAINTS");
+        } catch (DatabaseException dbe) {
+            // ignore
+        }
 
         CustomType simpleTypeB = new CustomType();
         simpleTypeB.setName("SimpleB");
@@ -183,25 +195,20 @@ public class AB_OneToOne {
 
     }
 
-    @AfterClass
-    public static void shutdown() {
+    @After
+    public void clearDynamicTables() {
         EntityManager em = emf.createEntityManager();
 
         em.getTransaction().begin();
-        em.createQuery("DELETE FROM CustomField").executeUpdate();
-        em.createQuery("DELETE FROM CustomType").executeUpdate();
-        try {
-            em.createNativeQuery("DROP TABLE CUSTOM_SIMPLE_A CASCADE CONSTRAINTS").executeUpdate();
-        } catch (DatabaseException dbe) {
-            // ignore
-        }
-        try {
-            em.createNativeQuery("DROP TABLE CUSTOM_SIMPLE_B CASCADE CONSTRAINTS").executeUpdate();
-        } catch (DatabaseException dbe) {
-            // ignore
-        }
+        em.createQuery("DELETE FROM SimpleA a WHERE a.id > 1").executeUpdate();
+        em.createQuery("DELETE FROM SimpleB b WHERE b.id > 1").executeUpdate();
         em.getTransaction().commit();
+        em.close();
+    }
 
+    @AfterClass
+    public static void shutdown() {
         emf.close();
     }
+
 }

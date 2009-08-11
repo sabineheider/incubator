@@ -108,7 +108,8 @@ public class SimpleType {
         em.createQuery("DELETE FROM CustomType").executeUpdate();
         em.createNativeQuery("DROP TABLE CUSTOM_SIMPLE CASCADE CONSTRAINTS").executeUpdate();
         em.getTransaction().commit();
-        
+
+        em.close();
         emf.close();
     }
 }
