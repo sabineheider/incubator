@@ -60,11 +60,6 @@ public class DynamicEntityException extends EclipseLinkException {
 				+ " of type: " + entity.getClass());
 	}
 
-	public static DynamicEntityException featureNotSupported(String message) {
-		return new DynamicEntityException(
-				"DynamicEntity does not yet support: " + message);
-	}
-
 	public static DynamicEntityException propertyNotReference(
 			DatabaseMapping mapping) {
 		return new DynamicEntityException(

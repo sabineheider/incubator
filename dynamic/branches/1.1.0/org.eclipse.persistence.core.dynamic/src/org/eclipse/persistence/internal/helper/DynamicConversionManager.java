@@ -27,7 +27,12 @@ import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.sessions.Session;
 
 /**
- * 
+ * Custom {@link ConversionManager} used in EclipseLink session where Dynamic
+ * Persistence is required.
+ * <p>
+ * NOTE: When this code is migrated into the incubator this code will become
+ * part of the core {@link ConversionManager} and this custom subclass will no
+ * longer be needed.
  * 
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
@@ -37,7 +42,7 @@ public class DynamicConversionManager extends ConversionManager {
     /**
      * Lookup the DynamicConversionManager for the given session. If the
      * existing ConversionManager is not an instance of DynamicConversionManager
-     * then create a new one and replace the exitsing one.
+     * then create a new one and replace the existing one.
      * 
      * @param session
      * @return

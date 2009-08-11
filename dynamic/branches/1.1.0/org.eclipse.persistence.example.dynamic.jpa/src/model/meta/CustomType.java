@@ -1,6 +1,7 @@
 package model.meta;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.persistence.*;
 
@@ -10,7 +11,7 @@ import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 import org.eclipse.persistence.internal.jpa.CMP3Policy;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.sessions.server.Server;
-import org.eclipse.persistence.tools.schemaframework.*;
+import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 
 @Entity
 @Table(name = "CUSTOM_TYPE")
@@ -37,6 +38,9 @@ public class CustomType {
 
     @Column(name = "TABLE_NAME")
     private String tableName;
+
+    @Transient
+    private EntityTypeImpl entityType;
 
     public CustomType() {
         this.fields = new ArrayList<CustomField>();
@@ -131,12 +135,20 @@ public class CustomType {
         this.tableName = tableName;
     }
 
+    /**
+     * @return the {@link EntityTypeImpl} cached during
+     *         {@link #createType(EntityManagerFactory, boolean, boolean)}
+     */
+    public EntityType getEntityType() {
+        return this.entityType;
+    }
+
     protected CustomField addField(CustomField field) {
         getFields().add(field);
         field.setType(this);
         return field;
     }
-    
+
     public CustomField addField(String name, String javaType, String fieldName) {
         CustomField field = new CustomField(name, javaType, fieldName);
         return addField(field);
@@ -144,20 +156,27 @@ public class CustomType {
 
     public OneToOneRelationship addOneToOne(String name, CustomType referenceType, String fieldName) {
         OneToOneRelationship field = new OneToOneRelationship(name, referenceType, fieldName);
-         return (OneToOneRelationship) addField(field);
+        return (OneToOneRelationship) addField(field);
     }
 
     public ManyToOneRelationship addManyToOne(String name, CustomType referenceType, String fieldName) {
         OneToOneRelationship field = new OneToOneRelationship(name, referenceType, fieldName);
-         return (ManyToOneRelationship) addField(field);
+        return (ManyToOneRelationship) addField(field);
     }
+
     public ManyToManyRelationship addManyToMany(String name, CustomType referenceType, String fieldName) {
         OneToOneRelationship field = new OneToOneRelationship(name, referenceType, fieldName);
-         return (ManyToManyRelationship) addField(field);
+        return (ManyToManyRelationship) addField(field);
     }
+
     /**
+     * Create a dynamic type defined by a {@link EntityTypeImpl} instance
      * 
      * @param emf
+     * @param persist
+     *            indicates if this type instance should be persisted.
+     * @param createSchema
+     *            if true a table is created for the specified object
      * @return
      */
     public EntityType createType(EntityManagerFactory emf, boolean persist, boolean createSchema) {
@@ -187,24 +206,16 @@ public class CustomType {
         session.addDescriptor(entityType.getDescriptor());
 
         if (createSchema) {
-            TableCreator creator = new DefaultTableGenerator(session.getProject()).generateDefaultTableCreator();
-
-            TableDefinition tableDef = null;
-            for (Iterator i = creator.getTableDefinitions().iterator(); tableDef == null && i.hasNext();) {
-                TableDefinition td = (TableDefinition) i.next();
-                if (td.getName().equalsIgnoreCase(getTableName())) {
-                    tableDef = td;
-                }
-            }
-
-            new SchemaManager(session).createObject(tableDef);
+            new DynamicSchemaManager(session).createTables(entityType);
         }
 
+        entityType.getDescriptor().setProperty(EntityTypeImpl.DESCRIPTOR_PROPERTY, entityType);
+        this.entityType = entityType;
         return entityType;
     }
 
     public String getIdFieldName() {
-        for (CustomField field: getFields()) {
+        for (CustomField field : getFields()) {
             if (field.isId()) {
                 return field.getFieldName();
             }

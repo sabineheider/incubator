@@ -10,7 +10,7 @@
  * Contributors:
  * 		dclarke - initial JPA Employee example using XML (bug 217884)
  ******************************************************************************/
-package testing;
+package testing.employee;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;

@@ -9,49 +9,24 @@
  *
  * Contributors:
  *     dclarke - Dynamic Persistence INCUBATION - Enhancement 200045
- *     			 http://wiki.eclipse.org/EclipseLink/Development/JPA/Dynamic
+ *               http://wiki.eclipse.org/EclipseLink/Development/JPA/Dynamic
  *     
  * This code is being developed under INCUBATION and is not currently included 
  * in the automated EclipseLink build. The API in this code may change, or 
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package org.eclipse.persistence.dynamic;
+package example.employee;
 
-import java.util.List;
-
-import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.mappings.DatabaseMapping;
+import org.eclipse.persistence.dynamic.EntityType;
 
 /**
- * An EntityType provides a metadata facade into the EclipseLink
- * object-relational metadata (descriptors & mappings) with specific knowledge
- * of the entity types being dynamic.
+ * factory for the creation of the dynamic {@link EntityType}'s required for the
+ * employee example.
  * 
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
-public interface EntityType {
+public class EntityTypeFactory {
 
-    /**
-     * Return the entity type's name. This is the short name of the class or the {@link ClassDescriptor#getAlias()}
-     * @return
-     */
-    public String getName();
-
-    public int getNumberOfProperties();
-
-    public List<String> getPropertiesNames();
-
-    public boolean containsProperty(String propertyName);
-
-    public List<DatabaseMapping> getMappings();
-
-    public int getPropertyIndex(String propertyName);
-
-    public Class getJavaClass();
-
-    public DynamicEntity newInstance();
-
-    public <T> T unwrap(Class<T> T);
 }

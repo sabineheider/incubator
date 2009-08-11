@@ -10,7 +10,7 @@
  * Contributors:
  * 		dclarke - initial JPA Employee example using XML (bug 217884)
  ******************************************************************************/
-package testing;
+package testing.employee;
 
 import java.util.*;
 
@@ -27,6 +27,8 @@ import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.tools.schemaframework.*;
 import org.junit.Test;
 
+import testing.util.EclipseLinkJPATest;
+
 /**
  * Utility class to create the database schema and populate it for the Employee
  * JPA example using XML configuration. This
@@ -34,7 +36,7 @@ import org.junit.Test;
  * @author dclarke
  * @since EclipseLink 1.1
  */
-@PersistenceContext(unitName = "employee")
+@PersistenceContext(unitName = "custom-types")
 public class CreateDatabaseSession extends EclipseLinkJPATest {
 
     @Test
@@ -44,7 +46,7 @@ public class CreateDatabaseSession extends EclipseLinkJPATest {
         Assert.assertNotNull(em);
         Assert.assertTrue(em.isOpen());
         
-        Server serverSession = (Server) SessionManager.getManager().getSession("employee");
+        Server serverSession = (Server) SessionManager.getManager().getSession("custom-types");
         Assert.assertNotNull(serverSession);
         Assert.assertTrue(serverSession.isConnected());
         

@@ -11,7 +11,7 @@
  * 		dclarke - initial JPA Employee example using XML (bug 217884)
  * 				- ported from earlier Oracle Toplink examples
  ******************************************************************************/
-package testing;
+package testing.util;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,7 +31,6 @@ import org.eclipse.persistence.jpa.JpaHelper;
 import org.junit.After;
 import org.junit.AfterClass;
 
-import testing.util.QuerySQLTracker;
 
 /**
  * Base test case for testing a JPA persistence unit in JavaSE using JUnit4.

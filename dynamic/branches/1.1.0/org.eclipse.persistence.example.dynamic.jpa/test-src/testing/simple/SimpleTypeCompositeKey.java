@@ -1,4 +1,4 @@
-package testing;
+package testing.simple;
 
 import java.util.*;
 
@@ -11,9 +11,14 @@ import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.junit.*;
 
-public class SimpleType {
+public class SimpleTypeCompositeKey {
 
     private static EntityManagerFactory emf;
+
+    @Test
+    public void verifyConfig() throws Exception {
+        Assert.fail("NOT YET IMPLEMENTED");
+    }
 
     @Test
     public void simpleType() {
@@ -79,15 +84,15 @@ public class SimpleType {
     public static void setUp() {
         Map properties = new HashMap();
 
-        //properties.put("eclipselink.ddl-generation.output-mode", "database");
-        //properties.put("eclipselink.ddl-generation", "drop-and-create-tables");
+        properties.put("eclipselink.ddl-generation.output-mode", "database");
+        properties.put("eclipselink.ddl-generation", "drop-and-create-tables");
 
-        emf = Persistence.createEntityManagerFactory("custom-types", properties);
+        emf = Persistence.createEntityManagerFactory("custom-types", properties);      
 
         CustomType simpleType = new CustomType();
         simpleType.setName("Simple");
         simpleType.setClassName("model.Simple");
-        simpleType.setTableName("CUSTOM_SIMPLE");
+        simpleType.setTableName("SIMPLE_TYPE");
         simpleType.addField("id", int.class.getName(), "SID").setId(true);
         simpleType.addField("value1", String.class.getName(), "VAL_1");
         simpleType.addField("value2", boolean.class.getName(), "VAL_2");
@@ -101,12 +106,14 @@ public class SimpleType {
     @AfterClass
     public static void shutdown() {
         EntityManager em = emf.createEntityManager();
-        
+
         em.getTransaction().begin();
-        em.createQuery("DELETE FROM CustomRelationship").executeUpdate();
-        em.createQuery("DELETE FROM CustomField").executeUpdate();
-        em.createQuery("DELETE FROM CustomType").executeUpdate();
-        em.createNativeQuery("DROP TABLE CUSTOM_SIMPLE CASCADE CONSTRAINTS").executeUpdate();
+        em.createNativeQuery("DELETE FROM CUSTOM_REL_MTM").executeUpdate();
+        em.createNativeQuery("DELETE FROM CUSTOM_REL_MTO").executeUpdate();
+        em.createNativeQuery("DELETE FROM CUSTOM_REL_OTO").executeUpdate();
+        em.createNativeQuery("DELETE FROM CUSTOM_FIELD").executeUpdate();
+        em.createNativeQuery("DELETE FROM CUSTOM_TYPE").executeUpdate();
+        em.createNativeQuery("DROP TABLE SIMPLE_TYPE CASCADE CONSTRAINTS").executeUpdate();
         em.getTransaction().commit();
 
         em.close();

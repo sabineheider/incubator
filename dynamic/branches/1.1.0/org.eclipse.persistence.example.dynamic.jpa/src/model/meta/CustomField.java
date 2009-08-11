@@ -96,9 +96,6 @@ public class CustomField {
     protected void addToType(DynamicConversionManager dcm, EntityTypeImpl entityType) {
         Class javaClass = dcm.convertClassNameToClass(getJavaType());
         entityType.addDirectMapping(getName(), javaClass, getFieldName(), isId());
-        if (isId()) {
-            entityType.getDescriptor().addPrimaryKeyFieldName(getFieldName());
-        }
     }
 
     public static class ID implements Serializable {

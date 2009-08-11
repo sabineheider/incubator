@@ -16,7 +16,7 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package example;
+package example.employee;
 
 import java.util.*;
 

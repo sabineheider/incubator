@@ -21,9 +21,10 @@ package testing;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-import util.CreateSchema;
+import testing.simple.SimpleType;
+import testing.simple.SimpleTypes_OneToOne;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { CreateSchema.class, SimpleType.class, AB_OneToOne.class })
+@Suite.SuiteClasses( { testing.simple.AllTests.class })
 public class AllTests {
 }

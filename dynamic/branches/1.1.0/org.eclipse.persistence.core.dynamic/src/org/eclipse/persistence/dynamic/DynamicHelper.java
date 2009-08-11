@@ -19,26 +19,19 @@
 package org.eclipse.persistence.dynamic;
 
 import java.util.Iterator;
-import java.util.Map;
 
 import org.eclipse.persistence.config.SessionCustomizer;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.helper.*;
-import org.eclipse.persistence.logging.AbstractSessionLog;
-import org.eclipse.persistence.logging.SessionLog;
-import org.eclipse.persistence.sequencing.*;
-import org.eclipse.persistence.sessions.*;
-import org.eclipse.persistence.tools.schemaframework.FieldDefinition;
-import org.eclipse.persistence.tools.schemaframework.TableDefinition;
+import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.Session;
 
 /**
- * A DynamicSessionFactory is the factory to bootstrap a session that will use
- * dynamic entity types as well as being a helper class for using these types.
- * The standard TopLink interface has many dependencies on the concrete class.
- * These concrete classes will not be available for the application developer
- * and instead they must use aliases or assumed String class names. This factory
- * will assist in the writing of TopLink enabled applications.
+ * A DynamicHelper provides some utility methods to simplify application
+ * development with dynamic types. Since the application does not have static
+ * references to the dynamic types it must use entity names. This helper
+ * provides simplified access to methods that would typically require the static
+ * classes.
  * 
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
@@ -50,9 +43,6 @@ public class DynamicHelper {
      * for factory creation but can also be used to provide the application with
      * access to the meta model (type and properties) allowing for dynamic use
      * as well as optimized data value retrieval from an entity.
-     * 
-     * @param typeName
-     * @return
      */
     public static EntityType getType(DatabaseSession session, String typeName) {
         if (session == null) {
@@ -97,14 +87,18 @@ public class DynamicHelper {
 
         if (type != null) {
             session.getIdentityMapAccessor().initializeIdentityMap(type.getJavaClass());
-            
+
             ClassDescriptor descriptor = type.unwrap(ClassDescriptor.class);
-            
+
             session.getProject().getOrderedDescriptors().remove(descriptor);
             session.getProject().getDescriptors().remove(type.getJavaClass());
         }
     }
 
+    /**
+     * {@link SessionCustomizer} which configures all descriptors as dynamic
+     * entity types.
+     */
     public static class Configure implements SessionCustomizer {
 
         public void customize(Session session) throws Exception {
@@ -115,117 +109,6 @@ public class DynamicHelper {
 
         }
 
-    }
-
-    /**
-     * 
-     * @param type
-     * @param session
-     */
-    public static TableDefinition createTable(EntityType type, Session session) {
-        ClassDescriptor descriptor = type.unwrap(ClassDescriptor.class);
-        TableDefinition tblDef = new TableDefinition();
-        DatabaseTable dbTbl = descriptor.getTables().get(0);
-        tblDef.setName(dbTbl.getName());
-        tblDef.setQualifier(dbTbl.getTableQualifier());
-
-        // build each field definition and figure out which table it goes
-        Iterator fieldIter = descriptor.getFields().iterator();
-        DatabaseField dbField = null;
-
-        while (fieldIter.hasNext()) {
-            dbField = (DatabaseField) fieldIter.next();
-
-            boolean isPKField = false;
-
-            // first check if the filed is a pk field in the default table.
-            isPKField = descriptor.getPrimaryKeyFields().contains(dbField);
-
-            // then check if the field is a pk field in the secondary table(s),
-            // this is only applied to the multiple tables case.
-            Map secondaryKeyMap = descriptor.getAdditionalTablePrimaryKeyFields().get(dbField.getTable());
-
-            if (secondaryKeyMap != null) {
-                isPKField = isPKField || secondaryKeyMap.containsValue(dbField);
-            }
-
-            // build or retrieve the field definition.
-            FieldDefinition fieldDef = getFieldDefFromDBField(dbField, isPKField, session);
-            if (isPKField) {
-                // Check if the generation strategy is IDENTITY
-                String sequenceName = descriptor.getSequenceNumberName();
-                DatabaseLogin login = session.getProject().getLogin();
-                Sequence seq = login.getSequence(sequenceName);
-                if (seq instanceof DefaultSequence) {
-                    seq = login.getDefaultSequence();
-                }
-                // The native sequence whose value should be aquired after
-                // insert is identity sequence
-                boolean isIdentity = seq instanceof NativeSequence && seq.shouldAcquireValueAfterInsert();
-                fieldDef.setIsIdentity(isIdentity);
-            }
-
-            if (!tblDef.getFields().contains(fieldDef)) {
-                tblDef.addField(fieldDef);
-            }
-        }
-
-        return tblDef;
-    }
-
-    /**
-     * Build a field definition object from a database field.
-     */
-    private static FieldDefinition getFieldDefFromDBField(DatabaseField dbField, boolean isPrimaryKey, Session session) {
-        FieldDefinition fieldDef = new FieldDefinition();
-        fieldDef.setName(dbField.getName());
-
-        if (dbField.getColumnDefinition() != null && dbField.getColumnDefinition().length() > 0) {
-            // This column definition would include the complete definition of
-            // the
-            // column like type, size, "NULL/NOT NULL" clause, unique key clause
-            fieldDef.setTypeDefinition(dbField.getColumnDefinition());
-        } else {
-            Class fieldType = dbField.getType();
-
-            // Check if the user field is a String and only then allow the
-            // length specified
-            // in the @Column annotation to be set on the field.
-            if ((fieldType != null)) {
-                if (fieldType.equals(ClassConstants.STRING) || fieldType.equals(ClassConstants.APCHAR) || fieldType.equals(ClassConstants.ACHAR)) {
-                    // The field size is defaulted to "255" or use the user
-                    // supplied length
-                    fieldDef.setSize(dbField.getLength());
-                } else {
-                    if (dbField.getPrecision() > 0) {
-                        fieldDef.setSize(dbField.getPrecision());
-                        fieldDef.setSubSize(dbField.getScale());
-                    }
-                }
-            }
-
-            if ((fieldType == null) || (!fieldType.isPrimitive() && (session.getPlatform().getFieldTypeDefinition(fieldType) == null))) {
-                // TODO: log a warning for inaccessiable type or not convertable
-                // type.
-                AbstractSessionLog.getLog().log(SessionLog.FINEST, "field_type_set_to_java_lang_string", dbField.getQualifiedName(), fieldType);
-
-                // set the default type (lang.String) to all un-resolved java
-                // type, like null, Number, util.Date, NChar/NType, Calendar
-                // sql.Blob/Clob, Object, or unknown type). Please refer to bug
-                // 4352820.
-                fieldDef.setType(ClassConstants.STRING);
-            } else {
-                // need to convert the primitive type if applied.
-                fieldDef.setType(ConversionManager.getObjectClass(fieldType));
-            }
-
-            fieldDef.setShouldAllowNull(dbField.isNullable());
-            fieldDef.setUnique(dbField.isUnique());
-        }
-
-        fieldDef.setIsPrimaryKey(isPrimaryKey);
-
-        return fieldDef;
     }
 
 }

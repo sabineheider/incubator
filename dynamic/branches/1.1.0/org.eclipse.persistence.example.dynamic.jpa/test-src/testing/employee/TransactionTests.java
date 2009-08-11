@@ -10,7 +10,7 @@
  * Contributors:
  * 		dclarke - initial JPA Employee example using XML (bug 217884)
  ******************************************************************************/
-package testing;
+package testing.employee;
 
 import static junit.framework.Assert.*;
 
@@ -23,9 +23,11 @@ import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.sessions.server.Server;
 import org.junit.Test;
 
-import example.*;
+import testing.util.EclipseLinkJPATest;
 
-@PersistenceContext(unitName="employee")
+import example.employee.*;
+
+@PersistenceContext(unitName="custom-types")
 public class TransactionTests extends EclipseLinkJPATest {
 
 	Transactions transactions = new Transactions();

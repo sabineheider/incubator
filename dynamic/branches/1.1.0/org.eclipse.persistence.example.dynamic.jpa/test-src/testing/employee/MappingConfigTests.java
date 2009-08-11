@@ -10,9 +10,11 @@
  * Contributors:
  * 		dclarke - initial JPA Employee example using XML (bug 217884)
  ******************************************************************************/
-package testing;
+package testing.employee;
 
 import static org.junit.Assert.*;
+
+import javax.persistence.PersistenceContext;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.jpa.JpaHelper;
@@ -21,6 +23,8 @@ import org.eclipse.persistence.mappings.OneToOneMapping;
 import org.eclipse.persistence.sessions.server.Server;
 import org.junit.Test;
 
+import testing.util.EclipseLinkJPATest;
+
 /**
  * Set of tests to ensure the mappings are properly populated from the provided
  * annotations/xml.
@@ -28,6 +32,7 @@ import org.junit.Test;
  * @author dclarke
  * @since EclipseLink 1.1
  */
+@PersistenceContext(unitName="custom-types")
 public class MappingConfigTests extends EclipseLinkJPATest {
 
     @Test
@@ -41,7 +46,7 @@ public class MappingConfigTests extends EclipseLinkJPATest {
         assertEquals(1, session.getDefaultConnectionPool().getMinNumberOfConnections());
 
         assertTrue(session.getName().startsWith("file"));
-        assertTrue(session.getName().endsWith("employee"));
+        assertTrue(session.getName().endsWith("custom-types"));
     }
 
     @Test

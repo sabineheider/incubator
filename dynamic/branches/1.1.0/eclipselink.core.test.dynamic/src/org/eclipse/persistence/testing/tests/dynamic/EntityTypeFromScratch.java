@@ -47,7 +47,7 @@ public class EntityTypeFromScratch {
         session.getSessionLog().setLevel(SessionLog.FINE);
         session.login();
 
-        entityType.initialize(session);
+        entityType.addToSession(session);
         new SchemaManager(session).replaceDefaultTables();
 
         DynamicEntity entity = entityType.newInstance();

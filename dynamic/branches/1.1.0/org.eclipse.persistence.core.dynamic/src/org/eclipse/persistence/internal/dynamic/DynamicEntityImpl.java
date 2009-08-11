@@ -27,6 +27,7 @@ import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.exceptions.DescriptorException;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.internal.descriptors.PersistenceEntity;
+import org.eclipse.persistence.internal.helper.ClassConstants;
 import org.eclipse.persistence.internal.identitymaps.CacheKey;
 import org.eclipse.persistence.internal.localization.ExceptionLocalization;
 import org.eclipse.persistence.internal.weaving.PersistenceWeavedLazy;
@@ -53,6 +54,7 @@ import org.eclipse.persistence.sessions.Session;
  * 
  * @see DynamicEntity
  * @See DynamicAttributeAccessor
+ * @see EntityTypeImpl
  * 
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
@@ -140,7 +142,6 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         return set(getTypeImpl().getMapping(propertyName), value);
     }
 
-    // TODO: Ensure value is appropriate for mapping type?
     public DynamicEntity set(DatabaseMapping mapping, Object value) {
         Object currentValue = mapping.getAttributeValueFromObject(this);
 
@@ -186,12 +187,17 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         return map.put(key, value);
     }
 
-    public PropertyChangeListener _persistence_getPropertyChangeListener() {
-        return this.changeListener;
+    public boolean isSet(DatabaseMapping mapping) {
+        ValuesAccessor accessor = (ValuesAccessor) mapping.getAttributeAccessor();
+        return accessor.isSet(this);
     }
 
-    public void _persistence_setPropertyChangeListener(PropertyChangeListener listener) {
-        this.changeListener = listener;
+    public boolean isSet(int propertyIndex) {
+        return isSet(getTypeImpl().getMapping(propertyIndex));
+    }
+
+    public boolean isSet(String propertyName) {
+        return isSet(getTypeImpl().getMapping(propertyName));
     }
 
     /**
@@ -215,6 +221,14 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         return writer.toString();
     }
 
+    public PropertyChangeListener _persistence_getPropertyChangeListener() {
+        return this.changeListener;
+    }
+
+    public void _persistence_setPropertyChangeListener(PropertyChangeListener listener) {
+        this.changeListener = listener;
+    }
+
     public FetchGroup _persistence_getFetchGroup() {
         return this.fetchGroup;
     }
@@ -227,9 +241,14 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         return this.fetchGroup == null || this.fetchGroup.containsAttribute(attribute);
     }
 
+    /*
+     * Reset all attributes of the tracked object to the un-fetched state with
+     * initial default values.
+     */
     public void _persistence_resetFetchGroup() {
-        // TODO: What do we do here?
-        this.refreshFetchGroup = true;
+        // TODO: Clear all values that are not to be fetched ensuring that any
+        // values that require initialization are properly initialized
+        throw new UnsupportedOperationException("DynamicEntityImpl._persistence_resetFetchGroup:: NOT SUPPORTED");
     }
 
     public void _persistence_setFetchGroup(FetchGroup group) {
@@ -331,6 +350,14 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
             values[getIndex()] = value == null ? NULL_ENTRY : value;
         }
 
+        protected boolean isSet(Object entity) throws DescriptorException {
+            Object[] values = getValues(entity);
+            Object value = values[getIndex()];
+           
+            return value != null || value == NULL_ENTRY;
+        }
+
+
         @Override
         public Class getAttributeClass() {
             if (getMapping().isForeignReferenceMapping()) {
@@ -344,24 +371,12 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
                 }
                 return refMapping.getReferenceClass();
             } else {
+                if (getMapping().getAttributeClassification() == null) {
+                    return ClassConstants.OBJECT;
+                }
                 return getMapping().getAttributeClassification();
             }
         }
-    }
-
-    public boolean isSet(DatabaseMapping mapping) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    public boolean isSet(int propertyIndex) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    public boolean isSet(String propertyName) {
-        // TODO Auto-generated method stub
-        return false;
     }
 
 }

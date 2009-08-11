@@ -16,42 +16,12 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package org.eclipse.persistence.dynamic;
+package testing.simple;
 
-import java.util.List;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.mappings.DatabaseMapping;
-
-/**
- * An EntityType provides a metadata facade into the EclipseLink
- * object-relational metadata (descriptors & mappings) with specific knowledge
- * of the entity types being dynamic.
- * 
- * @author dclarke
- * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
- */
-public interface EntityType {
-
-    /**
-     * Return the entity type's name. This is the short name of the class or the {@link ClassDescriptor#getAlias()}
-     * @return
-     */
-    public String getName();
-
-    public int getNumberOfProperties();
-
-    public List<String> getPropertiesNames();
-
-    public boolean containsProperty(String propertyName);
-
-    public List<DatabaseMapping> getMappings();
-
-    public int getPropertyIndex(String propertyName);
-
-    public Class getJavaClass();
-
-    public DynamicEntity newInstance();
-
-    public <T> T unwrap(Class<T> T);
+@RunWith(Suite.class)
+@Suite.SuiteClasses( { SimpleType.class, SimpleTypes_OneToOne.class, SimpleTypeCompositeKey.class })
+public class AllTests {
 }

@@ -10,7 +10,7 @@
  * Contributors:
  * 		dclarke - initial JPA Employee example using XML (bug 217884)
  ******************************************************************************/
-package testing;
+package testing.employee;
 
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
@@ -27,8 +27,10 @@ import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.ReadAllQuery;
 import org.junit.Test;
 
-import example.Queries;
-import example.Sample;
+import testing.util.EclipseLinkJPATest;
+
+import example.employee.Queries;
+import example.employee.Sample;
 
 /**
  * Simple query examples for the XML mapped Employee domain model.
@@ -36,7 +38,7 @@ import example.Sample;
  * @author dclarke
  * @since EclipseLink 1.1
  */
-@PersistenceContext(unitName = "employee")
+@PersistenceContext(unitName = "custom-types")
 public class QueryTests extends EclipseLinkJPATest {
 
     private Queries examples = new Queries();

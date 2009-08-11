@@ -10,7 +10,7 @@
  * Contributors:
  * 		dclarke - initial JPA Employee example using XML (bug 217884)
  ******************************************************************************/
-package testing;
+package testing.employee;
 
 import static org.eclipse.persistence.config.PersistenceUnitProperties.DDL_GENERATION;
 import static org.eclipse.persistence.config.PersistenceUnitProperties.DROP_AND_CREATE;
@@ -26,7 +26,7 @@ import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 import org.junit.Test;
 
-import example.Sample;
+import example.employee.Sample;
 
 /**
  * Utility class to create the database schema and populate it for the Employee
@@ -45,7 +45,7 @@ public class CreateDatabase {
     public static void populate(Map properties) {
         properties.put(DDL_GENERATION, DROP_AND_CREATE);
 
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory("employee", properties);
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("custom-types", properties);
 
         new SchemaManager(JpaHelper.getServerSession(emf)).createSequences();
 

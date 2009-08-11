@@ -1,4 +1,4 @@
-package testing;
+package testing.simple;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,9 +12,10 @@ import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.sessions.server.Server;
+import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.junit.*;
 
-public class AB_OneToOne {
+public class SimpleTypes_OneToOne {
 
     private static EntityManagerFactory emf;
 
@@ -164,12 +165,12 @@ public class AB_OneToOne {
 
         Server session = JpaHelper.getServerSession(emf);
         try {
-            session.executeNonSelectingSQL("DROP TABLE CUSTOM_SIMPLE_A CASCADE CONSTRAINTS");
+            session.executeNonSelectingSQL("DROP TABLE SIMPLE_TYPE_A CASCADE CONSTRAINTS");
         } catch (DatabaseException dbe) {
             // ignore
         }
         try {
-            session.executeNonSelectingSQL("DROP TABLE CUSTOM_SIMPLE_B CASCADE CONSTRAINTS");
+            session.executeNonSelectingSQL("DROP TABLE SIMPLE_TYPE_B CASCADE CONSTRAINTS");
         } catch (DatabaseException dbe) {
             // ignore
         }
@@ -177,22 +178,23 @@ public class AB_OneToOne {
         CustomType simpleTypeB = new CustomType();
         simpleTypeB.setName("SimpleB");
         simpleTypeB.setClassName("model.SimpleB");
-        simpleTypeB.setTableName("CUSTOM_SIMPLE_B");
+        simpleTypeB.setTableName("SIMPLE_TYPE_B");
         simpleTypeB.addField("id", int.class.getName(), "SID").setId(true);
         simpleTypeB.addField("value1", String.class.getName(), "VAL_1");
 
-        simpleTypeB.createType(emf, true, true);
+        simpleTypeB.createType(emf, true, false);
 
         CustomType simpleTypeA = new CustomType();
         simpleTypeA.setName("SimpleA");
         simpleTypeA.setClassName("model.SimpleA");
-        simpleTypeA.setTableName("CUSTOM_SIMPLE_A");
+        simpleTypeA.setTableName("SIMPLE_TYPE_A");
         simpleTypeA.addField("id", int.class.getName(), "SID").setId(true);
         simpleTypeA.addField("value1", String.class.getName(), "VAL_1");
         simpleTypeA.addOneToOne("b", simpleTypeB, "B_FK");
 
-        simpleTypeA.createType(emf, true, true);
+        simpleTypeA.createType(emf, true, false);
 
+        new DynamicSchemaManager(session).createTables(simpleTypeA.getEntityType(), simpleTypeB.getEntityType());
     }
 
     @After
@@ -208,6 +210,19 @@ public class AB_OneToOne {
 
     @AfterClass
     public static void shutdown() {
+        EntityManager em = emf.createEntityManager();
+
+        em.getTransaction().begin();
+        em.createNativeQuery("DELETE FROM CUSTOM_REL_MTM").executeUpdate();
+        em.createNativeQuery("DELETE FROM CUSTOM_REL_MTO").executeUpdate();
+        em.createNativeQuery("DELETE FROM CUSTOM_REL_OTO").executeUpdate();
+        em.createNativeQuery("DELETE FROM CUSTOM_FIELD").executeUpdate();
+        em.createNativeQuery("DELETE FROM CUSTOM_TYPE").executeUpdate();
+        em.createNativeQuery("DROP TABLE SIMPLE_TYPE_A CASCADE CONSTRAINTS").executeUpdate();
+        em.createNativeQuery("DROP TABLE SIMPLE_TYPE_B CASCADE CONSTRAINTS").executeUpdate();
+        em.getTransaction().commit();
+
+        em.close();
         emf.close();
     }
 

@@ -10,7 +10,7 @@
  * Contributors:
  * 		dclarke - initial JPA Employee example using XML (bug 217884)
  ******************************************************************************/
-package testing;
+package testing.employee;
 
 import static org.eclipse.persistence.config.PersistenceUnitProperties.*;
 
@@ -30,7 +30,7 @@ import org.eclipse.persistence.config.TargetServer;
  */
 public abstract class PersistenceHelper {
 
-	public static final String PERSISTENCE_UNIT_NAME = "employee-dynamic";
+	public static final String PERSISTENCE_UNIT_NAME = "custom-types";
 
 	public static EntityManagerFactory createEMF() {
 		return createEMF(null);

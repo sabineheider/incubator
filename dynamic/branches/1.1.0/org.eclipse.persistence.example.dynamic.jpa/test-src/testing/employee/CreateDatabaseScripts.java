@@ -10,7 +10,7 @@
  * Contributors:
  * 		dclarke - initial JPA Employee example using XML (bug 217884)
  ******************************************************************************/
-package testing;
+package testing.employee;
 
 import static org.eclipse.persistence.config.PersistenceUnitProperties.*;
 
@@ -39,7 +39,7 @@ import org.junit.Test;
  */
 public class CreateDatabaseScripts {
 	
-	public static final String PU_NAME = "employee";
+	public static final String PU_NAME = "custom-types";
 
 	@Test
 	public void createSchemaScripts() {
