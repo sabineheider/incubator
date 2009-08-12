@@ -47,7 +47,7 @@ public class DynamicConversionManager extends ConversionManager {
      * @param session
      * @return
      */
-    public static DynamicConversionManager getDynamicConversionManager(Session session) {
+    public static DynamicConversionManager lookup(Session session) {
         ConversionManager cm = null;
 
         if (session == null) {

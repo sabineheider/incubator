@@ -189,7 +189,7 @@ public class CustomType {
         }
 
         Server session = JpaHelper.getServerSession(emf);
-        DynamicConversionManager dcm = DynamicConversionManager.getDynamicConversionManager(session);
+        DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
         Class dynamicClass = dcm.createDynamicClass(getClassName());
 
         EntityTypeImpl entityType = new EntityTypeImpl(dynamicClass, getTableName());

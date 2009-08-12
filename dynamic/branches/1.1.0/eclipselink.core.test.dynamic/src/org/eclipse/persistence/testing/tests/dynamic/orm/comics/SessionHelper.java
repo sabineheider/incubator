@@ -11,7 +11,7 @@ public class SessionHelper {
 
     public static Server getComicsSession() {
         if (!SessionManager.getManager().getSessions().containsKey(SESSION_NAME)) {
-            DynamicConversionManager dcm = DynamicConversionManager.getDynamicConversionManager(null);
+            DynamicConversionManager dcm = DynamicConversionManager.lookup(null);
 
             dcm.createDynamicClass("model.Issue");
             dcm.createDynamicClass("model.Publisher");

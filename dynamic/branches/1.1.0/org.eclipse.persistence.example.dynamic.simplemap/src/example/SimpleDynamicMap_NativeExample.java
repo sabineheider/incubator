@@ -83,7 +83,7 @@ public class SimpleDynamicMap_NativeExample {
      * </code>
      */
     public ClassDescriptor createDynamicType(DatabaseSession session) {
-        DynamicConversionManager dcm = DynamicConversionManager.getDynamicConversionManager(session);
+        DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
 
         Class javaClass = dcm.createDynamicClass("model.SimpleType");
 

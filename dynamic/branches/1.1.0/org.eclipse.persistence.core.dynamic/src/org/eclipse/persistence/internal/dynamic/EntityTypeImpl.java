@@ -293,11 +293,30 @@ public class EntityTypeImpl implements EntityType {
      * initialized.
      */
     public void addToSession(DatabaseSession session) {
-        DynamicConversionManager dcm = DynamicConversionManager.getDynamicConversionManager(session);
-        Class javaClass = dcm.createDynamicClass(getDescriptor().getJavaClassName(), DynamicEntityImpl.class);
+        if (getDescriptor().getJavaClass() == null) {
+            DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
+            Class javaClass = dcm.createDynamicClass(getDescriptor().getJavaClassName(), DynamicEntityImpl.class);
+            getDescriptor().setJavaClass(javaClass);
+        }
 
-        getDescriptor().setJavaClass(javaClass);
         session.addDescriptor(getDescriptor());
+    }
+
+    public static void addToSession(DatabaseSession session, List<EntityTypeImpl> entityTypes) {
+        DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
+        List<ClassDescriptor> descriptors = new ArrayList<ClassDescriptor>(entityTypes.size());
+
+        for (int index = 0; index < entityTypes.size(); index++) {
+            EntityTypeImpl type = entityTypes.get(index);
+
+            if (type.getDescriptor().getJavaClass() == null) {
+                Class javaClass = dcm.createDynamicClass(type.getDescriptor().getJavaClassName(), DynamicEntityImpl.class);
+                type.getDescriptor().setJavaClass(javaClass);
+            }
+            descriptors.add(type.getDescriptor());
+        }
+
+        session.addDescriptors(descriptors);
     }
 
     public String toString() {
@@ -357,11 +376,11 @@ public class EntityTypeImpl implements EntityType {
         DirectToFieldMapping mapping = (DirectToFieldMapping) getDescriptor().addDirectMapping(name, fieldName);
         mapping.setAttributeClassification(javaType);
         mapping.setAttributeAccessor(new ValuesAccessor(mapping, getDescriptor().getMappings().indexOf(mapping)));
-        
+
         if (isPrimaryKey && !getDescriptor().getPrimaryKeyFieldNames().contains(fieldName)) {
             getDescriptor().addPrimaryKeyFieldName(fieldName);
         }
-        
+
         if (requiresInitialization(mapping)) {
             getMappingsRequiringInitialization().add(mapping);
         }
@@ -395,6 +414,37 @@ public class EntityTypeImpl implements EntityType {
 
         return mapping;
     }
+    
+    public OneToManyMapping addOneToManyMapping(String name, Class refType, String fkFieldName, String targetField) {
+        OneToManyMapping mapping = new OneToManyMapping();
+        mapping.setAttributeName(name);
+        mapping.setReferenceClass(refType);
+        mapping.addTargetForeignKeyFieldName(fkFieldName, targetField);
+        mapping.useTransparentList();
+        descriptor.addMapping(mapping);
+        mapping.setAttributeAccessor(new ValuesAccessor(mapping, getDescriptor().getMappings().indexOf(mapping)));
+
+        if (requiresInitialization(mapping)) {
+            getMappingsRequiringInitialization().add(mapping);
+        }
+
+        return mapping;
+    }
+
+    public AggregateObjectMapping addAggregateObjectMapping(String name, Class refType) {
+        AggregateObjectMapping mapping = new AggregateObjectMapping();
+        mapping.setAttributeName(name);
+        mapping.setReferenceClass(refType);
+        descriptor.addMapping(mapping);
+        mapping.setAttributeAccessor(new ValuesAccessor(mapping, getDescriptor().getMappings().indexOf(mapping)));
+
+        if (requiresInitialization(mapping)) {
+            getMappingsRequiringInitialization().add(mapping);
+        }
+
+        return mapping;
+    }
+
 
     /**
      * TODO: Not used yet but will be used for incremental creation of

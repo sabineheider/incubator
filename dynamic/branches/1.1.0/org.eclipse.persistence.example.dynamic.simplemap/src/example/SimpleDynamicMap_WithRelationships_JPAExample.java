@@ -88,7 +88,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
      */
     public void createDynamicTypes(EntityManagerFactory emf) {
         ServerSession session = (ServerSession) JpaHelper.getServerSession(emf);
-        DynamicConversionManager dcm = DynamicConversionManager.getDynamicConversionManager(session);
+        DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
 
         // Create SimpleTypeA with direct mappings
         Class javaClassA = dcm.createDynamicClass("model." + TYPE_A);
