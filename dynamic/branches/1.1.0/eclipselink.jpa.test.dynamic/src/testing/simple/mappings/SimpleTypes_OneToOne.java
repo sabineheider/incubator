@@ -1,20 +1,21 @@
-package testing.simple;
+package testing.simple.mappings;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
-
-import java.util.*;
 
 import javax.persistence.*;
 
 import junit.framework.Assert;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
 import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.mappings.DirectToFieldMapping;
+import org.eclipse.persistence.mappings.OneToOneMapping;
 import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.junit.*;
@@ -32,17 +33,26 @@ public class SimpleTypes_OneToOne {
 
         EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
         assertNotNull("'SimpleA' EntityType not found", simpleTypeA);
-
         assertEquals(descriptorA, simpleTypeA.getDescriptor());
+        DirectToFieldMapping a_id = (DirectToFieldMapping) descriptorA.getMappingForAttributeName("id");
+        assertEquals(int.class, a_id.getAttributeClassification());
+        DirectToFieldMapping a_value1 = (DirectToFieldMapping) descriptorA.getMappingForAttributeName("value1");
+        assertEquals(String.class, a_value1.getAttributeClassification());
 
         ClassDescriptor descriptorB = session.getClassDescriptorForAlias("SimpleB");
         assertNotNull("No descriptor found for alias='SimpleB'", descriptorB);
 
         EntityTypeImpl simpleTypeB = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleB");
         assertNotNull("'SimpleB' EntityType not found", simpleTypeB);
-
         assertEquals(descriptorB, simpleTypeB.getDescriptor());
-}
+        DirectToFieldMapping b_id = (DirectToFieldMapping) descriptorB.getMappingForAttributeName("id");
+        assertEquals(int.class, b_id.getAttributeClassification());
+        DirectToFieldMapping b_value1 = (DirectToFieldMapping) descriptorB.getMappingForAttributeName("value1");
+        assertEquals(String.class, b_value1.getAttributeClassification());
+
+        OneToOneMapping a_b = (OneToOneMapping) descriptorA.getMappingForAttributeName("b");
+        assertEquals(descriptorB, a_b.getReferenceDescriptor());
+    }
 
     @Test
     public void createSimpleA() {
@@ -51,7 +61,6 @@ public class SimpleTypes_OneToOne {
         Assert.assertNotNull(simpleTypeA);
 
         EntityManager em = emf.createEntityManager();
-
 
         DynamicEntity simpleInstance = simpleTypeA.newInstance();
         simpleInstance.set("id", 1);
@@ -96,11 +105,10 @@ public class SimpleTypes_OneToOne {
         Assert.assertNotNull(simpleTypeA);
         EntityTypeImpl simpleTypeB = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleB");
         Assert.assertNotNull(simpleTypeB);
-        
+
         EntityManager em = emf.createEntityManager();
 
         Assert.assertNotNull(JpaHelper.getServerSession(emf).getDescriptorForAlias("SimpleB"));
-
 
         DynamicEntity simpleInstanceB = simpleTypeB.newInstance();
         simpleInstanceB.set("id", 2);
@@ -126,24 +134,8 @@ public class SimpleTypes_OneToOne {
 
     @BeforeClass
     public static void setUp() {
-        Map properties = new HashMap();
-
-        properties.put("eclipselink.ddl-generation.output-mode", "database");
-        properties.put("eclipselink.ddl-generation", "drop-and-create-tables");
-
-        emf = Persistence.createEntityManagerFactory("custom-types", properties);
-
+        emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
-        try {
-            session.executeNonSelectingSQL("DROP TABLE SIMPLE_TYPE_A CASCADE CONSTRAINTS");
-        } catch (DatabaseException dbe) {
-            // ignore
-        }
-        try {
-            session.executeNonSelectingSQL("DROP TABLE SIMPLE_TYPE_B CASCADE CONSTRAINTS");
-        } catch (DatabaseException dbe) {
-            // ignore
-        }
 
         Class simpleTypeBClass = DynamicConversionManager.lookup(session).createDynamicClass("model.SimpleB");
         EntityTypeImpl entityTypeB = new EntityTypeImpl(simpleTypeBClass, "SIMPLE_TYPE_B");
@@ -158,12 +150,10 @@ public class SimpleTypes_OneToOne {
         entityTypeA.addOneToOneMapping("b", simpleTypeBClass, "B_FK", "SID");
         entityTypeA.addToSession(session);
 
-
         new DynamicSchemaManager(session).createTables(entityTypeA, entityTypeB);
     }
 
     @After
-    @Before
     public void clearDynamicTables() {
         EntityManager em = emf.createEntityManager();
 
@@ -179,11 +169,6 @@ public class SimpleTypes_OneToOne {
         EntityManager em = emf.createEntityManager();
 
         em.getTransaction().begin();
-        em.createNativeQuery("DELETE FROM CUSTOM_REL_MTM").executeUpdate();
-        em.createNativeQuery("DELETE FROM CUSTOM_REL_MTO").executeUpdate();
-        em.createNativeQuery("DELETE FROM CUSTOM_REL_OTO").executeUpdate();
-        em.createNativeQuery("DELETE FROM CUSTOM_FIELD").executeUpdate();
-        em.createNativeQuery("DELETE FROM CUSTOM_TYPE").executeUpdate();
         em.createNativeQuery("DROP TABLE SIMPLE_TYPE_A CASCADE CONSTRAINTS").executeUpdate();
         em.createNativeQuery("DROP TABLE SIMPLE_TYPE_B CASCADE CONSTRAINTS").executeUpdate();
         em.getTransaction().commit();

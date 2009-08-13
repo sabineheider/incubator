@@ -16,12 +16,12 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package testing.simple;
+package testing.simple.sequencing;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { SimpleType.class, testing.simple.mappings.AllTests.class, testing.simple.sequencing.AllTests.class })
+@Suite.SuiteClasses( { DefaultSequencing.class, TableSequencing.class, UnaryTableSequencing.class, NativeSequencing.class })
 public class AllTests {
 }

@@ -93,7 +93,9 @@ public class EntityTypeImpl implements EntityType {
     public EntityTypeImpl(Class dynamicClass, String tableName) {
         this.descriptor = new RelationalDescriptor();
         this.descriptor.setJavaClass(dynamicClass);
-        this.descriptor.setTableName(tableName);
+        if (tableName != null) {
+            this.descriptor.setTableName(tableName);
+        }
         initialize(this.descriptor);
     }
 
@@ -136,6 +138,9 @@ public class EntityTypeImpl implements EntityType {
         if (mapping.isReferenceMapping()) {
             ReferenceMapping frMapping = (ReferenceMapping) mapping;
             return frMapping.usesIndirection() || frMapping.isCollectionMapping();
+        }
+        if (mapping.isAggregateMapping()) {
+            return !((AggregateObjectMapping) mapping).isNullAllowed();
         }
         return false;
     }
@@ -253,7 +258,10 @@ public class EntityTypeImpl implements EntityType {
             if (refMapping.usesIndirection() && refMapping.getIndirectionPolicy() instanceof BasicIndirectionPolicy) {
                 value = new ValueHolder(value);
             }
+        } else if (mapping.isAggregateObjectMapping()) {
+            value = mapping.getReferenceDescriptor().getObjectBuilder().buildNewInstance();
         }
+
         mapping.setAttributeValueInObject(entity, value);
     }
 
@@ -414,7 +422,7 @@ public class EntityTypeImpl implements EntityType {
 
         return mapping;
     }
-    
+
     public OneToManyMapping addOneToManyMapping(String name, Class refType, String fkFieldName, String targetField) {
         OneToManyMapping mapping = new OneToManyMapping();
         mapping.setAttributeName(name);
@@ -444,7 +452,6 @@ public class EntityTypeImpl implements EntityType {
 
         return mapping;
     }
-
 
     /**
      * TODO: Not used yet but will be used for incremental creation of

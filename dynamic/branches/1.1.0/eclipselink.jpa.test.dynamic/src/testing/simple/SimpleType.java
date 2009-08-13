@@ -116,7 +116,7 @@ public class SimpleType {
         properties.put("eclipselink.ddl-generation.output-mode", "database");
         properties.put("eclipselink.ddl-generation", "drop-and-create-tables");
 
-        emf = Persistence.createEntityManagerFactory("custom-types", properties);
+        emf = Persistence.createEntityManagerFactory("empty", properties);
 
         Server session = JpaHelper.getServerSession(emf);
         try {
