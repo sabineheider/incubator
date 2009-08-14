@@ -85,7 +85,7 @@ public class SimpleDynamicMap_JPAExample {
         Server session = JpaHelper.getServerSession(emf);
         DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
 
-        Class javaClass = dcm.createDynamicClass("model.SimpleType");
+        Class javaClass = dcm.getDynamicClassLoader().createDynamicClass("model.SimpleType", DynamicMapEntity.class);
 
         RelationalDescriptor descriptor = new RelationalDescriptor();
 

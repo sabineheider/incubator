@@ -7,13 +7,11 @@ import javax.persistence.*;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.sequencing.TableSequence;
 import org.eclipse.persistence.sessions.IdentityMapAccessor;
 import org.eclipse.persistence.sessions.server.Server;
-import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.junit.*;
 
 public class TableSequencing {
@@ -46,7 +44,7 @@ public class TableSequencing {
 
         DynamicEntity simpleInstance = createSimpleInstance(emf, 1);
 
-        int simpleCount = ((Number) em.createQuery("SELECT COUNT(o) FROM " + ENTITY_TYPE +" o").getSingleResult()).intValue();
+        int simpleCount = ((Number) em.createQuery("SELECT COUNT(o) FROM " + ENTITY_TYPE + " o").getSingleResult()).intValue();
         assertEquals(1, simpleCount);
 
         IdentityMapAccessor cache = session.getIdentityMapAccessor();
@@ -74,7 +72,7 @@ public class TableSequencing {
         DynamicEntity simpleInstance1 = createSimpleInstance(emf, 1);
         DynamicEntity simpleInstance2 = createSimpleInstance(emf, 2);
 
-        int simpleCount = ((Number) em.createQuery("SELECT COUNT(o) FROM " + ENTITY_TYPE +" o").getSingleResult()).intValue();
+        int simpleCount = ((Number) em.createQuery("SELECT COUNT(o) FROM " + ENTITY_TYPE + " o").getSingleResult()).intValue();
         assertEquals(2, simpleCount);
 
         IdentityMapAccessor cache = session.getIdentityMapAccessor();
@@ -126,18 +124,14 @@ public class TableSequencing {
         ((AbstractSession) session).getProject().getLogin().setDefaultSequence(sequence);
         sequence.onConnect(session.getPlatform());
 
-        Class simpleTypeClass = DynamicConversionManager.lookup(session).createDynamicClass("model.sequencing." + ENTITY_TYPE);
-        EntityTypeImpl entityType = new EntityTypeImpl(simpleTypeClass, TABLE_NAME);
-        entityType.addDirectMapping("id", int.class, "SID", true);
-        entityType.addDirectMapping("value1", String.class, "VAL_1", false);
-        entityType.getDescriptor().setSequenceNumberName(ENTITY_TYPE+"_SEQ");
-        entityType.getDescriptor().setSequenceNumberFieldName("SID");
-        entityType.getDescriptor().setSequence(sequence);
-       
-        entityType.addToSession(session);
-        
-        DynamicSchemaManager dsm = new DynamicSchemaManager(session);
-        dsm.createTables(entityType);
+        RelationalMappingFactory factory = new RelationalMappingFactory(session, "model.sequencing." + ENTITY_TYPE, TABLE_NAME);
+        factory.addDirectMapping("id", int.class, "SID", true);
+        factory.addDirectMapping("value1", String.class, "VAL_1", false);
+        ((EntityTypeImpl) factory.getType()).getDescriptor().setSequenceNumberName(ENTITY_TYPE + "_SEQ");
+        ((EntityTypeImpl) factory.getType()).getDescriptor().setSequenceNumberFieldName("SID");
+        ((EntityTypeImpl) factory.getType()).getDescriptor().setSequence(sequence);
+
+        factory.addToSession(session, true);
     }
 
     @Before
@@ -148,7 +142,7 @@ public class TableSequencing {
         em.createNativeQuery("UPDATE TEST_SEQ SET SEQ_VALUE = 0").executeUpdate();
         em.getTransaction().commit();
         em.close();
-        
+
         JpaHelper.getServerSession(emf).getSequencingControl().initializePreallocated();
     }
 

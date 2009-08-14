@@ -91,7 +91,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
         DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
 
         // Create SimpleTypeA with direct mappings
-        Class javaClassA = dcm.createDynamicClass("model." + TYPE_A);
+        Class javaClassA = dcm.getDynamicClassLoader().createDynamicClass("model." + TYPE_A, DynamicMapEntity.class);
         RelationalDescriptor descriptorA = new RelationalDescriptor();
         descriptorA.setJavaClass(javaClassA);
         descriptorA.setTableName("DYNAMIC_A");
@@ -103,7 +103,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
         mapping.setAttributeAccessor(new ValueAccessor(mapping, String.class));
 
         // Create SimpleTypeB with direct mappings
-        Class javaClassB = dcm.createDynamicClass("model." + TYPE_B);
+        Class javaClassB = dcm.getDynamicClassLoader().createDynamicClass("model." + TYPE_B, DynamicMapEntity.class);
         RelationalDescriptor descriptorB = new RelationalDescriptor();
         descriptorB.setJavaClass(javaClassB);
         descriptorB.setTableName("DYNAMIC_B");
@@ -115,7 +115,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
         mapping.setAttributeAccessor(new ValueAccessor(mapping, Calendar.class));
 
         // Create SimpleTypeC with direct mappings
-        Class javaClassC = dcm.createDynamicClass("model." + TYPE_C);
+        Class javaClassC = dcm.getDynamicClassLoader().createDynamicClass("model." + TYPE_C, DynamicMapEntity.class);
         RelationalDescriptor descriptorC = new RelationalDescriptor();
         descriptorC.setJavaClass(javaClassC);
         descriptorC.setTableName("DYNAMIC_C");

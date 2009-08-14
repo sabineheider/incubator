@@ -7,17 +7,14 @@ import javax.persistence.*;
 import junit.framework.Assert;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.internal.descriptors.changetracking.AggregateAttributeChangeListener;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.mappings.AggregateObjectMapping;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.sessions.server.Server;
-import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.junit.*;
 
 public class SimpleTypes_AggregateObject {
@@ -45,22 +42,39 @@ public class SimpleTypes_AggregateObject {
         EntityTypeImpl simpleTypeB = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleB");
         assertNotNull("'SimpleB' EntityType not found", simpleTypeB);
         assertEquals(descriptorB, simpleTypeB.getDescriptor());
-        DirectToFieldMapping b_id = (DirectToFieldMapping) descriptorB.getMappingForAttributeName("value2");
-        assertEquals(boolean.class, b_id.getAttributeClassification());
-        DirectToFieldMapping b_value1 = (DirectToFieldMapping) descriptorB.getMappingForAttributeName("value3");
-        assertEquals(String.class, b_value1.getAttributeClassification());
+        DirectToFieldMapping b_value2 = (DirectToFieldMapping) descriptorB.getMappingForAttributeName("value2");
+        assertEquals(boolean.class, b_value2.getAttributeClassification());
+        DirectToFieldMapping b_value3 = (DirectToFieldMapping) descriptorB.getMappingForAttributeName("value3");
+        assertEquals(String.class, b_value3.getAttributeClassification());
         assertTrue(descriptorB.isAggregateDescriptor());
 
         AggregateObjectMapping a_b = (AggregateObjectMapping) descriptorA.getMappingForAttributeName("b");
         assertSame(descriptorB.getJavaClass(), a_b.getReferenceDescriptor().getJavaClass());
-    }
+        assertTrue(a_b.isNullAllowed());
+        
+        ClassDescriptor descriptorC = session.getClassDescriptorForAlias("SimpleC");
+        assertNotNull("No descriptor found for alias='SimpleB'", descriptorB);
+
+        EntityTypeImpl simpleTypeC = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleC");
+        assertNotNull("'SimpleC' EntityType not found", simpleTypeC);
+        assertEquals(descriptorB, simpleTypeB.getDescriptor());
+        DirectToFieldMapping c_value4 = (DirectToFieldMapping) descriptorC.getMappingForAttributeName("value4");
+        assertEquals(double.class, c_value4.getAttributeClassification());
+        DirectToFieldMapping c_value5 = (DirectToFieldMapping) descriptorC.getMappingForAttributeName("value5");
+        assertEquals(String.class, c_value5.getAttributeClassification());
+        assertTrue(descriptorB.isAggregateDescriptor());
+
+        AggregateObjectMapping a_c = (AggregateObjectMapping) descriptorA.getMappingForAttributeName("c");
+        assertSame(descriptorC.getJavaClass(), a_c.getReferenceDescriptor().getJavaClass());
+        assertFalse(a_c.isNullAllowed());
+}
 
     @Test
     public void verifyProperties() {
         Server session = JpaHelper.getServerSession(emf);
         EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
         Assert.assertNotNull(simpleTypeA);
-        
+
         assertEquals(4, simpleTypeA.getNumberOfProperties());
         assertEquals("id", simpleTypeA.getPropertiesNames().get(0));
         assertEquals("value1", simpleTypeA.getPropertiesNames().get(1));
@@ -73,7 +87,7 @@ public class SimpleTypes_AggregateObject {
         Server session = JpaHelper.getServerSession(emf);
         EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
         Assert.assertNotNull(simpleTypeA);
-        
+
         DynamicEntity a = simpleTypeA.newInstance();
 
         assertNotNull(a);
@@ -81,7 +95,7 @@ public class SimpleTypes_AggregateObject {
         assertFalse(a.isSet("value1"));
         assertFalse(a.isSet("b"));
         assertTrue(a.isSet("c"));
-        
+
         DynamicEntity c = a.get("c", DynamicEntity.class);
         assertNotNull(c);
         assertTrue(c.isSet("value4"));
@@ -113,7 +127,7 @@ public class SimpleTypes_AggregateObject {
     @Test
     public void verifyChangTracking() {
         persistSimpleA();
-        
+
         Server session = JpaHelper.getServerSession(emf);
         EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
         Assert.assertNotNull(simpleTypeA);
@@ -124,13 +138,12 @@ public class SimpleTypes_AggregateObject {
         DynamicEntityImpl a = (DynamicEntityImpl) em.find(simpleTypeA.getJavaClass(), 1);
         assertNotNull(a);
         assertNotNull(a._persistence_getPropertyChangeListener());
-        
+
         DynamicEntityImpl c = a.get("c", DynamicEntityImpl.class);
         assertNotNull(c);
         assertNotNull(c._persistence_getPropertyChangeListener());
         assertTrue(c._persistence_getPropertyChangeListener() instanceof AggregateAttributeChangeListener);
-        
-        
+
         em.getTransaction().rollback();
         em.close();
     }
@@ -171,29 +184,23 @@ public class SimpleTypes_AggregateObject {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
 
-        Class simpleTypeBClass = DynamicConversionManager.lookup(session).createDynamicClass("model.SimpleB");
-        EntityTypeImpl entityTypeB = new EntityTypeImpl(simpleTypeBClass, null);
-        entityTypeB.addDirectMapping("value2", boolean.class, "VAL_2", true);
-        entityTypeB.addDirectMapping("value3", String.class, "VAL_3", false);
-        entityTypeB.getDescriptor().descriptorIsAggregate();
-        entityTypeB.addToSession(session);
+        RelationalMappingFactory bFactory = new RelationalMappingFactory(session, "model.SimpleB");
+        bFactory.addDirectMapping("value2", boolean.class, "VAL_2", true);
+        bFactory.addDirectMapping("value3", String.class, "VAL_3", false);
+        bFactory.addToSession(session, false);
 
-        Class simpleTypeCClass = DynamicConversionManager.lookup(session).createDynamicClass("model.SimpleC");
-        EntityTypeImpl entityTypeC = new EntityTypeImpl(simpleTypeCClass, null);
-        entityTypeC.addDirectMapping("value4", double.class, "VAL_4", true);
-        entityTypeC.addDirectMapping("value5", String.class, "VAL_5", false);
-        entityTypeC.getDescriptor().descriptorIsAggregate();
-        entityTypeC.addToSession(session);
+        RelationalMappingFactory cFactory = new RelationalMappingFactory(session, "model.SimpleC");
+        cFactory.addDirectMapping("value4", double.class, "VAL_4", true);
+        cFactory.addDirectMapping("value5", String.class, "VAL_5", false);
+        cFactory.addToSession(session, false);
 
-        Class simpleTypeAClass = DynamicConversionManager.lookup(session).createDynamicClass("model.SimpleA");
-        EntityTypeImpl entityTypeA = new EntityTypeImpl(simpleTypeAClass, "SIMPLE_TYPE_A");
-        entityTypeA.addDirectMapping("id", int.class, "SID", true);
-        entityTypeA.addDirectMapping("value1", String.class, "VAL_1", false);
-        entityTypeA.addAggregateObjectMapping("b", simpleTypeBClass);
-        entityTypeA.addAggregateObjectMapping("c", simpleTypeCClass).setIsNullAllowed(false);
-        entityTypeA.addToSession(session);
+        RelationalMappingFactory aFactory = new RelationalMappingFactory(session, "model.SimpleA", "SIMPLE_TYPE_A");
+        aFactory.addDirectMapping("id", int.class, "SID", true);
+        aFactory.addDirectMapping("value1", String.class, "VAL_1", false);
+        aFactory.addAggregateObjectMapping("b", bFactory.getType(), true);
+        aFactory.addAggregateObjectMapping("c", cFactory.getType(), false);
+        aFactory.addToSession(session, true);
 
-        new DynamicSchemaManager(session).createTables(entityTypeA, entityTypeB);
     }
 
     @After

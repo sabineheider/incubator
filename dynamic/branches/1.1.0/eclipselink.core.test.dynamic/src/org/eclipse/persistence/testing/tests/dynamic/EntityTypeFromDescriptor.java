@@ -48,7 +48,7 @@ public class EntityTypeFromDescriptor {
 		session.getSessionLog().setLevel(SessionLog.FINE);
 		session.login();
 
-		entityType.addToSession(session);
+		session.addDescriptor(entityType.getDescriptor());
 		new SchemaManager(session).replaceDefaultTables();
 		
 		DynamicEntity entity = entityType.newInstance();

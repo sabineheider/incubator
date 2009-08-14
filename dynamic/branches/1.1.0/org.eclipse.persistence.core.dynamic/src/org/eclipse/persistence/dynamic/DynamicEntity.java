@@ -75,5 +75,4 @@ public interface DynamicEntity {
     public boolean isSet(int propertyIndex);
 
     public boolean isSet(DatabaseMapping mapping);
-
-}
+    }

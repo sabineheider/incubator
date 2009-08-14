@@ -6,12 +6,11 @@ import java.util.List;
 import javax.persistence.*;
 
 import org.eclipse.persistence.dynamic.EntityType;
+import org.eclipse.persistence.dynamic.RelationalMappingFactory;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.helper.DynamicConversionManager;
-import org.eclipse.persistence.internal.jpa.CMP3Policy;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.jpa.dynamic.JPAMappingFactory;
 import org.eclipse.persistence.sessions.server.Server;
-import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 
 @Entity
 @Table(name = "CUSTOM_TYPE")
@@ -40,7 +39,7 @@ public class CustomType {
     private String tableName;
 
     @Transient
-    private EntityTypeImpl entityType;
+    private EntityType entityType;
 
     public CustomType() {
         this.fields = new ArrayList<CustomField>();
@@ -189,29 +188,14 @@ public class CustomType {
         }
 
         Server session = JpaHelper.getServerSession(emf);
-        DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
-        Class dynamicClass = dcm.createDynamicClass(getClassName());
-
-        EntityTypeImpl entityType = new EntityTypeImpl(dynamicClass, getTableName());
-        entityType.getDescriptor().setAlias(getName());
+        RelationalMappingFactory factory = new JPAMappingFactory(session, getClassName(), getTableName());
 
         for (CustomField field : getFields()) {
-            field.addToType(dcm, entityType);
+            field.addToType(factory);
         }
 
-        if (entityType.getDescriptor().getCMPPolicy() == null) {
-            entityType.getDescriptor().setCMPPolicy(new CMP3Policy());
-        }
-
-        session.addDescriptor(entityType.getDescriptor());
-
-        if (createSchema) {
-            new DynamicSchemaManager(session).createTables(entityType);
-        }
-
-        entityType.getDescriptor().setProperty(EntityTypeImpl.DESCRIPTOR_PROPERTY, entityType);
-        this.entityType = entityType;
-        return entityType;
+        factory.addToSession(session, true);
+        return factory.getType();
     }
 
     public String getIdFieldName() {

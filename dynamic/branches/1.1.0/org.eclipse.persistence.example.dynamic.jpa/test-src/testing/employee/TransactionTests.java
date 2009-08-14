@@ -24,7 +24,6 @@ import org.eclipse.persistence.sessions.server.Server;
 import org.junit.Test;
 
 import testing.util.EclipseLinkJPATest;
-
 import example.employee.*;
 
 @PersistenceContext(unitName="custom-types")

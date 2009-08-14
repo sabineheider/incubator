@@ -28,7 +28,6 @@ import org.eclipse.persistence.queries.ReadAllQuery;
 import org.junit.Test;
 
 import testing.util.EclipseLinkJPATest;
-
 import example.employee.Queries;
 import example.employee.Sample;
 

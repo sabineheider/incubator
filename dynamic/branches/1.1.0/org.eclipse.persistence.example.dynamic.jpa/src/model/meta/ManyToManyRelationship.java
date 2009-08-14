@@ -2,11 +2,12 @@ package model.meta;
 
 import javax.persistence.*;
 
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.helper.DynamicConversionManager;
- 
+import org.eclipse.persistence.dynamic.EntityType;
+import org.eclipse.persistence.dynamic.RelationalMappingFactory;
+
 @Entity
-@Table(name="CUSTOM_REL_MTM")@DiscriminatorValue("M:M")
+@Table(name = "CUSTOM_REL_MTM")
+@DiscriminatorValue("M:M")
 public class ManyToManyRelationship extends OneToOneRelationship {
 
     @Column(name = "JOIN_TABLE")
@@ -25,8 +26,9 @@ public class ManyToManyRelationship extends OneToOneRelationship {
     }
 
     @Override
-    protected void addToType(DynamicConversionManager dcm, EntityTypeImpl entityType) {
-       // TODO: entityType.addOneToOneMapping(getName(), null, getFieldName());
+    protected void addToType(RelationalMappingFactory factory) {
+        // TODO
+        throw new UnsupportedOperationException();
     }
 
 }

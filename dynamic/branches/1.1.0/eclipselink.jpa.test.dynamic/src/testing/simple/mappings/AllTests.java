@@ -22,6 +22,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { SimpleTypes_OneToOne.class, SimpleTypes_AggregateObject.class, SimpleTypes_OneToMany.class, SimpleTypes_BasicCollection.class, SimpleTypes_ManyToOne.class })
+@Suite.SuiteClasses( { SimpleTypes_OneToOne.class, SimpleTypes_AggregateObject.class, SimpleTypes_MultiTable.class })
 public class AllTests {
 }

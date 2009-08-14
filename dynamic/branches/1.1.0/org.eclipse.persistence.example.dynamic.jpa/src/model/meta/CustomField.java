@@ -4,14 +4,13 @@ import java.io.Serializable;
 
 import javax.persistence.*;
 
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.helper.DynamicConversionManager;
+import org.eclipse.persistence.dynamic.RelationalMappingFactory;
 
 @Entity
 @IdClass(CustomField.ID.class)
 @Table(name = "CUSTOM_FIELD")
 @Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn(name = "FIELD_TYPE", discriminatorType = DiscriminatorType.STRING, length=10)
+@DiscriminatorColumn(name = "FIELD_TYPE", discriminatorType = DiscriminatorType.STRING, length = 10)
 @DiscriminatorValue("FIELD")
 public class CustomField {
 
@@ -93,19 +92,18 @@ public class CustomField {
         this.typeName = type.getName();
     }
 
-    protected void addToType(DynamicConversionManager dcm, EntityTypeImpl entityType) {
-        Class javaClass = dcm.convertClassNameToClass(getJavaType());
-        entityType.addDirectMapping(getName(), javaClass, getFieldName(), isId());
+    protected void addToType(RelationalMappingFactory factory) {
+        factory.addDirectMapping(getName(), getType().getEntityType().getJavaClass(), getFieldName(), isId());
     }
 
     public static class ID implements Serializable {
         private String name;
         private String typeName;
-        
+
         public ID() {
-            
+
         }
-        
+
         public ID(String name, String typeName) {
             this.name = name;
             this.typeName = typeName;

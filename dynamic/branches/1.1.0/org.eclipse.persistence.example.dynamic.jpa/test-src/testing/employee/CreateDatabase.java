@@ -18,9 +18,7 @@ import static org.eclipse.persistence.config.PersistenceUnitProperties.DROP_AND_
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
+import javax.persistence.*;
 
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;

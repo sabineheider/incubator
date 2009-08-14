@@ -14,25 +14,19 @@ package testing.employee;
 
 import static org.junit.Assert.*;
 
-import java.util.List;
 import java.util.Map;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.mappings.OneToManyMapping;
 import org.eclipse.persistence.mappings.OneToOneMapping;
 import org.eclipse.persistence.sessions.server.Server;
-import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.junit.Test;
 
-import example.employee.EntityTypeFactory;
-
 import testing.util.EclipseLinkJPATest;
+import example.employee.EntityTypeFactory;
 
 /**
  * Set of tests to ensure the mappings are properly populated from the provided
@@ -41,7 +35,7 @@ import testing.util.EclipseLinkJPATest;
  * @author dclarke
  * @since EclipseLink 1.1
  */
-@PersistenceContext(unitName="custom-types")
+@PersistenceContext(unitName = "custom-types")
 public class MappingConfigTests extends EclipseLinkJPATest {
 
     @Test
@@ -73,9 +67,10 @@ public class MappingConfigTests extends EclipseLinkJPATest {
         assertTrue(addrMapping.isPrivateOwned());
 
         // PhoenNumber Mapping
-        //OneToManyMapping phoneMapping = (OneToManyMapping) descriptor.getMappingForAttributeName("phoneNumbers");
-        //assertNotNull(phoneMapping);
-        //assertTrue(phoneMapping.isPrivateOwned());
+        // OneToManyMapping phoneMapping = (OneToManyMapping)
+        // descriptor.getMappingForAttributeName("phoneNumbers");
+        // assertNotNull(phoneMapping);
+        // assertTrue(phoneMapping.isPrivateOwned());
     }
 
     @Test
@@ -131,17 +126,13 @@ public class MappingConfigTests extends EclipseLinkJPATest {
     @Override
     protected EntityManagerFactory createEMF(String unitName, Map properties) {
         EntityManagerFactory newEMF = super.createEMF(unitName, properties);
-        
+
         Server session = JpaHelper.getServerSession(newEMF);
         if (session.getDescriptors().isEmpty()) {
-            List<EntityTypeImpl> types = EntityTypeFactory.createTypes(newEMF, "model.dynamic.employee");
-            EntityTypeImpl.addToSession(session, types);
-            
-            new DynamicSchemaManager(session).createTables((EntityType[]) null);
+            EntityTypeFactory.createTypes(newEMF, "model.dynamic.employee", true);
         }
-        
+
         return newEMF;
     }
-    
-    
+
 }

@@ -18,12 +18,7 @@
  ******************************************************************************/
 package org.eclipse.persistence.internal.helper;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.internal.dynamic.DynamicClassWriter;
-import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.sessions.Session;
 
 /**
@@ -76,82 +71,8 @@ public class DynamicConversionManager extends ConversionManager {
         this.dataTypesConvertedToAClass = cm.dataTypesConvertedToAClass;
     }
 
-    protected DynamicClassLoader getDynamicClassLoader() {
+    public DynamicClassLoader getDynamicClassLoader() {
         return (DynamicClassLoader) getLoader();
     }
-
-    private static Class DEFAULT_DYNAMIC_PARENT_CLASS = DynamicEntityImpl.class;
-
-    public Class createDynamicClass(String className) {
-        return createDynamicClass(className, DEFAULT_DYNAMIC_PARENT_CLASS);
-    }
-
-    public Class createDynamicClass(String className, Class baseClass) {
-        return createDynamicClass(className, baseClass, new DynamicClassWriter());
-    }
-
-    public Class createDynamicClass(String className, Class baseClass, DynamicClassWriter classWriter) {
-        return getDynamicClassLoader().createDynamicClass(className, baseClass, classWriter);
-    }
-
-    /**
-     * 
-     */
-    private class DynamicClassLoader extends ClassLoader {
-
-        private ClassLoader delegateLoader;
-
-        private Map<String, Class> dynamicEntityClasses = new HashMap<String, Class>();
-
-        private DynamicClassLoader(ClassLoader delegate) {
-            this.delegateLoader = delegate;
-        }
-
-        private Map<String, Class> getDynamicEntityClasses() {
-            return this.dynamicEntityClasses;
-        }
-
-        protected Class getDynamicEntityClass(String className) {
-            return getDynamicEntityClasses().get(className);
-        }
-
-        /**
-         * Create a dynamic subclass if one does not already exist and register
-         * the created class for subsequent use.
-         */
-        public Class<DynamicEntity> createDynamicClass(String className, Class baseClass, DynamicClassWriter writer) {
-            Class javaClass = getDynamicEntityClass(className);
-
-            if (javaClass != null) {
-                return javaClass;
-            }
-
-            if (className == null) {
-                return null;
-            }
-
-            synchronized (getDynamicEntityClasses()) {
-                javaClass = getDynamicEntityClass(className);
-
-                if (javaClass == null) {
-                    byte[] bytes = writer.writeClass(baseClass, className);
-                    javaClass = super.defineClass(className, bytes, 0, bytes.length);
-                    getDynamicEntityClasses().put(className, javaClass);
-                }
-            }
-
-            return javaClass;
-        }
-
-        @Override
-        public synchronized Class<?> loadClass(String name) throws ClassNotFoundException {
-            Class dynamicClass = getDynamicEntityClass(name);
-            if (dynamicClass != null) {
-                return dynamicClass;
-            }
-            return this.delegateLoader.loadClass(name);
-        }
-
-    };
 
 }

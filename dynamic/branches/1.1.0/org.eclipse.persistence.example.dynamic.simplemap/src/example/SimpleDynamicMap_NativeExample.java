@@ -18,12 +18,8 @@
  ******************************************************************************/
 package example;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.io.*;
+import java.util.*;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
@@ -34,10 +30,7 @@ import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.queries.ReadAllQuery;
 import org.eclipse.persistence.queries.ReadObjectQuery;
-import org.eclipse.persistence.sessions.DatabaseLogin;
-import org.eclipse.persistence.sessions.DatabaseSession;
-import org.eclipse.persistence.sessions.Project;
-import org.eclipse.persistence.sessions.UnitOfWork;
+import org.eclipse.persistence.sessions.*;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 
 public class SimpleDynamicMap_NativeExample {
@@ -84,8 +77,7 @@ public class SimpleDynamicMap_NativeExample {
      */
     public ClassDescriptor createDynamicType(DatabaseSession session) {
         DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
-
-        Class javaClass = dcm.createDynamicClass("model.SimpleType");
+        Class javaClass = dcm.getDynamicClassLoader().createDynamicClass("model.SimpleType", DynamicMapEntity.class);
 
         RelationalDescriptor descriptor = new RelationalDescriptor();
 

@@ -24,14 +24,13 @@ import java.util.*;
 
 import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
 import org.eclipse.persistence.dynamic.*;
-import org.eclipse.persistence.exceptions.DescriptorException;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.internal.descriptors.PersistenceEntity;
-import org.eclipse.persistence.internal.helper.ClassConstants;
 import org.eclipse.persistence.internal.identitymaps.CacheKey;
 import org.eclipse.persistence.internal.localization.ExceptionLocalization;
 import org.eclipse.persistence.internal.weaving.PersistenceWeavedLazy;
-import org.eclipse.persistence.mappings.*;
+import org.eclipse.persistence.mappings.CollectionMapping;
+import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.queries.*;
 import org.eclipse.persistence.sessions.Session;
 
@@ -306,76 +305,6 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
             return super.clone();
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException("DynamicEntity._persistence_shallow_clone failed on super.clone", e);
-        }
-    }
-
-    protected static class ValuesAccessor extends AttributeAccessor {
-
-        protected final static Object NULL_ENTRY = new Object();
-
-        private DatabaseMapping mapping;
-
-        private int index;
-
-        public ValuesAccessor(DatabaseMapping mapping, int index) {
-            super();
-            this.mapping = mapping;
-            this.index = index;
-        }
-
-        public DatabaseMapping getMapping() {
-            return this.mapping;
-        }
-
-        public int getIndex() {
-            return this.index;
-        }
-
-        private Object[] getValues(Object entity) {
-            return ((DynamicEntityImpl) entity).values;
-        }
-
-        public Object getAttributeValueFromObject(Object entity) throws DescriptorException {
-            Object[] values = getValues(entity);
-            Object value = values[getIndex()];
-
-            if (value == NULL_ENTRY) {
-                value = null;
-            }
-            return value;
-        }
-
-        public void setAttributeValueInObject(Object entity, Object value) throws DescriptorException {
-            Object[] values = getValues(entity);
-            values[getIndex()] = value == null ? NULL_ENTRY : value;
-        }
-
-        protected boolean isSet(Object entity) throws DescriptorException {
-            Object[] values = getValues(entity);
-            Object value = values[getIndex()];
-           
-            return value != null || value == NULL_ENTRY;
-        }
-
-
-        @Override
-        public Class getAttributeClass() {
-            if (getMapping().isForeignReferenceMapping()) {
-                ForeignReferenceMapping refMapping = (ForeignReferenceMapping) getMapping();
-
-                if (refMapping.isCollectionMapping()) {
-                    return ((CollectionMapping) refMapping).getContainerPolicy().getContainerClass();
-                }
-                if (refMapping.usesIndirection()) {
-                    return ValueHolderInterface.class;
-                }
-                return refMapping.getReferenceClass();
-            } else {
-                if (getMapping().getAttributeClassification() == null) {
-                    return ClassConstants.OBJECT;
-                }
-                return getMapping().getAttributeClassification();
-            }
         }
     }
 

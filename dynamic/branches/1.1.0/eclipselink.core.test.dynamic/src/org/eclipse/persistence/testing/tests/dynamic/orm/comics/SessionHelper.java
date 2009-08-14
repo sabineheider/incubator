@@ -13,9 +13,9 @@ public class SessionHelper {
         if (!SessionManager.getManager().getSessions().containsKey(SESSION_NAME)) {
             DynamicConversionManager dcm = DynamicConversionManager.lookup(null);
 
-            dcm.createDynamicClass("model.Issue");
-            dcm.createDynamicClass("model.Publisher");
-            dcm.createDynamicClass("model.Title");
+            dcm.getDynamicClassLoader().createDynamicClass("model.Issue");
+            dcm.getDynamicClassLoader().createDynamicClass("model.Publisher");
+            dcm.getDynamicClassLoader().createDynamicClass("model.Title");
 
             XMLSessionConfigLoader loader = new XMLSessionConfigLoader();
             loader.setClassLoader(dcm.getLoader());

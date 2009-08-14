@@ -7,12 +7,10 @@ import javax.persistence.*;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.sequencing.TableSequence;
 import org.eclipse.persistence.sessions.IdentityMapAccessor;
 import org.eclipse.persistence.sessions.server.Server;
-import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.junit.*;
 
 public class DefaultSequencing {
@@ -116,21 +114,18 @@ public class DefaultSequencing {
     public static void setUp() {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
-        
+
         TableSequence defaultSequence = (TableSequence) session.getLogin().getDefaultSequence();
         defaultSequence.setTableName("TEST_SEQ");
-        
-        Class simpleTypeClass = DynamicConversionManager.lookup(session).createDynamicClass("model.sequencing." + ENTITY_TYPE);
-        EntityTypeImpl entityType = new EntityTypeImpl(simpleTypeClass, TABLE_NAME);
-        entityType.addDirectMapping("id", int.class, "SID", true);
-        entityType.addDirectMapping("value1", String.class, "VAL_1", false);
-        entityType.getDescriptor().setSequenceNumberName(ENTITY_TYPE + "_SEQ");
-        entityType.getDescriptor().setSequenceNumberFieldName("SID");
 
-        entityType.addToSession(session);
+        RelationalMappingFactory factory = new RelationalMappingFactory(session, "model.sequencing." + ENTITY_TYPE, TABLE_NAME);
+        factory.addDirectMapping("id", int.class, "SID", true);
+        factory.addDirectMapping("value1", String.class, "VAL_1", false);
 
-        DynamicSchemaManager dsm = new DynamicSchemaManager(session);
-        dsm.createTables(entityType);
+        ((EntityTypeImpl) factory.getType()).getDescriptor().setSequenceNumberName(ENTITY_TYPE + "_SEQ");
+        ((EntityTypeImpl) factory.getType()).getDescriptor().setSequenceNumberFieldName("SID");
+
+        factory.addToSession(session, true);
     }
 
     @Before

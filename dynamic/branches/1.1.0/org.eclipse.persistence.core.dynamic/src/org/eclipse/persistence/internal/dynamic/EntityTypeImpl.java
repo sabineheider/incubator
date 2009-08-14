@@ -33,17 +33,12 @@ import org.eclipse.persistence.dynamic.DynamicEntityException;
 import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.exceptions.DescriptorException;
 import org.eclipse.persistence.indirection.ValueHolder;
-import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl.ValuesAccessor;
 import org.eclipse.persistence.internal.helper.ClassConstants;
-import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 import org.eclipse.persistence.internal.indirection.BasicIndirectionPolicy;
 import org.eclipse.persistence.internal.jpa.CMP3Policy;
 import org.eclipse.persistence.internal.security.PrivilegedAccessHelper;
 import org.eclipse.persistence.mappings.*;
 import org.eclipse.persistence.mappings.structures.ReferenceMapping;
-import org.eclipse.persistence.sessions.DatabaseSession;
-import org.eclipse.persistence.tools.schemaframework.SchemaManager;
-import org.eclipse.persistence.tools.schemaframework.TableDefinition;
 
 /**
  * An EntityType provides a metadata facade into the EclipseLink
@@ -86,7 +81,7 @@ public class EntityTypeImpl implements EntityType {
      * provided table.
      * 
      * @param dynamicClass
-     *            created using the {@link DynamicConversionManager}
+     *            created using the {@link DynamicClassLoader}
      * @param tableName
      *            Qualified table name
      */
@@ -184,7 +179,7 @@ public class EntityTypeImpl implements EntityType {
         return getMappings().size();
     }
 
-    protected Set<DatabaseMapping> getMappingsRequiringInitialization() {
+    public Set<DatabaseMapping> getMappingsRequiringInitialization() {
         return this.mappingsRequiringInitialization;
     }
 
@@ -295,42 +290,6 @@ public class EntityTypeImpl implements EntityType {
         return getDescriptor().isFullyInitialized();
     }
 
-    /**
-     * Add the dynamically created EntityType to the provided session. If the
-     * session is already initialized then the descriptor will also be
-     * initialized.
-     */
-    public void addToSession(DatabaseSession session) {
-        if (getDescriptor().getJavaClass() == null) {
-            DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
-            Class javaClass = dcm.createDynamicClass(getDescriptor().getJavaClassName(), DynamicEntityImpl.class);
-            getDescriptor().setJavaClass(javaClass);
-        }
-
-        session.addDescriptor(getDescriptor());
-    }
-
-    public static void addToSession(DatabaseSession session, List<EntityTypeImpl> entityTypes) {
-        DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
-        List<ClassDescriptor> descriptors = new ArrayList<ClassDescriptor>(entityTypes.size());
-
-        for (int index = 0; index < entityTypes.size(); index++) {
-            EntityTypeImpl type = entityTypes.get(index);
-
-            if (type.getDescriptor().getJavaClass() == null) {
-                Class javaClass = dcm.createDynamicClass(type.getDescriptor().getJavaClassName(), DynamicEntityImpl.class);
-                type.getDescriptor().setJavaClass(javaClass);
-            }
-            descriptors.add(type.getDescriptor());
-        }
-
-        session.addDescriptors(descriptors);
-    }
-
-    public String toString() {
-        return "EntityType(" + getName() + ") - " + getDescriptor();
-    }
-
     public boolean containsProperty(String propertyName) {
         return getPropertiesNames().contains(propertyName);
     }
@@ -359,6 +318,30 @@ public class EntityTypeImpl implements EntityType {
         return mapping;
     }
 
+    /**
+     * 
+     */
+    public DatabaseMapping addMapping(DatabaseMapping mapping, String... pkFields) {
+        // TODO: verify that duplicate PK fields are not added
+        if (pkFields != null && pkFields.length > 0) {
+            for (int index = 0; index < pkFields.length; index++) {
+                getDescriptor().addPrimaryKeyFieldName(pkFields[index]);
+            }
+        }
+
+        if (!getDescriptor().getMappings().contains(mapping)) {
+            getDescriptor().addMapping(mapping);
+        }
+
+        mapping.setAttributeAccessor(new ValuesAccessor(mapping, getDescriptor().getMappings().indexOf(mapping)));
+
+        if (requiresInitialization(mapping)) {
+            getMappingsRequiringInitialization().add(mapping);
+        }
+
+        return mapping;
+    }
+
     public List<String> getPropertiesNames() {
         return this.propertyNames;
     }
@@ -367,105 +350,12 @@ public class EntityTypeImpl implements EntityType {
         return getMappings().indexOf(getMapping(propertyName));
     }
 
-    /**
-     * Allows {@link DirectToFieldMapping} (@Basic) mapping to be added to a
-     * dynamic type through API. This method can be used on a new
-     * {@link EntityTypeImpl} that has yet to be added to a session and have its
-     * descriptor initialized, or it can be called on an active (initialized)
-     * descriptor.
-     * <p>
-     * There is no support currently for having the EclipseLink
-     * {@link SchemaManager} generate ALTER TABLE calls so any new columns
-     * expected must be added without the help of EclipseLink or use the
-     * {@link SchemaManager#replaceObject(org.eclipse.persistence.tools.schemaframework.DatabaseObjectDefinition)}
-     * to DROP and CREATE the table. WARNING: This will cause data loss.
-     */
-    public DirectToFieldMapping addDirectMapping(String name, Class javaType, String fieldName, boolean isPrimaryKey) {
-        DirectToFieldMapping mapping = (DirectToFieldMapping) getDescriptor().addDirectMapping(name, fieldName);
-        mapping.setAttributeClassification(javaType);
-        mapping.setAttributeAccessor(new ValuesAccessor(mapping, getDescriptor().getMappings().indexOf(mapping)));
-
-        if (isPrimaryKey && !getDescriptor().getPrimaryKeyFieldNames().contains(fieldName)) {
-            getDescriptor().addPrimaryKeyFieldName(fieldName);
-        }
-
-        if (requiresInitialization(mapping)) {
-            getMappingsRequiringInitialization().add(mapping);
-        }
-        return mapping;
+    public Class getPropertyType(int propertyIndex) {
+        return getMapping(propertyIndex).getAttributeClassification();
     }
 
-    /**
-     * Allows {@link OneToOneMapping} (@OneToOne and @ManyToOne) mappings to be
-     * added to a dynamic type through API. This method can be used on a new
-     * {@link EntityTypeImpl} that has yet to be added to a session and have its
-     * descriptor initialized, or it can be called on an active (initialized)
-     * descriptor.
-     * <p>
-     * There is no support currently for having the EclipseLink
-     * {@link SchemaManager} generate ALTER TABLE calls so any new columns
-     * expected must be added without the help of EclipseLink or use the
-     * {@link SchemaManager#replaceObject(org.eclipse.persistence.tools.schemaframework.DatabaseObjectDefinition)}
-     * to DROP and CREATE the table. WARNING: This will cause data loss.
-     */
-    public OneToOneMapping addOneToOneMapping(String name, Class refType, String fkFieldName, String targetField) {
-        OneToOneMapping mapping = new OneToOneMapping();
-        mapping.setAttributeName(name);
-        mapping.setReferenceClass(refType);
-        mapping.addForeignKeyFieldName(fkFieldName, targetField);
-        descriptor.addMapping(mapping);
-        mapping.setAttributeAccessor(new ValuesAccessor(mapping, getDescriptor().getMappings().indexOf(mapping)));
-
-        if (requiresInitialization(mapping)) {
-            getMappingsRequiringInitialization().add(mapping);
-        }
-
-        return mapping;
-    }
-
-    public OneToManyMapping addOneToManyMapping(String name, Class refType, String fkFieldName, String targetField) {
-        OneToManyMapping mapping = new OneToManyMapping();
-        mapping.setAttributeName(name);
-        mapping.setReferenceClass(refType);
-        mapping.addTargetForeignKeyFieldName(fkFieldName, targetField);
-        mapping.useTransparentList();
-        descriptor.addMapping(mapping);
-        mapping.setAttributeAccessor(new ValuesAccessor(mapping, getDescriptor().getMappings().indexOf(mapping)));
-
-        if (requiresInitialization(mapping)) {
-            getMappingsRequiringInitialization().add(mapping);
-        }
-
-        return mapping;
-    }
-
-    public AggregateObjectMapping addAggregateObjectMapping(String name, Class refType) {
-        AggregateObjectMapping mapping = new AggregateObjectMapping();
-        mapping.setAttributeName(name);
-        mapping.setReferenceClass(refType);
-        descriptor.addMapping(mapping);
-        mapping.setAttributeAccessor(new ValuesAccessor(mapping, getDescriptor().getMappings().indexOf(mapping)));
-
-        if (requiresInitialization(mapping)) {
-            getMappingsRequiringInitialization().add(mapping);
-        }
-
-        return mapping;
-    }
-
-    /**
-     * TODO: Not used yet but will be used for incremental creation of
-     * individual dynamic tables
-     * 
-     * @return
-     */
-    public TableDefinition getTableDefinition() {
-        TableDefinition tableDef = new TableDefinition();
-
-        tableDef.setName(getDescriptor().getTableName());
-        tableDef.addPrimaryKeyField("ID", Integer.class);
-
-        return tableDef;
+    public Class getPropertyType(String propertyName) {
+        return getMapping(propertyName).getAttributeClassification();
     }
 
     /**
@@ -479,6 +369,10 @@ public class EntityTypeImpl implements EntityType {
         }
 
         throw new IllegalArgumentException("Cannot unwrap " + this + " as: " + T);
+    }
+
+    public String toString() {
+        return "EntityType(" + getName() + ") - " + getDescriptor();
     }
 
     /**

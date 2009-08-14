@@ -12,18 +12,14 @@
  ******************************************************************************/
 package testing.employee;
 
-import static org.eclipse.persistence.config.PersistenceUnitProperties.DDL_GENERATION;
-import static org.eclipse.persistence.config.PersistenceUnitProperties.DROP_AND_CREATE;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.persistence.*;
 
-import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.sessions.server.Server;
-import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
+import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 import org.junit.Test;
 
 import example.employee.EntityTypeFactory;
@@ -47,10 +43,9 @@ public class CreateDatabase {
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("custom-types", properties);
 
         Server session = JpaHelper.getServerSession(emf);
-        List<EntityTypeImpl> types = EntityTypeFactory.createTypes(emf, "model.dynamic.employee");
-        EntityTypeImpl.addToSession(session, types);
+        EntityTypeFactory.createTypes(emf, "model.dynamic.employee", false);
 
-        DynamicSchemaManager dsm = new DynamicSchemaManager(session);
+        SchemaManager dsm = new SchemaManager(session);
         dsm.replaceDefaultTables();
         dsm.createSequences();
 

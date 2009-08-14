@@ -54,4 +54,9 @@ public interface EntityType {
     public DynamicEntity newInstance();
 
     public <T> T unwrap(Class<T> T);
+
+    public Class getPropertyType(int propertyIndex);
+
+    public Class getPropertyType(String propertyName);
+    
 }

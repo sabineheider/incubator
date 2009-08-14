@@ -18,14 +18,15 @@
  ******************************************************************************/
 package example.employee;
 
-import java.util.*;
+import java.util.Calendar;
 
 import javax.persistence.EntityManagerFactory;
 
+import org.eclipse.persistence.dynamic.RelationalMappingFactory;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.helper.DynamicConversionManager;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.mappings.OneToOneMapping;
+import org.eclipse.persistence.sessions.server.Server;
 
 /**
  * Factory for the creation of the dynamic {@link EntityTypeImpl}'s required for
@@ -36,88 +37,65 @@ import org.eclipse.persistence.mappings.OneToOneMapping;
  */
 public class EntityTypeFactory {
 
-    public static List<EntityTypeImpl> createTypes(EntityManagerFactory emf, String packageName) {
+    public static void createTypes(EntityManagerFactory emf, String packageName, boolean createMissingTables) {
         String packagePrefix = packageName.endsWith(".") ? packageName : packageName + ".";
-        DynamicConversionManager dcm = DynamicConversionManager.lookup(JpaHelper.getServerSession(emf));
+        Server session = JpaHelper.getServerSession(emf);
 
-        Class employeeClass = dcm.createDynamicClass(packagePrefix + "Employee");
-        Class addressClass = dcm.createDynamicClass(packagePrefix + "Address");
-        Class phoneNumberClass = dcm.createDynamicClass(packagePrefix + "PhoneNumber");
-        // Class employmentPeriodClass = dcm.createDynamicClass(packagePrefix +
-        // "EmploymentPeriod");
+        RelationalMappingFactory employee = new RelationalMappingFactory(session, packagePrefix + "Employee", "D_EMPLOYEE");
+        RelationalMappingFactory address = new RelationalMappingFactory(session, packagePrefix + "Address", "D_ADDRESS");
+        RelationalMappingFactory phone = new RelationalMappingFactory(session, packagePrefix + "PhoneNumber", "D_PHONE");
+        RelationalMappingFactory period = new RelationalMappingFactory(session, packagePrefix + "Employee");
 
-        List<EntityTypeImpl> entityTypes = new ArrayList<EntityTypeImpl>();
+        configureEmployee(employee, address, phone, period);
+        configureAddress(address);
+        configurePhone(phone, employee);
+        configurePeriod(period);
 
-        entityTypes.add(createEmployeeType(employeeClass, addressClass, phoneNumberClass));
-        entityTypes.add(createAddressType(addressClass));
-        entityTypes.add(createPhoneNumberType(phoneNumberClass, employeeClass));
-        // entityTypes.add(createEmploymentPeriodType(employmentPeriodClass,
-        // employeeClass));
-
-        return entityTypes;
+        employee.addToSession(session, false);
+        address.addToSession(session, false);
+        phone.addToSession(session, false);
+        period.addToSession(session, createMissingTables);
     }
 
-    private static EntityTypeImpl createPhoneNumberType(Class phoneNumberClass, Class employeeClass) {
-        EntityTypeImpl type = new EntityTypeImpl(phoneNumberClass, "D_PHONE");
-
-        type.addDirectMapping("type", String.class, "PHONE_TYPE", true);
-        type.addDirectMapping("ownerId", int.class, "EMP_ID", true).readOnly();
-        type.addDirectMapping("areaCode", String.class, "AREA_CODE", false);
-        type.addDirectMapping("number", String.class, "PNUMBER", false);
-        type.addOneToOneMapping("owner", employeeClass, "EMP_ID", "EMP_ID");
-
-        return type;
+    private static void configurePhone(RelationalMappingFactory phone, RelationalMappingFactory employee) {
+        phone.addDirectMapping("type", String.class, "PHONE_TYPE", true);
+        phone.addDirectMapping("ownerId", int.class, "EMP_ID", true).readOnly();
+        phone.addDirectMapping("areaCode", String.class, "AREA_CODE", false);
+        phone.addDirectMapping("number", String.class, "PNUMBER", false);
+        phone.addOneToOneMapping("owner", employee.getType(), "EMP_ID", "EMP_ID");
     }
 
-    private static EntityTypeImpl createAddressType(Class addressClass) {
-        EntityTypeImpl type = new EntityTypeImpl(addressClass, "D_ADDRESS");
-
-        type.addDirectMapping("id", int.class, "ADDR_ID", true);
-        type.addDirectMapping("street", String.class, "STREET", false);
-        type.addDirectMapping("city", String.class, "CITY", false);
-        type.addDirectMapping("province", String.class, "PROV", false);
-        type.addDirectMapping("postalCode", String.class, "P_CODE", false);
-        type.addDirectMapping("country", String.class, "COUNTRY", false);
-        
-        //type.getDescriptor().setSequenceNumberName("ADDR_SEQ");
-        //type.getDescriptor().setSequenceNumberFieldName("ADDR_ID");
-
-        return type;
+    private static void configureAddress(RelationalMappingFactory address) {
+        address.addDirectMapping("id", int.class, "ADDR_ID", true);
+        address.addDirectMapping("street", String.class, "STREET", false);
+        address.addDirectMapping("city", String.class, "CITY", false);
+        address.addDirectMapping("province", String.class, "PROV", false);
+        address.addDirectMapping("postalCode", String.class, "P_CODE", false);
+        address.addDirectMapping("country", String.class, "COUNTRY", false);
     }
 
-    private static EntityTypeImpl createEmployeeType(Class employeeClass, Class addressClass, Class phoneNumberClass) {
-        EntityTypeImpl type = new EntityTypeImpl(employeeClass, "D_EMPLOYEE");
+    private static void configureEmployee(RelationalMappingFactory employee, RelationalMappingFactory address, RelationalMappingFactory phone, RelationalMappingFactory period) {
+        employee.addDirectMapping("id", int.class, "EMP_ID", true);
+        employee.addDirectMapping("firstName", String.class, "F_NAME", false);
+        employee.addDirectMapping("lastName", String.class, "L_NAME", false);
+        employee.addDirectMapping("gender", String.class, "GENDER", false);
+        employee.addDirectMapping("salary", int.class, "SALARY", false);
 
-        type.addDirectMapping("id", int.class, "EMP_ID", true);
-        type.addDirectMapping("firstName", String.class, "F_NAME", false);
-        type.addDirectMapping("lastName", String.class, "L_NAME", false);
-        type.addDirectMapping("gender", String.class, "GENDER", false);
-        // TODO: Need to add secondary SALARY Table
-        type.addDirectMapping("salary", int.class, "SALARY", false);
-
-        OneToOneMapping addressMapping = type.addOneToOneMapping("address", addressClass, "ADDR_ID", "ADDR_ID");
+        OneToOneMapping addressMapping = employee.addOneToOneMapping("address", address.getType(), "ADDR_ID", "ADDR_ID");
         addressMapping.setCascadePersist(true);
         addressMapping.setIsPrivateOwned(true);
-        type.addOneToOneMapping("manager", employeeClass, "MANAGER_ID", "EMP_ID").setIsPrivateOwned(true);
+        employee.addOneToOneMapping("manager", employee.getType(), "MANAGER_ID", "EMP_ID").setIsPrivateOwned(true);
         // type.addOneToManyMapping("phoneNumbers", phoneNumberClass,
         // "OWNER_ID", "EMP_ID");
-        // type.addAggregateObjectMapping("period", employmentPeriodClass);
+        employee.addAggregateObjectMapping("period", period.getType(), true);
 
-        //type.getDescriptor().setSequenceNumberName("EMP_SEQ");
-        //type.getDescriptor().setSequenceNumberFieldName("EMP_ID");
-
-        return type;
+        // type.getDescriptor().setSequenceNumberName("EMP_SEQ");
+        // type.getDescriptor().setSequenceNumberFieldName("EMP_ID");
     }
 
-    private static EntityTypeImpl createEmploymentPeriodType(Class employmentPeriodClass, Class employeeClass) {
-        EntityTypeImpl type = new EntityTypeImpl(employmentPeriodClass, "D_EMPLOYEE");
-
-        type.addDirectMapping("startDate", Calendar.class, "START_DATE", false);
-        type.addDirectMapping("endDate", Calendar.class, "END_DATE", false);
-
-        type.getDescriptor().descriptorIsAggregate();
-
-        return type;
+    private static void configurePeriod(RelationalMappingFactory period) {
+        period.addDirectMapping("startDate", Calendar.class, "START_DATE", false);
+        period.addDirectMapping("endDate", Calendar.class, "END_DATE", false);
     }
 
 }

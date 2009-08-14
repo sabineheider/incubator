@@ -1,8 +1,6 @@
 package testing.util;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Map;
 import java.util.Properties;
 

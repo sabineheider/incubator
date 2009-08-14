@@ -14,18 +14,12 @@
 package testing.util;
 
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import org.eclipse.persistence.internal.helper.Helper;
-import org.eclipse.persistence.logging.DefaultSessionLog;
-import org.eclipse.persistence.logging.SessionLog;
-import org.eclipse.persistence.logging.SessionLogEntry;
+import org.eclipse.persistence.logging.*;
 import org.eclipse.persistence.queries.DatabaseQuery;
-import org.eclipse.persistence.sessions.Session;
-import org.eclipse.persistence.sessions.SessionEvent;
-import org.eclipse.persistence.sessions.SessionEventAdapter;
+import org.eclipse.persistence.sessions.*;
 
 /**
  * 

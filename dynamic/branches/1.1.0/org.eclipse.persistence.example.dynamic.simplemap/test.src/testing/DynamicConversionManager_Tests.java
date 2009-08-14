@@ -18,10 +18,7 @@
  ******************************************************************************/
 package testing;
 
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertSame;
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.fail;
+import static junit.framework.Assert.*;
 
 import org.eclipse.persistence.internal.helper.ConversionManager;
 import org.eclipse.persistence.internal.helper.DynamicConversionManager;
@@ -31,24 +28,30 @@ import example.DynamicMapEntity;
 
 public class DynamicConversionManager_Tests {
 
-    private DynamicConversionManager classLoader = new DynamicConversionManager(ConversionManager.getDefaultManager());
+    private DynamicConversionManager dcm = new DynamicConversionManager(ConversionManager.getDefaultManager());
 
-    @Test
-    public void validateConstructor() {
-        fail("NOT YET IMPLEMENTED");
-    }
-
+    @SuppressWarnings("static-access")
     @Test
     public void validate_createDynamicType() throws ClassNotFoundException {
-        Class dynamicType = this.classLoader.createDynamicClass("model.SimpleType");
+        Class dynamicType = this.dcm.getDynamicClassLoader().createDynamicClass("model.SimpleType", DynamicMapEntity.class);
 
         assertNotNull(dynamicType);
         assertTrue(DynamicMapEntity.class.isAssignableFrom(dynamicType));
 
-        Class dynamicType2 = this.classLoader.loadClass("model.SimpleType");
+        Class dynamicType2 = this.dcm.getDynamicClassLoader().loadClass("model.SimpleType");
 
         assertNotNull(dynamicType2);
         assertSame(dynamicType, dynamicType2);
-    }
+
+        Class dynamicType3 = Class.forName("model.SimpleType", true, this.dcm.getDynamicClassLoader());
+
+        assertNotNull(dynamicType3);
+        assertSame(dynamicType, dynamicType3);
+
+        Class dynamicType4 = this.dcm.convertClassNameToClass("model.Simple");
+
+        assertNotNull(dynamicType4);
+        // TODO assertSame(dynamicType, dynamicType4);
+}
 
 }

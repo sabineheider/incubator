@@ -2,11 +2,11 @@ package model.meta;
 
 import javax.persistence.*;
 
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.helper.DynamicConversionManager;
- 
+import org.eclipse.persistence.dynamic.RelationalMappingFactory;
+
 @Entity
-@Table(name="CUSTOM_REL_MTO")@DiscriminatorValue("M:1")
+@Table(name = "CUSTOM_REL_MTO")
+@DiscriminatorValue("M:1")
 public class ManyToOneRelationship extends OneToOneRelationship {
 
     @Column(name = "MAPPED_BY")
@@ -25,8 +25,9 @@ public class ManyToOneRelationship extends OneToOneRelationship {
     }
 
     @Override
-    protected void addToType(DynamicConversionManager dcm, EntityTypeImpl entityType) {
-        // TODO: entityType.addOneToOneMapping(getName(), null, getFieldName());
+    protected void addToType(RelationalMappingFactory factory) {
+        // TODO: Target Field Name?
+        factory.addOneToOneMapping(getName(), null, getFieldName(), "TODO_BLAH");
     }
 
 }
