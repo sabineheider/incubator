@@ -21,8 +21,6 @@ package org.eclipse.persistence.internal.dynamic;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.persistence.dynamic.DynamicEntity;
-
 /**
  * 
  * 
@@ -30,14 +28,14 @@ import org.eclipse.persistence.dynamic.DynamicEntity;
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public class DynamicClassLoader extends ClassLoader {
-    
-    public static final Class DEFAULT_DYNAMIC_PARENT = DynamicEntityImpl.class;
+
+    public static final Class<?> DEFAULT_DYNAMIC_PARENT = DynamicEntityImpl.class;
 
     private boolean createDynamicClasses = true;
 
-    private Map<String, Class> dynamicEntityClasses = new HashMap<String, Class>();
+    private Map<String, Class<?>> dynamicEntityClasses = new HashMap<String, Class<?>>();
 
-    private Class defaultParentClass = DEFAULT_DYNAMIC_PARENT;
+    private Class<?> defaultParentClass = DEFAULT_DYNAMIC_PARENT;
 
     private DynamicClassWriter defaultWriter = new DynamicClassWriter();
 
@@ -53,19 +51,19 @@ public class DynamicClassLoader extends ClassLoader {
         this.createDynamicClasses = createDynamicClasses;
     }
 
-    private Map<String, Class> getDynamicEntityClasses() {
+    private Map<String, Class<?>> getDynamicEntityClasses() {
         return this.dynamicEntityClasses;
     }
 
-    public Class getDynamicEntityClass(String className) {
+    public Class<?> getDynamicEntityClass(String className) {
         return getDynamicEntityClasses().get(className);
     }
 
-    public Class getDefaultParentClass() {
+    public Class<?> getDefaultParentClass() {
         return defaultParentClass;
     }
 
-    public void setDefaultParentClass(Class defaultParentClass) {
+    public void setDefaultParentClass(Class<?> defaultParentClass) {
         this.defaultParentClass = defaultParentClass;
     }
 
@@ -77,11 +75,11 @@ public class DynamicClassLoader extends ClassLoader {
         this.defaultWriter = defaultWriter;
     }
 
-    public Class<DynamicEntity> createDynamicClass(String name) {
+    public Class<?> createDynamicClass(String name) {
         return createDynamicClass(name, getDefaultParentClass());
     }
 
-    public Class<DynamicEntity> createDynamicClass(String name, Class baseClass) {
+    public Class<?> createDynamicClass(String name, Class<?> baseClass) {
         return createDynamicClass(name, baseClass, getDefaultWriter());
     }
 
@@ -89,8 +87,8 @@ public class DynamicClassLoader extends ClassLoader {
      * Create a dynamic subclass if one does not already exist and register the
      * created class for subsequent use.
      */
-    public Class<DynamicEntity> createDynamicClass(String name, Class baseClass, DynamicClassWriter writer) {
-        Class javaClass = getDynamicEntityClass(name);
+    public Class<?> createDynamicClass(String name, Class<?> baseClass, DynamicClassWriter writer) {
+        Class<?> javaClass = getDynamicEntityClass(name);
 
         if (javaClass != null) {
             return javaClass;
@@ -117,8 +115,8 @@ public class DynamicClassLoader extends ClassLoader {
     protected Class<?> findClass(String name) throws ClassNotFoundException {
         if (!isCreateDynamicClasses()) {
             return super.findClass(name);
-        } 
-        
+        }
+
         return createDynamicClass(name);
     }
 

@@ -18,20 +18,39 @@
  ******************************************************************************/
 package org.eclipse.persistence.jpa.dynamic;
 
-import org.eclipse.persistence.dynamic.RelationalMappingFactory;
+import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.internal.dynamic.RelationalEntityTypeFactory;
 import org.eclipse.persistence.internal.jpa.CMP3Policy;
 import org.eclipse.persistence.sessions.DatabaseSession;
 
-public class JPAMappingFactory extends RelationalMappingFactory {
+public class JPAEntityTypeFactory extends RelationalEntityTypeFactory {
 
-    public JPAMappingFactory(DatabaseSession session, String className, String... tableNames) {
+    public JPAEntityTypeFactory(DatabaseSession session, String className, String... tableNames) {
         super(session, className, tableNames);
     }
 
-    public JPAMappingFactory(Class dynamicClass, String[] tableNames) {
+    public JPAEntityTypeFactory(Class dynamicClass, String[] tableNames) {
         super(dynamicClass, tableNames);
-        
+
         this.entityType.getDescriptor().setCMPPolicy(new CMP3Policy());
+    }
+    
+    public JPAEntityTypeFactory(ClassDescriptor descriptor) {
+        super(descriptor);
+    }
+
+    /**
+     * Initialize an existing descriptor for dynamic usage.
+     * 
+     * @param descriptor
+     */
+    protected void configure(ClassDescriptor descriptor) {
+        super.configure(descriptor);
+
+        if (descriptor.getCMPPolicy() == null) {
+            descriptor.setCMPPolicy(new CMP3Policy());
+        }
+
     }
 
 }

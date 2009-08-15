@@ -1,9 +1,11 @@
 package model.meta;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 
-import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.dynamic.RelationalMappingFactory;
+import org.eclipse.persistence.dynamic.EntityTypeFactory;
 
 @Entity
 @Table(name = "CUSTOM_REL_MTM")
@@ -26,7 +28,7 @@ public class ManyToManyRelationship extends OneToOneRelationship {
     }
 
     @Override
-    protected void addToType(RelationalMappingFactory factory) {
+    protected void addToType(EntityTypeFactory factory) {
         // TODO
         throw new UnsupportedOperationException();
     }

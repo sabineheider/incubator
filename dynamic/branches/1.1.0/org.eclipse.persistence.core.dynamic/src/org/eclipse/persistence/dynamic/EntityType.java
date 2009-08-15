@@ -49,14 +49,22 @@ public interface EntityType {
 
     public int getPropertyIndex(String propertyName);
 
-    public Class getJavaClass();
+    public Class<?> getJavaClass();
 
     public DynamicEntity newInstance();
 
     public <T> T unwrap(Class<T> T);
 
-    public Class getPropertyType(int propertyIndex);
+    public Class<?> getPropertyType(int propertyIndex);
 
-    public Class getPropertyType(String propertyName);
+    public Class<?> getPropertyType(String propertyName);
+    
+    public ClassDescriptor getDescriptor();
+    
+    /**
+     * Property name used to store the EntityTypeImpl on each descriptor.
+     */
+    public static final String DESCRIPTOR_PROPERTY = "ENTITY_TYPE";
+
     
 }

@@ -2,7 +2,7 @@ package model.meta;
 
 import javax.persistence.*;
 
-import org.eclipse.persistence.dynamic.RelationalMappingFactory;
+import org.eclipse.persistence.dynamic.EntityTypeFactory;
 
 @Entity
 @Table(name = "CUSTOM_REL_OTO")
@@ -30,7 +30,7 @@ public class OneToOneRelationship extends CustomField {
     }
 
     @Override
-    protected void addToType(RelationalMappingFactory factory) {
+    protected void addToType(EntityTypeFactory factory) {
         factory.addOneToOneMapping(getName(), getReferenceType().getEntityType(), getFieldName(), getReferenceType().getIdFieldName());
     }
 

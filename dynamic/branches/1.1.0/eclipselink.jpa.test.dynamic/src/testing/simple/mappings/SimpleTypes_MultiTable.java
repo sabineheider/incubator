@@ -1,19 +1,30 @@
 package testing.simple.mappings;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
 
-import javax.persistence.*;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 
 import junit.framework.Assert;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.EntityTypeFactory;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeFactory;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.sessions.server.Server;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class SimpleTypes_MultiTable {
 
@@ -136,13 +147,14 @@ public class SimpleTypes_MultiTable {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
 
-        RelationalMappingFactory factory = new RelationalMappingFactory(session, "model.SimpleA", "SIMPLE_TYPE_A", "SIMPLE_TYPE_B", "SIMPLE_TYPE_C");
-        factory.addDirectMapping("id", int.class, "SIMPLE_TYPE_A.SID", true);
-        factory.addDirectMapping("value1", String.class, "SIMPLE_TYPE_A.VAL_1", false);
-        factory.addDirectMapping("value2", boolean.class, "SIMPLE_TYPE_B.VAL_2", true);
-        factory.addDirectMapping("value3", String.class, "SIMPLE_TYPE_B.VAL_3", false);
-        factory.addDirectMapping("value4", double.class, "SIMPLE_TYPE_C.VAL_4", true);
-        factory.addDirectMapping("value5", String.class, "SIMPLE_TYPE_C.VAL_5", false);
+        EntityTypeFactory factory = new JPAEntityTypeFactory(session, "model.SimpleA", "SIMPLE_TYPE_A", "SIMPLE_TYPE_B", "SIMPLE_TYPE_C");
+        factory.addPrimaryKeyFields("SIMPLE_TYPE_A.SID");
+        factory.addDirectMapping("id", int.class, "SIMPLE_TYPE_A.SID");
+        factory.addDirectMapping("value1", String.class, "SIMPLE_TYPE_A.VAL_1");
+        factory.addDirectMapping("value2", boolean.class, "SIMPLE_TYPE_B.VAL_2");
+        factory.addDirectMapping("value3", String.class, "SIMPLE_TYPE_B.VAL_3");
+        factory.addDirectMapping("value4", double.class, "SIMPLE_TYPE_C.VAL_4");
+        factory.addDirectMapping("value5", String.class, "SIMPLE_TYPE_C.VAL_5");
         factory.addToSession(session, true);
     }
 

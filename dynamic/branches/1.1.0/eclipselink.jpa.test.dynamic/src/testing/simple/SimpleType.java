@@ -1,18 +1,32 @@
 package testing.simple;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
 
 import java.util.Calendar;
 
-import javax.persistence.*;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.EntityType;
+import org.eclipse.persistence.dynamic.EntityTypeFactory;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeFactory;
 import org.eclipse.persistence.sessions.IdentityMapAccessor;
 import org.eclipse.persistence.sessions.server.Server;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class SimpleType {
 
@@ -27,7 +41,7 @@ public class SimpleType {
 
         EntityTypeImpl simpleType = (EntityTypeImpl) DynamicHelper.getType(session, "Simple");
         assertNotNull("'Simple' EntityType not found", simpleType);
-        
+
         assertEquals(2, simpleType.getMappingsRequiringInitialization().size());
 
         assertEquals(descriptor, simpleType.getDescriptor());
@@ -46,11 +60,11 @@ public class SimpleType {
         assertFalse(cache.containsObjectInIdentityMap(simpleInstance));
 
         EntityManager em = emf.createEntityManager();
-        
+
         assertFalse(em.contains(simpleInstance));
-        simpleInstance =  em.merge(simpleInstance);
+        simpleInstance = em.merge(simpleInstance);
         assertTrue(em.contains(simpleInstance));
-        
+
         em.close();
     }
 
@@ -103,14 +117,14 @@ public class SimpleType {
         assertEquals(1, ((Number) em.createQuery("SELECT COUNT(s) FROM Simple s").getSingleResult()).intValue());
 
         DynamicEntity foundEntity = (DynamicEntity) em.find(simpleEntityType.getJavaClass(), 1);
-        
+
         assertNotNull(foundEntity);
         assertEquals(simpleInstance.get("id"), foundEntity.get("id"));
         assertEquals(simpleInstance.get("value1"), foundEntity.get("value1"));
         assertEquals(simpleInstance.get("value2"), foundEntity.get("value2"));
 
         em.close();
-        
+
         return simpleInstance;
     }
 
@@ -119,12 +133,13 @@ public class SimpleType {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
 
-        RelationalMappingFactory factory = new RelationalMappingFactory(session, "model.Simple", "SIMPLE_TYPE");
-        factory.addDirectMapping("id", int.class, "SID", true);
-        factory.addDirectMapping("value1", String.class, "VAL_1", false);
-        factory.addDirectMapping("value2", boolean.class, "VAL_2", false);
-        factory.addDirectMapping("value3", Calendar.class, "VAL_3", false);
-        factory.addDirectMapping("value4", Character.class, "VAL_4", false);
+        EntityTypeFactory factory = new JPAEntityTypeFactory(session, "model.Simple", "SIMPLE_TYPE");
+        factory.addPrimaryKeyFields("SID");
+        factory.addDirectMapping("id", int.class, "SID");
+        factory.addDirectMapping("value1", String.class, "VAL_1");
+        factory.addDirectMapping("value2", boolean.class, "VAL_2");
+        factory.addDirectMapping("value3", Calendar.class, "VAL_3");
+        factory.addDirectMapping("value4", Character.class, "VAL_4");
 
         factory.addToSession(session, true);
     }

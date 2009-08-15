@@ -30,7 +30,6 @@ public class DynamicConversionManager_Tests {
 
     private DynamicConversionManager dcm = new DynamicConversionManager(ConversionManager.getDefaultManager());
 
-    @SuppressWarnings("static-access")
     @Test
     public void validate_createDynamicType() throws ClassNotFoundException {
         Class dynamicType = this.dcm.getDynamicClassLoader().createDynamicClass("model.SimpleType", DynamicMapEntity.class);

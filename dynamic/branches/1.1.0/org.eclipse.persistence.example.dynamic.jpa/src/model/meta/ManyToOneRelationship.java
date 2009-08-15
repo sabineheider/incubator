@@ -2,7 +2,7 @@ package model.meta;
 
 import javax.persistence.*;
 
-import org.eclipse.persistence.dynamic.RelationalMappingFactory;
+import org.eclipse.persistence.dynamic.EntityTypeFactory;
 
 @Entity
 @Table(name = "CUSTOM_REL_MTO")
@@ -25,7 +25,7 @@ public class ManyToOneRelationship extends OneToOneRelationship {
     }
 
     @Override
-    protected void addToType(RelationalMappingFactory factory) {
+    protected void addToType(EntityTypeFactory factory) {
         // TODO: Target Field Name?
         factory.addOneToOneMapping(getName(), null, getFieldName(), "TODO_BLAH");
     }

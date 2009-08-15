@@ -13,7 +13,7 @@
             <print-date>false</print-date>
          </logging-options>
       </logging>
-      <session-customizer-class>org.eclipse.persistence.dynamic.DynamicHelper$Configure</session-customizer-class>
+      <session-customizer-class>org.eclipse.persistence.dynamic.DynamicHelper$SessionCustomizer</session-customizer-class>
       <primary-project xsi:type="xml">META-INF/dynamic-comics-map.xml</primary-project>
       <login xsi:type="database-login">
          <platform-class>org.eclipse.persistence.platform.database.OraclePlatform</platform-class>

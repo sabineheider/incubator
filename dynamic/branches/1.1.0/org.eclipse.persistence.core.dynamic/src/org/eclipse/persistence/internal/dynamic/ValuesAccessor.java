@@ -77,7 +77,7 @@ public class ValuesAccessor extends AttributeAccessor {
     }
 
     @Override
-    public Class getAttributeClass() {
+    public Class<?> getAttributeClass() {
         if (getMapping().isForeignReferenceMapping()) {
             ForeignReferenceMapping refMapping = (ForeignReferenceMapping) getMapping();
 

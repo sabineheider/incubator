@@ -41,7 +41,7 @@ public class DynamicClassWriter {
     protected static final String INIT = "<init>";
     private static final String WRITE_REPLACE = "writeReplace";
 
-    public byte[] writeClass(Class parentClass, String className) {
+    public byte[] writeClass(Class<?> parentClass, String className) {
         if (parentClass == null || parentClass.isPrimitive() || parentClass.isArray() || parentClass.isEnum() || parentClass.isInterface() || Modifier.isFinal(parentClass.getModifiers())) {
             throw new IllegalArgumentException("Invalid parent class: " + parentClass);
         }
@@ -74,8 +74,8 @@ public class DynamicClassWriter {
      * 
      * @see #addConstructor(ClassWriter, Constructor)
      */
-    protected void addConstructors(ClassWriter cw, Class parentClass) {
-        Constructor[] constructors = parentClass.getDeclaredConstructors();
+    protected void addConstructors(ClassWriter cw, Class<?> parentClass) {
+        Constructor<?>[] constructors = parentClass.getDeclaredConstructors();
 
         for (int index = 0; index < constructors.length; index++) {
             if (Modifier.isPublic(constructors[index].getModifiers()) || Modifier.isProtected(constructors[index].getModifiers())) {
@@ -90,7 +90,7 @@ public class DynamicClassWriter {
      * {@link #addConstructors(ClassWriter, Class)} for each constructor
      * available in the parent class.
      */
-    protected void addConstructor(ClassWriter cw, Constructor constructor) {
+    protected void addConstructor(ClassWriter cw, Constructor<?> constructor) {
         Type[] types = new Type[constructor.getParameterTypes().length];
 
         for (int index = 0; index < constructor.getParameterTypes().length; index++) {
@@ -117,7 +117,7 @@ public class DynamicClassWriter {
      * method exist as a method on the {@link Serializable} class and not
      * provided through inheritance.
      */
-    protected void addWriteReplace(ClassWriter cw, Class parentClass) {
+    protected void addWriteReplace(ClassWriter cw, Class<?> parentClass) {
         boolean parentHasWriteReplace = false;
 
         try {
@@ -149,7 +149,7 @@ public class DynamicClassWriter {
     /**
      * Provided to allow subclasses to add their own fields.
      */
-    protected void addFields(ClassWriter cw, Class parentClass) {
+    protected void addFields(ClassWriter cw, Class<?> parentClass) {
     }
 
     /**
@@ -157,6 +157,6 @@ public class DynamicClassWriter {
      * additional methods needed to implement any interfaces returned from
      * {@link #getInterfaces()}
      */
-    protected void addMethods(ClassWriter cw, Class parentClass) {
+    protected void addMethods(ClassWriter cw, Class<?> parentClass) {
     }
 }

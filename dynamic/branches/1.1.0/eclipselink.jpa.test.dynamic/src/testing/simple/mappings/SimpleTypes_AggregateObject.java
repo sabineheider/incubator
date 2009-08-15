@@ -1,21 +1,33 @@
 package testing.simple.mappings;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertSame;
+import static junit.framework.Assert.assertTrue;
 
-import javax.persistence.*;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 
 import junit.framework.Assert;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.EntityTypeFactory;
 import org.eclipse.persistence.internal.descriptors.changetracking.AggregateAttributeChangeListener;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeFactory;
 import org.eclipse.persistence.mappings.AggregateObjectMapping;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.sessions.server.Server;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class SimpleTypes_AggregateObject {
 
@@ -51,7 +63,7 @@ public class SimpleTypes_AggregateObject {
         AggregateObjectMapping a_b = (AggregateObjectMapping) descriptorA.getMappingForAttributeName("b");
         assertSame(descriptorB.getJavaClass(), a_b.getReferenceDescriptor().getJavaClass());
         assertTrue(a_b.isNullAllowed());
-        
+
         ClassDescriptor descriptorC = session.getClassDescriptorForAlias("SimpleC");
         assertNotNull("No descriptor found for alias='SimpleB'", descriptorB);
 
@@ -67,7 +79,7 @@ public class SimpleTypes_AggregateObject {
         AggregateObjectMapping a_c = (AggregateObjectMapping) descriptorA.getMappingForAttributeName("c");
         assertSame(descriptorC.getJavaClass(), a_c.getReferenceDescriptor().getJavaClass());
         assertFalse(a_c.isNullAllowed());
-}
+    }
 
     @Test
     public void verifyProperties() {
@@ -184,19 +196,20 @@ public class SimpleTypes_AggregateObject {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
 
-        RelationalMappingFactory bFactory = new RelationalMappingFactory(session, "model.SimpleB");
-        bFactory.addDirectMapping("value2", boolean.class, "VAL_2", true);
-        bFactory.addDirectMapping("value3", String.class, "VAL_3", false);
+        EntityTypeFactory bFactory = new JPAEntityTypeFactory(session, "model.SimpleB");
+        bFactory.addDirectMapping("value2", boolean.class, "VAL_2");
+        bFactory.addDirectMapping("value3", String.class, "VAL_3");
         bFactory.addToSession(session, false);
 
-        RelationalMappingFactory cFactory = new RelationalMappingFactory(session, "model.SimpleC");
-        cFactory.addDirectMapping("value4", double.class, "VAL_4", true);
-        cFactory.addDirectMapping("value5", String.class, "VAL_5", false);
+        EntityTypeFactory cFactory = new JPAEntityTypeFactory(session, "model.SimpleC");
+        cFactory.addDirectMapping("value4", double.class, "VAL_4");
+        cFactory.addDirectMapping("value5", String.class, "VAL_5");
         cFactory.addToSession(session, false);
 
-        RelationalMappingFactory aFactory = new RelationalMappingFactory(session, "model.SimpleA", "SIMPLE_TYPE_A");
-        aFactory.addDirectMapping("id", int.class, "SID", true);
-        aFactory.addDirectMapping("value1", String.class, "VAL_1", false);
+        EntityTypeFactory aFactory = new JPAEntityTypeFactory(session, "model.SimpleA", "SIMPLE_TYPE_A");
+        aFactory.addPrimaryKeyFields("SID");
+        aFactory.addDirectMapping("id", int.class, "SID");
+        aFactory.addDirectMapping("value1", String.class, "VAL_1");
         aFactory.addAggregateObjectMapping("b", bFactory.getType(), true);
         aFactory.addAggregateObjectMapping("c", cFactory.getType(), false);
         aFactory.addToSession(session, true);

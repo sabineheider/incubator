@@ -6,10 +6,10 @@ import java.util.List;
 import javax.persistence.*;
 
 import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.dynamic.RelationalMappingFactory;
+import org.eclipse.persistence.dynamic.EntityTypeFactory;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.jpa.dynamic.JPAMappingFactory;
+import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeFactory;
 import org.eclipse.persistence.sessions.server.Server;
 
 @Entity
@@ -188,7 +188,7 @@ public class CustomType {
         }
 
         Server session = JpaHelper.getServerSession(emf);
-        RelationalMappingFactory factory = new JPAMappingFactory(session, getClassName(), getTableName());
+        EntityTypeFactory factory = new JPAEntityTypeFactory(session, getClassName(), getTableName());
 
         for (CustomField field : getFields()) {
             field.addToType(factory);

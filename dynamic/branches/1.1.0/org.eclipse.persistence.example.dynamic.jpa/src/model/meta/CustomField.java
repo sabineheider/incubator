@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import javax.persistence.*;
 
-import org.eclipse.persistence.dynamic.RelationalMappingFactory;
+import org.eclipse.persistence.dynamic.EntityTypeFactory;
 
 @Entity
 @IdClass(CustomField.ID.class)
@@ -92,8 +92,11 @@ public class CustomField {
         this.typeName = type.getName();
     }
 
-    protected void addToType(RelationalMappingFactory factory) {
-        factory.addDirectMapping(getName(), getType().getEntityType().getJavaClass(), getFieldName(), isId());
+    protected void addToType(EntityTypeFactory factory) {
+        if (isId) {
+            factory.addPrimaryKeyFields(getFieldName());
+        }
+        factory.addDirectMapping(getName(), getType().getEntityType().getJavaClass(), getFieldName());
     }
 
     public static class ID implements Serializable {

@@ -21,10 +21,15 @@ package org.eclipse.persistence.testing.tests.dynamic;
 import static junit.framework.Assert.assertEquals;
 
 import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.dynamic.RelationalMappingFactory;
-import org.eclipse.persistence.internal.dynamic.*;
+import org.eclipse.persistence.dynamic.EntityTypeFactory;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
+import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.internal.dynamic.RelationalEntityTypeFactory;
 import org.eclipse.persistence.logging.SessionLog;
-import org.eclipse.persistence.sessions.*;
+import org.eclipse.persistence.sessions.DatabaseLogin;
+import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.Project;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 import org.junit.Test;
 
@@ -59,9 +64,10 @@ public class EntityTypeFromScratch {
     }
 
     private EntityTypeImpl buildMyEntityType() {
-        RelationalMappingFactory factory = new RelationalMappingFactory(MyEntity.class, "MY_ENTITY");
-        factory.addDirectMapping("id", int.class, "ID", true);
-        factory.addDirectMapping("name", String.class, "NAME", false);
+        EntityTypeFactory factory = new RelationalEntityTypeFactory(MyEntity.class, "MY_ENTITY");
+        factory.addPrimaryKeyFields("ID");
+        factory.addDirectMapping("id", int.class, "ID");
+        factory.addDirectMapping("name", String.class, "NAME");
 
         return (EntityTypeImpl) factory.getType();
     }

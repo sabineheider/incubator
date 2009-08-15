@@ -11,6 +11,7 @@ import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeFactory;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.mappings.OneToOneMapping;
 import org.eclipse.persistence.sessions.server.Server;
@@ -133,16 +134,18 @@ public class SimpleTypes_OneToOne {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
 
-        RelationalMappingFactory bFactory = new RelationalMappingFactory(session, "model.SimpleB", "SIMPLE_TYPE_B");
-        bFactory.addDirectMapping("id", int.class, "SID", true);
-        bFactory.addDirectMapping("value1", String.class, "VAL_1", false);
+        EntityTypeFactory bFactory = new JPAEntityTypeFactory(session, "model.SimpleB", "SIMPLE_TYPE_B");
+        bFactory.addPrimaryKeyFields("SID");
+        bFactory.addDirectMapping("id", int.class, "SID");
+        bFactory.addDirectMapping("value1", String.class, "VAL_1");
 
         bFactory.addToSession(session, false);
 
-        RelationalMappingFactory aFactory = new RelationalMappingFactory(session, "model.SimpleA", "SIMPLE_TYPE_A");
-        aFactory.addDirectMapping("id", int.class, "SID", true);
-        aFactory.addDirectMapping("value1", String.class, "VAL_1", false);
-        aFactory.addOneToOneMapping("b", bFactory.getType(), "B_FK", "SID");
+        EntityTypeFactory aFactory = new JPAEntityTypeFactory(session, "model.SimpleA", "SIMPLE_TYPE_A");
+        aFactory.addPrimaryKeyFields("SID");
+        aFactory.addDirectMapping("id", int.class, "SID");
+        aFactory.addDirectMapping("value1", String.class, "VAL_1");
+        aFactory.addOneToOneMapping("b", bFactory.getType(), "B_FK");
 
         aFactory.addToSession(session, true);
     }

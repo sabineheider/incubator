@@ -94,7 +94,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
      * 
      * @see PersistenceEntity
      */
-    private Vector primaryKey;
+    private Vector<Object> primaryKey;
 
     protected DynamicEntityImpl(EntityTypeImpl type) {
         this.type = type;
@@ -113,6 +113,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         return get(getTypeImpl().getMapping(propertyName));
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T get(String propertyName, Class<T> type) {
         return (T) get(propertyName);
     }
@@ -121,6 +122,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         return get(getTypeImpl().getMapping(propertyIndex));
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T get(int propertyIndex, Class<T> type) {
         return (T) get(propertyIndex);
     }
@@ -129,6 +131,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         return mapping.getAttributeValueFromObject(this);
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T get(DatabaseMapping mapping, Class<T> type) {
         return (T) mapping.getAttributeValueFromObject(this);
     }
@@ -152,37 +155,39 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         return this;
     }
 
-    private Collection getCollection(DatabaseMapping mapping) {
+    private Collection<?> getCollection(DatabaseMapping mapping) {
         if (!mapping.isCollectionMapping() || Collection.class.isAssignableFrom(((CollectionMapping) mapping).getContainerPolicy().getContainerClass())) {
             throw DynamicEntityException.propertyNotCollection(mapping);
         }
-        return (Collection) get(mapping);
+        return (Collection<?>) get(mapping);
     }
 
-    private Map getMap(DatabaseMapping mapping) {
+    private Map<?, ?> getMap(DatabaseMapping mapping) {
         if (!mapping.isCollectionMapping() || Map.class.isAssignableFrom(((CollectionMapping) mapping).getContainerPolicy().getContainerClass())) {
             throw DynamicEntityException.propertyNotCollection(mapping);
         }
-        return (Map) get(mapping);
+        return (Map<?, ?>) get(mapping);
     }
 
+    @SuppressWarnings("unchecked")
     public Object add(String propertyName, Object value) {
-        Collection collection = getCollection(getTypeImpl().getMapping(propertyName));
+        Collection<Object> collection = (Collection<Object>) getCollection(getTypeImpl().getMapping(propertyName));
         return collection.add(value);
     }
 
     public Object remove(String propertyName, Object value) {
-        Collection collection = getCollection(getTypeImpl().getMapping(propertyName));
+        Collection<?> collection = getCollection(getTypeImpl().getMapping(propertyName));
         return collection.remove(value);
     }
 
     public Object get(String propertyName, Object key) {
-        Map map = getMap(getTypeImpl().getMapping(propertyName));
+        Map<?,?> map = getMap(getTypeImpl().getMapping(propertyName));
         return map.get(key);
     }
 
+    @SuppressWarnings("unchecked")
     public Object put(String propertyName, Object key, Object value) {
-        Map map = getMap(getTypeImpl().getMapping(propertyName));
+        Map<Object,Object> map = (Map<Object, Object>) getMap(getTypeImpl().getMapping(propertyName));
         return map.put(key, value);
     }
 
@@ -292,10 +297,12 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         this.cacheKey = key;
     }
 
+    @SuppressWarnings("unchecked")
     public Vector _persistence_getPKVector() {
         return this.primaryKey;
     }
 
+    @SuppressWarnings("unchecked")
     public void _persistence_setPKVector(Vector pk) {
         this.primaryKey = pk;
     }
