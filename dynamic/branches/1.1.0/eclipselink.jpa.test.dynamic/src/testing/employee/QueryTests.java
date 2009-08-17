@@ -16,8 +16,10 @@ import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
@@ -28,7 +30,7 @@ import org.eclipse.persistence.queries.ReadAllQuery;
 import org.junit.Test;
 
 import testing.util.EclipseLinkJPATest;
-
+import example.employee.EntityTypeFactory;
 import example.employee.Queries;
 import example.employee.Sample;
 
@@ -38,7 +40,7 @@ import example.employee.Sample;
  * @author dclarke
  * @since EclipseLink 1.1
  */
-@PersistenceContext(unitName = "custom-types")
+@PersistenceContext(unitName = "empty")
 public class QueryTests extends EclipseLinkJPATest {
 
     private Queries examples = new Queries();
@@ -80,22 +82,9 @@ public class QueryTests extends EclipseLinkJPATest {
         assertTrue(minId > 0);
     }
 
-     @Test
+    @Test
     public void testGenderIn() throws Exception {
         List<DynamicEntity> emps = getExamples().findEmployeesUsingGenderIn(getEntityManager());
-
-        assertNotNull(emps);
-    }
-
-    /**
-     * Test a dynamic JPQL query comparing a value with the custom Enum
-     * converter (Gender).
-     */
-    @Test
-    public void testGenderEquals() throws Exception {
-        EntityManager em = getEntityManager();
-
-        List<DynamicEntity> emps = em.createQuery("SELECT e FROM Employee e WHERE e.gender = model.Gender.Male").getResultList();
 
         assertNotNull(emps);
     }
@@ -110,13 +99,13 @@ public class QueryTests extends EclipseLinkJPATest {
     @Test
     public void largeStackOR() {
         ClassDescriptor descriptor = JpaHelper.getServerSession(getEMF()).getDescriptorForAlias("Employee");
-        
+
         ReadAllQuery query = new ReadAllQuery();
         query.setReferenceClass(descriptor.getJavaClass());
         Expression expressionRoot = query.getExpressionBuilder();
 
         Expression expression = null;
-        
+
         for (int i = 0; i < 2002; i++) {
             Expression filter = expressionRoot.get("firstName").equal("" + i);
             expression = filter.or(expression);
@@ -125,8 +114,17 @@ public class QueryTests extends EclipseLinkJPATest {
         query.setSelectionCriteria(expression);
 
         List<DynamicEntity> results = JpaHelper.createQuery(query, getEntityManager()).getResultList();
-        
+
         assertNotNull(results);
 
     }
+
+    @Override
+    protected EntityManagerFactory createEMF(String unitName, Map properties) {
+        EntityManagerFactory emf = super.createEMF(unitName, properties);
+
+        EntityTypeFactory.createTypes(emf, "example.model.employee", true);
+
+        return emf;
     }
+}

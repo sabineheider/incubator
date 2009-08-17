@@ -4,6 +4,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.fail;
 
 import java.util.Calendar;
 
@@ -15,10 +16,10 @@ import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
 import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.dynamic.EntityTypeFactory;
+import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeFactory;
+import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
 import org.eclipse.persistence.sessions.IdentityMapAccessor;
 import org.eclipse.persistence.sessions.server.Server;
 import org.junit.After;
@@ -30,7 +31,36 @@ import org.junit.Test;
 
 public class SimpleType {
 
-    private static EntityManagerFactory emf;
+    protected static EntityManagerFactory emf;
+
+    protected EntityType simpleType;
+    
+    protected EntityType getSimpleType() {
+        if (simpleType == null) {
+            this.simpleType = DynamicHelper.getType(JpaHelper.getServerSession(emf), "Simple");
+            
+            if (this.simpleType == null) {
+                createSimpleType();
+            }
+        }
+        return this.simpleType;
+    }
+    
+    protected EntityType createSimpleType() {
+        Server session = JpaHelper.getServerSession(emf);
+
+        EntityTypeBuilder factory = new JPAEntityTypeBuilder(session, "model.Simple", null, "SIMPLE_TYPE");
+        factory.setPrimaryKeyFields("SID");
+        factory.addDirectMapping("id", int.class, "SID");
+        factory.addDirectMapping("value1", String.class, "VAL_1");
+        factory.addDirectMapping("value2", boolean.class, "VAL_2");
+        factory.addDirectMapping("value3", Calendar.class, "VAL_3");
+        factory.addDirectMapping("value4", Character.class, "VAL_4");
+
+        factory.addToSession(session, true);
+        
+        return factory.getType();
+    }
 
     @Test
     public void verifyConfig() throws Exception {
@@ -42,9 +72,29 @@ public class SimpleType {
         EntityTypeImpl simpleType = (EntityTypeImpl) DynamicHelper.getType(session, "Simple");
         assertNotNull("'Simple' EntityType not found", simpleType);
 
-        assertEquals(2, simpleType.getMappingsRequiringInitialization().size());
+        assertEquals(1 + descriptor.getPrimaryKeyFields().size(), simpleType.getMappingsRequiringInitialization().size());
 
         assertEquals(descriptor, simpleType.getDescriptor());
+    }
+
+    @Test
+    public void find() {
+        createSimpleInstance(emf, 1);
+
+        EntityManager em = emf.createEntityManager();
+
+        DynamicEntity simpleInstance = find(em, 1);
+        assertNotNull("Could not find simple instance with id = 1", simpleInstance);
+
+        simpleInstance = find(em, new Integer(1));
+        assertNotNull("Could not find simple instance with id = Integer(1)", simpleInstance);
+
+        try {
+            em.find(getSimpleType().getJavaClass(), 1l);
+        } catch (IllegalArgumentException iae) {
+            return;
+        }
+        fail("em.find should have failed with incorrect PK type");
     }
 
     @Test
@@ -87,7 +137,7 @@ public class SimpleType {
         assertDefaultValues(simpleInstance);
     }
 
-    private void assertDefaultValues(DynamicEntity simpleInstance) {
+    protected void assertDefaultValues(DynamicEntity simpleInstance) {
         assertNotNull(simpleInstance);
 
         assertTrue("id not set on new instance", simpleInstance.isSet("id"));
@@ -105,7 +155,7 @@ public class SimpleType {
         Assert.assertNotNull(simpleEntityType);
 
         DynamicEntity simpleInstance = simpleEntityType.newInstance();
-        simpleInstance.set("id", 1);
+        simpleInstance.set("id", id);
         simpleInstance.set("value2", true);
 
         assertEquals(0, ((Number) em.createQuery("SELECT COUNT(s) FROM Simple s").getSingleResult()).intValue());
@@ -116,7 +166,7 @@ public class SimpleType {
 
         assertEquals(1, ((Number) em.createQuery("SELECT COUNT(s) FROM Simple s").getSingleResult()).intValue());
 
-        DynamicEntity foundEntity = (DynamicEntity) em.find(simpleEntityType.getJavaClass(), 1);
+        DynamicEntity foundEntity = find(em, 1);
 
         assertNotNull(foundEntity);
         assertEquals(simpleInstance.get("id"), foundEntity.get("id"));
@@ -128,25 +178,20 @@ public class SimpleType {
         return simpleInstance;
     }
 
+    protected DynamicEntity find(EntityManager em, int id) {
+        return (DynamicEntity) em.find(getSimpleType().getJavaClass(), 1);
+    }
+
     @BeforeClass
     public static void setUp() {
         emf = Persistence.createEntityManagerFactory("empty");
-        Server session = JpaHelper.getServerSession(emf);
-
-        EntityTypeFactory factory = new JPAEntityTypeFactory(session, "model.Simple", "SIMPLE_TYPE");
-        factory.addPrimaryKeyFields("SID");
-        factory.addDirectMapping("id", int.class, "SID");
-        factory.addDirectMapping("value1", String.class, "VAL_1");
-        factory.addDirectMapping("value2", boolean.class, "VAL_2");
-        factory.addDirectMapping("value3", Calendar.class, "VAL_3");
-        factory.addDirectMapping("value4", Character.class, "VAL_4");
-
-        factory.addToSession(session, true);
     }
 
     @Before
     @After
     public void clearSimpleTypeInstances() {
+        getSimpleType();
+        
         if (emf != null && emf.isOpen()) {
             EntityManager em = emf.createEntityManager();
             em.getTransaction().begin();
@@ -154,6 +199,8 @@ public class SimpleType {
             em.getTransaction().commit();
             em.close();
         }
+
+        JpaHelper.getServerSession(emf).getIdentityMapAccessor().initializeAllIdentityMaps();
     }
 
     @AfterClass

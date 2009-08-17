@@ -30,7 +30,7 @@ import org.eclipse.persistence.config.TargetServer;
  */
 public abstract class PersistenceHelper {
 
-	public static final String PERSISTENCE_UNIT_NAME = "custom-types";
+	public static final String PERSISTENCE_UNIT_NAME = "empty";
 
 	public static EntityManagerFactory createEMF() {
 		return createEMF(null);

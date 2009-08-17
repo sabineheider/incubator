@@ -18,9 +18,15 @@
  ******************************************************************************/
 package example.employee;
 
-import java.util.*;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
 
-import javax.persistence.*;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Query;
 
 import junit.framework.Assert;
 
@@ -48,9 +54,7 @@ public class Sample {
 
         this.employees = new DynamicEntity[] { basicEmployeeExample1(), basicEmployeeExample2(), basicEmployeeExample3(), basicEmployeeExample4(), basicEmployeeExample5(), basicEmployeeExample6(), basicEmployeeExample7(), basicEmployeeExample8(), basicEmployeeExample9(), basicEmployeeExample10(), basicEmployeeExample11(), basicEmployeeExample12() };
 
-/**
-          this.smallProjects = new DynamicEntity[] { basicSmallProjectExample1(), basicSmallProjectExample2(), basicSmallProjectExample3(), basicSmallProjectExample4(), basicSmallProjectExample5(), basicSmallProjectExample7(), basicSmallProjectExample8(), basicSmallProjectExample9(), basicSmallProjectExample10() };
- 
+        this.smallProjects = new DynamicEntity[] { basicSmallProjectExample1(), basicSmallProjectExample2(), basicSmallProjectExample3(), basicSmallProjectExample4(), basicSmallProjectExample5(), basicSmallProjectExample7(), basicSmallProjectExample8(), basicSmallProjectExample9(), basicSmallProjectExample10() };
 
         this.largeProjects = new DynamicEntity[] { basicLargeProjectExample1(), basicLargeProjectExample2(), basicLargeProjectExample3(), basicLargeProjectExample4(), basicLargeProjectExample5() };
 
@@ -80,7 +84,7 @@ public class Sample {
         this.largeProjects[0].set("teamLeader", this.employees[1]);
         this.largeProjects[3].set("teamLeader", this.employees[2]);
         this.largeProjects[4].set("teamLeader", this.employees[2]);
-        */
+
     }
 
     private DynamicEntity newInstance(String entityAlias) {
@@ -99,15 +103,15 @@ public class Sample {
         phone.set("areaCode", areaCode);
         phone.set("number", number);
         phone.set("owner", employee);
-        //employee.add("phoneNumbers", phone);
+        employee.add("phoneNumbers", phone);
         return phone;
     }
 
     private void setPeriod(DynamicEntity employee, Date startDate, Date endDate) {
-        // setPeriod(employee,
-        // employmentPeriod.set("startDate", startDate);
-        // endDate);
-        // 
+        DynamicEntity period = newInstance("EmploymentPeriod");
+        period.set("startDate", startDate);
+        period.set("endDate", endDate);
+        employee.set("period", period);
     }
 
     public DynamicEntity basicEmployeeExample1() {
@@ -236,8 +240,10 @@ public class Sample {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        // employee.add("responsibilities", "Hire people when more people are required.");
-        // employee.add("responsibilities", "Lay off employees when less people are required.");
+        // employee.add("responsibilities",
+        // "Hire people when more people are required.");
+        // employee.add("responsibilities",
+        // "Lay off employees when less people are required.");
         addPhoneNumber(employee, "Work", "613", "5558812");
         addPhoneNumber(employee, "ISDN", "905", "5553691");
 
@@ -264,7 +270,8 @@ public class Sample {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        // employee.add("responsibilities", "Perform code reviews as required.");
+        // employee.add("responsibilities",
+        // "Perform code reviews as required.");
         addPhoneNumber(employee, "Pager", "976", "5556666");
         addPhoneNumber(employee, "ISDN", "905", "5553691");
 
@@ -291,7 +298,8 @@ public class Sample {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        // employee.add("responsibilities", "Have to fix the Database problem.");
+        // employee.add("responsibilities",
+        // "Have to fix the Database problem.");
         addPhoneNumber(employee, "Work Fax", "613", "5555943");
         addPhoneNumber(employee, "Cellular", "416", "5551111");
         addPhoneNumber(employee, "Pager", "976", "5556666");
@@ -432,13 +440,23 @@ public class Sample {
         return employee;
     }
 
+    private void setCalendar(DynamicEntity entity, String name, int year, int month, int day, int hour, int minute, int seconds) {
+        Calendar cal = entity.get(name, Calendar.class);
+
+        if (cal == null) {
+            cal = Calendar.getInstance();
+            entity.set(name, cal);
+        }
+        cal.set(year, month, day, hour, minute, seconds);
+    }
+
     public DynamicEntity basicLargeProjectExample1() {
         DynamicEntity largeProject = newInstance("LargeProject");
 
         largeProject.set("name", "Sales Reporting");
         largeProject.set("description", "A reporting application to report on the corporations database through TopLink.");
         largeProject.set("budget", (double) 5000);
-        largeProject.get("milestone", Calendar.class).set(1991, 10, 11, 12, 0, 0);
+        setCalendar(largeProject, "milestone", 1991, 10, 11, 12, 0, 0);
 
         return largeProject;
     }
@@ -449,7 +467,7 @@ public class Sample {
         largeProject.set("name", "Light Reporter");
         largeProject.set("description", "A lightweight application to report on the corporations database through TopLink.");
         largeProject.set("budget", 100.98);
-        largeProject.get("milestone", Calendar.class).set(1999, 11, 25, 11, 40, 44);
+        setCalendar(largeProject, "milestone", 1999, 11, 25, 11, 40, 44);
 
         return largeProject;
     }
@@ -460,7 +478,7 @@ public class Sample {
         largeProject.set("name", "TOPEmployee Management");
         largeProject.set("description", "A management application to report on the corporations database through TopLink.");
         largeProject.set("budget", 4000.98);
-        largeProject.get("milestone", Calendar.class).set(1997, 10, 12, 1, 0, 0);
+        setCalendar(largeProject, "milestone", 1997, 10, 12, 1, 0, 0);
 
         return largeProject;
     }
@@ -471,7 +489,7 @@ public class Sample {
         largeProject.set("name", "Enterprise System");
         largeProject.set("description", "A enterprise wide application to report on the corporations database through TopLink.");
         largeProject.set("budget", 40.98);
-        largeProject.get("milestone", Calendar.class).set(1996, 8, 6, 6, 40, 44);
+        setCalendar(largeProject, "milestone", 1996, 8, 6, 6, 40, 44);
 
         return largeProject;
     }
@@ -482,7 +500,7 @@ public class Sample {
         largeProject.set("name", "Problem Reporting System");
         largeProject.set("description", "A PRS application to report on the corporations database through TopLink.");
         largeProject.set("budget", 101.98);
-        largeProject.get("milestone", Calendar.class).set(1997, 9, 6, 1, 40, 44);
+        setCalendar(largeProject, "milestone", 1997, 9, 6, 1, 40, 44);
 
         return largeProject;
     }
@@ -571,11 +589,11 @@ public class Sample {
         DynamicEntity employee = this.employees[empIndex];
 
         for (int index = 0; index < smallProjIndeces.length; index++) {
-            employee.add("project", this.smallProjects[smallProjIndeces[index]]);
+            //employee.add("project", this.smallProjects[smallProjIndeces[index]]);
         }
 
         for (int index = 0; index < largeProjIndeces.length; index++) {
-            employee.add("project", this.largeProjects[largeProjIndeces[index]]);
+            //employee.add("project", this.largeProjects[largeProjIndeces[index]]);
         }
     }
 
@@ -592,19 +610,18 @@ public class Sample {
         assertCount(em, "Employee", 0);
         assertCount(em, "Address", 0);
         assertCount(em, "PhoneNumber", 0);
-        //(em, "Project", 0);
+        // (em, "Project", 0);
 
         for (int index = 0; index < this.employees.length; index++) {
             em.persist(this.employees[index]);
         }
-        /* TODO
         for (int index = 0; index < this.smallProjects.length; index++) {
             em.persist(this.smallProjects[index]);
         }
         for (int index = 0; index < this.largeProjects.length; index++) {
             em.persist(this.largeProjects[index]);
         }
-*/
+
         em.flush();
         verifyCounts(em);
     }
@@ -612,7 +629,7 @@ public class Sample {
     public void verifyCounts(EntityManager em) {
         assertCount(em, "Employee", this.employees.length);
         assertCount(em, "Address", this.employees.length);
-       // assertCount(em, "Project", this.smallProjects.length + this.largeProjects.length);
+        assertCount(em, "Project", this.smallProjects.length + this.largeProjects.length);
     }
 
     /**

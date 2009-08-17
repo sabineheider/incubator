@@ -19,24 +19,25 @@
 package org.eclipse.persistence.jpa.dynamic;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.internal.dynamic.RelationalEntityTypeFactory;
+import org.eclipse.persistence.dynamic.EntityType;
+import org.eclipse.persistence.internal.dynamic.ORMEntityTypeBuilder;
 import org.eclipse.persistence.internal.jpa.CMP3Policy;
 import org.eclipse.persistence.sessions.DatabaseSession;
 
-public class JPAEntityTypeFactory extends RelationalEntityTypeFactory {
+public class JPAEntityTypeBuilder extends ORMEntityTypeBuilder {
 
-    public JPAEntityTypeFactory(DatabaseSession session, String className, String... tableNames) {
-        super(session, className, tableNames);
+    public JPAEntityTypeBuilder(DatabaseSession session, String className, EntityType parentType, String... tableNames) {
+        super(session, className, parentType, tableNames);
     }
 
-    public JPAEntityTypeFactory(Class dynamicClass, String[] tableNames) {
-        super(dynamicClass, tableNames);
+    public JPAEntityTypeBuilder(Class dynamicClass, EntityType parentType,String[] tableNames) {
+        super(dynamicClass, parentType, tableNames);
 
         this.entityType.getDescriptor().setCMPPolicy(new CMP3Policy());
     }
     
-    public JPAEntityTypeFactory(ClassDescriptor descriptor) {
-        super(descriptor);
+    public JPAEntityTypeBuilder(ClassDescriptor descriptor, EntityType parentType) {
+        super(descriptor, parentType);
     }
 
     /**
@@ -48,7 +49,7 @@ public class JPAEntityTypeFactory extends RelationalEntityTypeFactory {
         super.configure(descriptor);
 
         if (descriptor.getCMPPolicy() == null) {
-            descriptor.setCMPPolicy(new CMP3Policy());
+            descriptor.setCMPPolicy(new DynamicIdentityPolicy());
         }
 
     }

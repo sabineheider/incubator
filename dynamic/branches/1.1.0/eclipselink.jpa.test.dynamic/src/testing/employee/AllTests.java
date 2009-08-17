@@ -16,6 +16,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { MappingConfigTests.class,  CreateDatabase.class, QueryTests.class, TransactionTests.class })
+@Suite.SuiteClasses( { MappingConfigTests.class,  QueryTests.class, TransactionTests.class })
 public class AllTests {
 }

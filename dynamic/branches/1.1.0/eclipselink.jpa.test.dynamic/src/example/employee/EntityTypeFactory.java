@@ -22,8 +22,12 @@ import java.util.Calendar;
 
 import javax.persistence.EntityManagerFactory;
 
+import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.internal.dynamic.ORMEntityTypeBuilder;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeFactory;
+import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
+import org.eclipse.persistence.mappings.OneToManyMapping;
 import org.eclipse.persistence.mappings.OneToOneMapping;
 import org.eclipse.persistence.sessions.server.Server;
 
@@ -40,35 +44,38 @@ public class EntityTypeFactory {
         String packagePrefix = packageName.endsWith(".") ? packageName : packageName + ".";
         Server session = JpaHelper.getServerSession(emf);
 
-        JPAEntityTypeFactory employee = new JPAEntityTypeFactory(session, packagePrefix + "Employee", "D_EMPLOYEE");
-        JPAEntityTypeFactory address = new JPAEntityTypeFactory(session, packagePrefix + "Address", "D_ADDRESS");
-        JPAEntityTypeFactory phone = new JPAEntityTypeFactory(session, packagePrefix + "PhoneNumber", "D_PHONE");
-        JPAEntityTypeFactory period = new JPAEntityTypeFactory(session, packagePrefix + "Employee");
+        JPAEntityTypeBuilder employee = new JPAEntityTypeBuilder(session, packagePrefix + "Employee", null, "D_EMPLOYEE", "D_SALARY");
+        JPAEntityTypeBuilder address = new JPAEntityTypeBuilder(session, packagePrefix + "Address", null, "D_ADDRESS");
+        JPAEntityTypeBuilder phone = new JPAEntityTypeBuilder(session, packagePrefix + "PhoneNumber", null, "D_PHONE");
+        JPAEntityTypeBuilder period = new JPAEntityTypeBuilder(session, packagePrefix + "EmploymentPeriod", null);
+        JPAEntityTypeBuilder project = new JPAEntityTypeBuilder(session, packagePrefix + "Project", null, "D_PROJECT");
+        JPAEntityTypeBuilder smallProject = new JPAEntityTypeBuilder(session, packagePrefix + "SmallProject", project.getType(), "D_PROJECT");
+        JPAEntityTypeBuilder largeProject = new JPAEntityTypeBuilder(session, packagePrefix + "LargeProject", project.getType(), "D_LPROJECT");
 
-        configureEmployee(employee, address, phone, period);
         configureAddress(address);
+        configureEmployee(employee, address, phone, period);
         configurePhone(phone, employee);
         configurePeriod(period);
+        configureProject(project, smallProject, largeProject, employee);
+        configureSmallProject(smallProject, project);
+        configureLargeProject(largeProject, project);
 
-        employee.addToSession(session, false);
-        address.addToSession(session, false);
-        phone.addToSession(session, false);
-        period.addToSession(session, createMissingTables);
+        ORMEntityTypeBuilder.addToSession(session, true, true, employee.getType(), address.getType(), phone.getType(), period.getType(), project.getType(), smallProject.getType(), largeProject.getType());
     }
 
-    private static void configurePhone(JPAEntityTypeFactory phone, JPAEntityTypeFactory employee) {
-        phone.addPrimaryKeyFields("PHONE_TYPE", "EMP_ID");
+    private static void configurePhone(JPAEntityTypeBuilder phone, JPAEntityTypeBuilder employee) {
+        phone.setPrimaryKeyFields("PHONE_TYPE", "EMP_ID");
 
         phone.addDirectMapping("type", String.class, "PHONE_TYPE");
         phone.addDirectMapping("ownerId", int.class, "EMP_ID").readOnly();
         phone.addDirectMapping("areaCode", String.class, "AREA_CODE");
         phone.addDirectMapping("number", String.class, "PNUMBER");
 
-        phone.addOneToOneMapping("owner", employee.getType(), "EMP_ID", "EMP_ID");
+        phone.addOneToOneMapping("owner", employee.getType(), "EMP_ID");
     }
 
-    private static void configureAddress(JPAEntityTypeFactory address) {
-        address.addPrimaryKeyFields("ADDR_ID");
+    private static void configureAddress(JPAEntityTypeBuilder address) {
+        address.setPrimaryKeyFields("ADDR_ID");
 
         address.addDirectMapping("id", int.class, "ADDR_ID");
         address.addDirectMapping("street", String.class, "STREET");
@@ -76,32 +83,75 @@ public class EntityTypeFactory {
         address.addDirectMapping("province", String.class, "PROV");
         address.addDirectMapping("postalCode", String.class, "P_CODE");
         address.addDirectMapping("country", String.class, "COUNTRY");
+
+        address.configureSequencing("ADDR_SEQ", "ADDR_ID");
     }
 
-    private static void configureEmployee(JPAEntityTypeFactory employee, JPAEntityTypeFactory address, JPAEntityTypeFactory phone, JPAEntityTypeFactory period) {
-        employee.addPrimaryKeyFields("EMP_ID");
+    private static void configureEmployee(JPAEntityTypeBuilder employee, JPAEntityTypeBuilder address, JPAEntityTypeBuilder phone, JPAEntityTypeBuilder period) {
+        employee.setPrimaryKeyFields("EMP_ID");
 
-        employee.addDirectMapping("id", int.class, "EMP_ID");
-        employee.addDirectMapping("firstName", String.class, "F_NAME");
-        employee.addDirectMapping("lastName", String.class, "L_NAME");
-        employee.addDirectMapping("gender", String.class, "GENDER");
-        employee.addDirectMapping("salary", int.class, "SALARY");
+        employee.addDirectMapping("id", int.class, "D_EMPLOYEE.EMP_ID");
+        employee.addDirectMapping("firstName", String.class, "D_EMPLOYEE.F_NAME");
+        employee.addDirectMapping("lastName", String.class, "D_EMPLOYEE.L_NAME");
+        employee.addDirectMapping("gender", String.class, "D_EMPLOYEE.GENDER");
+        employee.addDirectMapping("salary", int.class, "D_SALARY.SALARY");
 
         OneToOneMapping addressMapping = employee.addOneToOneMapping("address", address.getType(), "ADDR_ID");
-        addressMapping.setCascadePersist(true);
+        addressMapping.setCascadeAll(true);
         addressMapping.setIsPrivateOwned(true);
-        employee.addOneToOneMapping("manager", employee.getType(), "MANAGER_ID").setIsPrivateOwned(true);
-        // type.addOneToManyMapping("phoneNumbers", phoneNumberClass,
-        // "OWNER_ID", "EMP_ID");
-        employee.addAggregateObjectMapping("period", period.getType(), true);
 
-        // type.getDescriptor().setSequenceNumberName("EMP_SEQ");
-        // type.getDescriptor().setSequenceNumberFieldName("EMP_ID");
+        employee.addOneToOneMapping("manager", employee.getType(), "MANAGER_ID");
+
+        OneToManyMapping phoneMapping = employee.addOneToManyMapping("phoneNumbers", phone.getType(), "OWNER_ID");
+        phoneMapping.setCascadeAll(true);
+        phoneMapping.setIsPrivateOwned(true);
+
+        employee.addAggregateObjectMapping("period", period.getType(), true);
+        employee.addOneToManyMapping("managedEmployees", phone.getType(), "MANAGER_ID");
+
+        employee.configureSequencing("EMP_SEQ", "EMP_ID");
     }
 
-    private static void configurePeriod(JPAEntityTypeFactory period) {
+    private static void configurePeriod(JPAEntityTypeBuilder period) {
         period.addDirectMapping("startDate", Calendar.class, "START_DATE");
         period.addDirectMapping("endDate", Calendar.class, "END_DATE");
+    }
+
+    private static void configureProject(JPAEntityTypeBuilder project, JPAEntityTypeBuilder smallProject, JPAEntityTypeBuilder largeProject, JPAEntityTypeBuilder employee) {
+        project.setPrimaryKeyFields("PROJ_ID");
+
+        project.addDirectMapping("id", int.class, "PROJ_ID");
+        project.addDirectMapping("name", String.class, "NAME");
+        project.addDirectMapping("description", String.class, "DESCRIP");
+
+        project.addOneToOneMapping("teamLeader", employee.getType(), "EMP_ID");
+
+        ClassDescriptor descriptor = project.getType().getDescriptor();
+
+        descriptor.getInheritancePolicy().setClassIndicatorFieldName("PROJ_TYPE");
+        descriptor.getInheritancePolicy().addClassIndicator(smallProject.getType().getJavaClass(), "S");
+        descriptor.getInheritancePolicy().addClassIndicator(largeProject.getType().getJavaClass(), "L");
+        descriptor.getInheritancePolicy().addClassIndicator(project.getType().getJavaClass(), "P");
+
+        project.configureSequencing("PROJ_SEQ", "PROJ_ID");
+    }
+
+    private static void configureLargeProject(JPAEntityTypeBuilder largeProject, JPAEntityTypeBuilder project) {
+        largeProject.setPrimaryKeyFields("PROJ_ID");
+
+        ClassDescriptor descriptor = largeProject.getType().getDescriptor();
+        descriptor.getInheritancePolicy().setClassIndicatorFieldName("PROJ_TYPE");
+        descriptor.getInheritancePolicy().setParentClass(project.getType().getJavaClass());
+
+        largeProject.addDirectMapping("budget", double.class, "BUDGET");
+        largeProject.addDirectMapping("milestone", Calendar.class, "MILESTONE");
+    }
+
+    private static void configureSmallProject(JPAEntityTypeBuilder smallProject, JPAEntityTypeBuilder project) {
+        smallProject.setPrimaryKeyFields("PROJ_ID");
+
+        ClassDescriptor descriptor = smallProject.getType().getDescriptor();
+        descriptor.getInheritancePolicy().setParentClass(project.getType().getJavaClass());
     }
 
 }

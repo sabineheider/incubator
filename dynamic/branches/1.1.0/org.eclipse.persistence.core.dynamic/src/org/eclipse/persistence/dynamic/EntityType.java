@@ -38,6 +38,8 @@ public interface EntityType {
      * @return
      */
     public String getName();
+    
+    public EntityType getParentType();
 
     public int getNumberOfProperties();
 
@@ -52,8 +54,6 @@ public interface EntityType {
     public Class<?> getJavaClass();
 
     public DynamicEntity newInstance();
-
-    public <T> T unwrap(Class<T> T);
 
     public Class<?> getPropertyType(int propertyIndex);
 

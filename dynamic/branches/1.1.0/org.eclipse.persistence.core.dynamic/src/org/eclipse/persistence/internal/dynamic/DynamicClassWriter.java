@@ -31,7 +31,7 @@ import org.eclipse.persistence.internal.libraries.asm.Type;
  * Write the byte codes of a dynamic entity class.
  * <p>
  * The intent is to provide a common writer for dynamic JPA entities but also
- * allow for sublcasses of this to be used in more complex writing situations
+ * allow for subclasses of this to be used in more complex writing situations
  * such as SDO and DBWS.
  * 
  * @author dclarke

@@ -22,20 +22,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 
+ * TODO
  * 
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public class DynamicClassLoader extends ClassLoader {
 
-    public static final Class<?> DEFAULT_DYNAMIC_PARENT = DynamicEntityImpl.class;
-
     private boolean createDynamicClasses = true;
 
     private Map<String, Class<?>> dynamicEntityClasses = new HashMap<String, Class<?>>();
 
-    private Class<?> defaultParentClass = DEFAULT_DYNAMIC_PARENT;
+    private Class<?> defaultParentClass = DynamicEntityImpl.class;
 
     private DynamicClassWriter defaultWriter = new DynamicClassWriter();
 
@@ -43,8 +41,8 @@ public class DynamicClassLoader extends ClassLoader {
         super(delegate);
     }
 
-    public boolean isCreateDynamicClasses() {
-        return createDynamicClasses;
+    public boolean createDynamicClasses() {
+        return this.createDynamicClasses;
     }
 
     public void setCreateDynamicClasses(boolean createDynamicClasses) {
@@ -113,7 +111,7 @@ public class DynamicClassLoader extends ClassLoader {
 
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
-        if (!isCreateDynamicClasses()) {
+        if (!createDynamicClasses()) {
             return super.findClass(name);
         }
 

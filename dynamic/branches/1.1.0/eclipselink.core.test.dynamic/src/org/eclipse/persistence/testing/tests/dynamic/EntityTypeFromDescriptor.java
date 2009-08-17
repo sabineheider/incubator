@@ -40,7 +40,7 @@ public class EntityTypeFromDescriptor {
 
 	@Test
 	public void entityTypeFromDescriptor() throws Exception {
-		EntityTypeImpl entityType = (EntityTypeImpl) new RelationalEntityTypeFactory(buildMyEntityDescriptor()).getType();
+		EntityTypeImpl entityType = (EntityTypeImpl) new ORMEntityTypeBuilder(buildMyEntityDescriptor(), null).getType();
 
 		assertEquals(MyEntity.class, entityType.getJavaClass());
 

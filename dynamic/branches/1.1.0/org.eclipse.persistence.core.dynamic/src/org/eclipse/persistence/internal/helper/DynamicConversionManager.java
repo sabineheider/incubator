@@ -75,4 +75,12 @@ public class DynamicConversionManager extends ConversionManager {
         return (DynamicClassLoader) getLoader();
     }
 
+    @Override
+    public void setLoader(ClassLoader classLoader) {
+        if (getLoader() instanceof DynamicClassLoader && classLoader != getLoader()) {
+            throw new IllegalStateException("Cannot replace dynamic class loader");
+        }
+        super.setLoader(classLoader);
+    }
+
 }

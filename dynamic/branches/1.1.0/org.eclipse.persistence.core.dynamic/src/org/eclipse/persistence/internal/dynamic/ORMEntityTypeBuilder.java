@@ -18,17 +18,23 @@
  ******************************************************************************/
 package org.eclipse.persistence.internal.dynamic;
 
-import static org.eclipse.persistence.internal.dynamic.DynamicClassLoader.DEFAULT_DYNAMIC_PARENT;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.descriptors.changetracking.AttributeChangeTrackingPolicy;
 import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.dynamic.EntityTypeFactory;
+import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.internal.helper.DatabaseField;
 import org.eclipse.persistence.internal.helper.DynamicConversionManager;
-import org.eclipse.persistence.mappings.*;
-import org.eclipse.persistence.mappings.structures.ReferenceMapping;
+import org.eclipse.persistence.internal.sessions.AbstractSession;
+import org.eclipse.persistence.mappings.AggregateObjectMapping;
+import org.eclipse.persistence.mappings.DatabaseMapping;
+import org.eclipse.persistence.mappings.DirectToFieldMapping;
+import org.eclipse.persistence.mappings.ForeignReferenceMapping;
+import org.eclipse.persistence.mappings.OneToManyMapping;
+import org.eclipse.persistence.mappings.OneToOneMapping;
 import org.eclipse.persistence.sequencing.Sequence;
 import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
@@ -40,20 +46,20 @@ import org.eclipse.persistence.tools.schemaframework.SchemaManager;
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
-public class RelationalEntityTypeFactory implements EntityTypeFactory {
+public class ORMEntityTypeBuilder implements EntityTypeBuilder {
 
     protected EntityTypeImpl entityType;
 
-    public RelationalEntityTypeFactory(DatabaseSession session, String className, String... tableNames) {
-        this((DynamicConversionManager.lookup(session).getDynamicClassLoader()).createDynamicClass(className), tableNames);
+    public ORMEntityTypeBuilder(DatabaseSession session, String className, EntityType parentType, String... tableNames) {
+        this(createClass(session, className, parentType), parentType, tableNames);
     }
 
-    public RelationalEntityTypeFactory(Class<?> dynamicClass, String... tableNames) {
+    public ORMEntityTypeBuilder(Class<?> dynamicClass, EntityType parentType, String... tableNames) {
         verifyDynamicType(dynamicClass);
 
         RelationalDescriptor descriptor = new RelationalDescriptor();
         descriptor.setJavaClass(dynamicClass);
-        
+
         if (tableNames == null || tableNames.length < 1) {
             descriptor.descriptorIsAggregate();
         } else {
@@ -61,14 +67,24 @@ public class RelationalEntityTypeFactory implements EntityTypeFactory {
                 descriptor.addTableName(tableNames[index]);
             }
         }
-        
-        this.entityType = new EntityTypeImpl(descriptor);
+
+        this.entityType = new EntityTypeImpl(descriptor, parentType);
         configure(descriptor);
     }
-    
-    public RelationalEntityTypeFactory(ClassDescriptor descriptor) {
-        this.entityType = new EntityTypeImpl(descriptor);
+
+    public ORMEntityTypeBuilder(ClassDescriptor descriptor, EntityType parentType) {
+        this.entityType = new EntityTypeImpl(descriptor, parentType);
         configure(descriptor);
+    }
+
+    public static Class<?> createClass(DatabaseSession session, String className, EntityType parentType) {
+        DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
+
+        if (parentType == null) {
+            return dcm.getDynamicClassLoader().createDynamicClass(className);
+        } else {
+            return dcm.getDynamicClassLoader().createDynamicClass(className, parentType.getJavaClass());
+        }
     }
 
     /**
@@ -78,7 +94,7 @@ public class RelationalEntityTypeFactory implements EntityTypeFactory {
      */
     protected void configure(ClassDescriptor descriptor) {
         descriptor.setObjectChangePolicy(new AttributeChangeTrackingPolicy());
-        descriptor.getInstantiationPolicy().useFactoryInstantiationPolicy(getType(), "newInstance");
+        descriptor.setInstantiationPolicy(new EntityTypeInstantiationPolicy((EntityTypeImpl) getType()));
 
         for (int index = 0; index < descriptor.getMappings().size(); index++) {
             addMapping((DatabaseMapping) descriptor.getMappings().get(index));
@@ -88,8 +104,9 @@ public class RelationalEntityTypeFactory implements EntityTypeFactory {
     }
 
     private void verifyDynamicType(Class<?> dynamicClass) {
-        if (dynamicClass == null || !DEFAULT_DYNAMIC_PARENT.isAssignableFrom(dynamicClass)) {
-            throw new IllegalArgumentException("Dynamic Class must be subclass of: " + DEFAULT_DYNAMIC_PARENT);
+        // TODO - make dependency more flexible
+        if (dynamicClass == null || !EntityTypeImpl.class.isAssignableFrom(dynamicClass)) {
+            throw new IllegalArgumentException("Dynamic Class must be subclass of: EntityTypeImpl");
         }
     }
 
@@ -116,8 +133,8 @@ public class RelationalEntityTypeFactory implements EntityTypeFactory {
         if (mapping.isDirectToFieldMapping() && mapping.getAttributeClassification() != null && mapping.getAttributeClassification().isPrimitive()) {
             return true;
         }
-        if (mapping.isReferenceMapping()) {
-            ReferenceMapping frMapping = (ReferenceMapping) mapping;
+        if (mapping.isForeignReferenceMapping()) {
+            ForeignReferenceMapping frMapping = (ForeignReferenceMapping) mapping;
             return frMapping.usesIndirection() || frMapping.isCollectionMapping();
         }
         if (mapping.isAggregateMapping()) {
@@ -133,7 +150,7 @@ public class RelationalEntityTypeFactory implements EntityTypeFactory {
      * @param pkFieldNames
      *            qualified or unqualified field names
      */
-    public void addPrimaryKeyFields(String... pkFieldNames) {
+    public void setPrimaryKeyFields(String... pkFieldNames) {
         if (pkFieldNames != null && pkFieldNames.length > 0) {
             for (int index = 0; index < pkFieldNames.length; index++) {
                 DatabaseField pkField = new DatabaseField(pkFieldNames[index]);
@@ -180,16 +197,16 @@ public class RelationalEntityTypeFactory implements EntityTypeFactory {
      * {@link SchemaManager#replaceObject(org.eclipse.persistence.tools.schemaframework.DatabaseObjectDefinition)}
      * to DROP and CREATE the table. WARNING: This will cause data loss.
      */
-    public OneToOneMapping addOneToOneMapping(String name, EntityType refType, String ... fkFieldNames) {
+    public OneToOneMapping addOneToOneMapping(String name, EntityType refType, String... fkFieldNames) {
         if (fkFieldNames == null || refType.getDescriptor().getPrimaryKeyFields().size() != fkFieldNames.length) {
             throw new IllegalArgumentException("Invalid FK field names: " + fkFieldNames + " for target: " + refType);
         }
-        
+
         OneToOneMapping mapping = new OneToOneMapping();
         mapping.setAttributeName(name);
         mapping.setReferenceClass(refType.getJavaClass());
-        
-        for (int index = 0 ; index < fkFieldNames.length; index++) {
+
+        for (int index = 0; index < fkFieldNames.length; index++) {
             String targetField = refType.getDescriptor().getPrimaryKeyFields().get(index).getName();
             mapping.addForeignKeyFieldName(fkFieldNames[index], targetField);
         }
@@ -197,11 +214,20 @@ public class RelationalEntityTypeFactory implements EntityTypeFactory {
         return (OneToOneMapping) addMapping(mapping);
     }
 
-    public OneToManyMapping addOneToManyMapping(String name, EntityType refType, String fkFieldName, String targetField) {
+    public OneToManyMapping addOneToManyMapping(String name, EntityType refType, String... fkFieldNames) {
+        if (fkFieldNames == null || getType().getDescriptor().getPrimaryKeyFields().size() != fkFieldNames.length) {
+            throw new IllegalArgumentException("Invalid FK field names: " + fkFieldNames + " for target: " + refType);
+        }
+
         OneToManyMapping mapping = new OneToManyMapping();
         mapping.setAttributeName(name);
         mapping.setReferenceClass(refType.getJavaClass());
-        mapping.addTargetForeignKeyFieldName(fkFieldName, targetField);
+
+        for (int index = 0; index < fkFieldNames.length; index++) {
+            String targetField = getType().getDescriptor().getPrimaryKeyFields().get(index).getName();
+            mapping.addTargetForeignKeyFieldName(fkFieldNames[index], targetField);
+        }
+
         mapping.useTransparentList();
 
         return (OneToManyMapping) addMapping(mapping);
@@ -219,18 +245,28 @@ public class RelationalEntityTypeFactory implements EntityTypeFactory {
     /**
      * 
      */
-    private DatabaseMapping addMapping(DatabaseMapping mapping) {
+    protected DatabaseMapping addMapping(DatabaseMapping mapping) {
         ClassDescriptor descriptor = getType().getDescriptor();
 
         if (!descriptor.getMappings().contains(mapping)) {
             descriptor.addMapping(mapping);
         }
 
-        mapping.setAttributeAccessor(new ValuesAccessor(mapping, descriptor.getMappings().indexOf(mapping)));
+        int index = descriptor.getMappings().indexOf(mapping);
+        // Need to account for inherited mappings
+        if (getType().getParentType() != null) {
+            EntityType current = getType();
+            while (current.getParentType() != null) {
+                index += current.getParentType().getMappings().size();
+                current = current.getParentType();
+            }
+        }
+
+        mapping.setAttributeAccessor(new ValuesAccessor(mapping, index));
 
         if (requiresInitialization(mapping)) {
             // TODO: Remove impl dependency
-            ((EntityTypeImpl)getType()).getMappingsRequiringInitialization().add(mapping);
+            ((EntityTypeImpl) getType()).getMappingsRequiringInitialization().add(mapping);
         }
 
         return mapping;
@@ -247,6 +283,10 @@ public class RelationalEntityTypeFactory implements EntityTypeFactory {
     }
 
     public void addToSession(DatabaseSession session, boolean createMissingTables) {
+        addToSession(session, createMissingTables, true);
+    }
+
+    public void addToSession(DatabaseSession session, boolean createMissingTables, boolean generateFKConstraints) {
         session.addDescriptor(getType().getDescriptor());
 
         if (createMissingTables) {
@@ -254,4 +294,29 @@ public class RelationalEntityTypeFactory implements EntityTypeFactory {
         }
     }
 
+    /**
+     * TODO
+     * 
+     * @param session
+     * @param createMissingTables
+     * @param generateFKConstraints
+     * @param types
+     */
+    public static void addToSession(DatabaseSession session, boolean createMissingTables, boolean generateFKConstraints, EntityType... types) {
+        Collection<ClassDescriptor> descriptors = new ArrayList<ClassDescriptor>(types.length);
+
+        for (int index = 0; index < types.length; index++) {
+            descriptors.add(types[index].getDescriptor());
+
+            if (!types[index].getDescriptor().requiresInitialization()) {
+                types[index].getDescriptor().getInstantiationPolicy().initialize((AbstractSession) session);
+            }
+        }
+
+        session.addDescriptors(descriptors);
+
+        if (createMissingTables) {
+            new DynamicSchemaManager(session).createTables(generateFKConstraints, types);
+        }
+    }
 }

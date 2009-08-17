@@ -14,11 +14,11 @@ import junit.framework.Assert;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
-import org.eclipse.persistence.dynamic.EntityTypeFactory;
+import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeFactory;
+import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.sessions.server.Server;
 import org.junit.After;
@@ -147,8 +147,8 @@ public class SimpleTypes_MultiTable {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
 
-        EntityTypeFactory factory = new JPAEntityTypeFactory(session, "model.SimpleA", "SIMPLE_TYPE_A", "SIMPLE_TYPE_B", "SIMPLE_TYPE_C");
-        factory.addPrimaryKeyFields("SIMPLE_TYPE_A.SID");
+        EntityTypeBuilder factory = new JPAEntityTypeBuilder(session, "model.SimpleA", null, "SIMPLE_TYPE_A", "SIMPLE_TYPE_B", "SIMPLE_TYPE_C");
+        factory.setPrimaryKeyFields("SIMPLE_TYPE_A.SID");
         factory.addDirectMapping("id", int.class, "SIMPLE_TYPE_A.SID");
         factory.addDirectMapping("value1", String.class, "SIMPLE_TYPE_A.VAL_1");
         factory.addDirectMapping("value2", boolean.class, "SIMPLE_TYPE_B.VAL_2");

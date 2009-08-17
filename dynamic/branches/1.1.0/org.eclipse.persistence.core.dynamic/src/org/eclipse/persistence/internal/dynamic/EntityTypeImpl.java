@@ -18,20 +18,16 @@
  ******************************************************************************/
 package org.eclipse.persistence.internal.dynamic;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.AbstractList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicEntityException;
 import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.exceptions.DescriptorException;
-import org.eclipse.persistence.indirection.ValueHolder;
-import org.eclipse.persistence.internal.helper.ClassConstants;
-import org.eclipse.persistence.internal.indirection.BasicIndirectionPolicy;
-import org.eclipse.persistence.internal.security.PrivilegedAccessHelper;
 import org.eclipse.persistence.mappings.DatabaseMapping;
-import org.eclipse.persistence.mappings.ForeignReferenceMapping;
 
 /**
  * An EntityType provides a metadata facade into the EclipseLink
@@ -43,30 +39,37 @@ import org.eclipse.persistence.mappings.ForeignReferenceMapping;
  */
 public class EntityTypeImpl implements EntityType {
 
-    private ClassDescriptor descriptor;
+    protected ClassDescriptor descriptor;
 
-    private List<String> propertyNames = new PropertyNameList();
+    protected List<String> propertyNames = new PropertyNameList();
+    
+    protected EntityType parentType;
 
     /**
      * These properties require initialization when a new instance is created.
      * This includes properties that are primitives as well as relationships
      * requiring indirection ValueHolders or collections.
      */
-    private Set<DatabaseMapping> mappingsRequiringInitialization = new HashSet<DatabaseMapping>();
+    protected Set<DatabaseMapping> mappingsRequiringInitialization = new HashSet<DatabaseMapping>();
 
     /**
      * Creation of an EntityTypeImpl for an existing Descriptor with mappings.
      * 
      * @param descriptor
      */
-    protected EntityTypeImpl(ClassDescriptor descriptor) {
+    protected EntityTypeImpl(ClassDescriptor descriptor, EntityType parentType) {
         this.descriptor = descriptor;
+        this.parentType = parentType;
     }
 
     public ClassDescriptor getDescriptor() {
         return this.descriptor;
     }
 
+    public EntityType getParentType() {
+        return this.parentType;
+    }
+    
     public List<DatabaseMapping> getMappings() {
         return getDescriptor().getMappings();
     }
@@ -86,108 +89,6 @@ public class EntityTypeImpl implements EntityType {
         return this.mappingsRequiringInitialization;
     }
 
-    /**
-     * Using privileged reflection create a new instance of the dynamic type
-     * passing in this {@link EntityTypeImpl} so the dynamic entity can have a
-     * reference to its type. After creation initialize all required attributes.
-     * 
-     * @see DynamicEntityImpl#DynamicEntityImpl(EntityTypeImpl)
-     * @return new DynamicEntity with initialized attributes
-     */
-    public DynamicEntityImpl newInstance() {
-        DynamicEntityImpl entity = null;
-
-        try {
-            entity = (DynamicEntityImpl) PrivilegedAccessHelper.invokeConstructor(this.getTypeConstructor(), new Object[] { this });
-        } catch (InvocationTargetException exception) {
-            throw DescriptorException.targetInvocationWhileConstructorInstantiation(this.getDescriptor(), exception);
-        } catch (IllegalAccessException exception) {
-            throw DescriptorException.illegalAccessWhileConstructorInstantiation(this.getDescriptor(), exception);
-        } catch (InstantiationException exception) {
-            throw DescriptorException.instantiationWhileConstructorInstantiation(this.getDescriptor(), exception);
-        } catch (NoSuchMethodError exception) {
-            // This exception is not documented but gets thrown.
-            throw DescriptorException.noSuchMethodWhileConstructorInstantiation(this.getDescriptor(), exception);
-        } catch (NullPointerException exception) {
-            // Some JVMs will throw a NULL pointer exception here
-            throw DescriptorException.nullPointerWhileConstructorInstantiation(this.getDescriptor(), exception);
-        }
-
-        for (DatabaseMapping mapping : getMappingsRequiringInitialization()) {
-            initializeValue(mapping, entity);
-        }
-
-        return entity;
-    }
-
-    /**
-     * Initialize the default value handling primitives, collections and
-     * indirection.
-     * 
-     * @param mapping
-     * @param entity
-     */
-    private void initializeValue(DatabaseMapping mapping, DynamicEntityImpl entity) {
-        Object value = null;
-
-        if (mapping.isDirectToFieldMapping() && mapping.getAttributeClassification().isPrimitive()) {
-            Class<?> primClass = mapping.getAttributeClassification();
-
-            if (primClass == ClassConstants.PBOOLEAN) {
-                value = false;
-            } else if (primClass == ClassConstants.PINT) {
-                value = 0;
-            } else if (primClass == ClassConstants.PLONG) {
-                value = 0L;
-            } else if (primClass == ClassConstants.PCHAR) {
-                value = Character.MIN_VALUE;
-            } else if (primClass == ClassConstants.PDOUBLE) {
-                value = 0.0d;
-            } else if (primClass == ClassConstants.PFLOAT) {
-                value = 0.0f;
-            } else if (primClass == ClassConstants.PSHORT) {
-                value = Short.MIN_VALUE;
-            } else if (primClass == ClassConstants.PBYTE) {
-                value = Byte.MIN_VALUE;
-            }
-        } else if (mapping.isForeignReferenceMapping()) {
-            ForeignReferenceMapping refMapping = (ForeignReferenceMapping) mapping;
-
-            if (refMapping.usesIndirection() && refMapping.getIndirectionPolicy() instanceof BasicIndirectionPolicy) {
-                value = new ValueHolder(value);
-            }
-        } else if (mapping.isAggregateObjectMapping()) {
-            value = mapping.getReferenceDescriptor().getObjectBuilder().buildNewInstance();
-        }
-
-        mapping.setAttributeValueInObject(entity, value);
-    }
-
-    private Constructor<?> defaultConstructor = null;
-
-    /**
-     * Return the default (zero-argument) constructor for the descriptor class.
-     */
-    protected Constructor<?> getTypeConstructor() throws DescriptorException {
-        // Lazy initialize, because the constructor cannot be serialized
-        if (defaultConstructor == null) {
-            buildTypeConstructorFor(getDescriptor().getJavaClass());
-        }
-        return defaultConstructor;
-    }
-
-    /**
-     * Build and return the default (zero-argument) constructor for the
-     * specified class.
-     */
-    protected void buildTypeConstructorFor(Class<?> javaClass) throws DescriptorException {
-        try {
-            this.defaultConstructor = PrivilegedAccessHelper.getDeclaredConstructorFor(javaClass, new Class[] { EntityTypeImpl.class }, true);
-            this.defaultConstructor.setAccessible(true);
-        } catch (NoSuchMethodException exception) {
-            throw DescriptorException.noSuchMethodWhileInitializingInstantiationPolicy(javaClass.getName() + ".<Default Constructor>", getDescriptor(), exception);
-        }
-    }
 
     public boolean isInitialized() {
         return getDescriptor().isFullyInitialized();
@@ -237,18 +138,8 @@ public class EntityTypeImpl implements EntityType {
         return getMapping(propertyName).getAttributeClassification();
     }
 
-    /**
-     * Helper method to access internal EclipseLink types within this
-     * {@link EntityTypeImpl} with a generic interface reducing unnecessary
-     * casting in the calling code.
-     */
-    @SuppressWarnings("unchecked")
-    public <T> T unwrap(Class<T> T) {
-        if (ClassDescriptor.class.isAssignableFrom(T)) {
-            return (T) getDescriptor();
-        }
-
-        throw new IllegalArgumentException("Cannot unwrap " + this + " as: " + T);
+    public DynamicEntity newInstance() {
+        return (DynamicEntity) getDescriptor().getInstantiationPolicy().buildNewInstance();
     }
 
     public String toString() {

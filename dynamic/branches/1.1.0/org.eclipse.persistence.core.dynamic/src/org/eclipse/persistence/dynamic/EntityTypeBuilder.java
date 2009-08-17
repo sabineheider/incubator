@@ -28,16 +28,22 @@ import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 
 /**
- * TODO
+ * An EntityTypeBuilder is used to construct dynamic descriptors from an
+ * existing descriptor or to construct one 'on-the-fly' adding mappings,
+ * Sequencing, and inheritance.
  * 
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
-public interface EntityTypeFactory {
+public interface EntityTypeBuilder {
 
+    /**
+     * Returns the EntityType in its current state. This could mean that the
+     * configuration is incomplete.
+     */
     public EntityType getType();
 
-    public void addPrimaryKeyFields(String... pkFieldNames);
+    public void setPrimaryKeyFields(String... pkFieldNames);
 
     /**
      * Allows {@link DirectToFieldMapping} (@Basic) mapping to be added to a
@@ -67,11 +73,12 @@ public interface EntityTypeFactory {
      * {@link SchemaManager#replaceObject(org.eclipse.persistence.tools.schemaframework.DatabaseObjectDefinition)}
      * to DROP and CREATE the table. WARNING: This will cause data loss.
      * 
-     * @param fkFieldNames names aligning with the PK fields of the target type
+     * @param fkFieldNames
+     *            names aligning with the PK fields of the target type
      */
-    public OneToOneMapping addOneToOneMapping(String name, EntityType refType, String ... fkFieldNames);
+    public OneToOneMapping addOneToOneMapping(String name, EntityType refType, String... fkFieldNames);
 
-    public OneToManyMapping addOneToManyMapping(String name, EntityType refType, String fkFieldName, String targetField);
+    public OneToManyMapping addOneToManyMapping(String name, EntityType refType, String... fkFieldNames);
 
     public AggregateObjectMapping addAggregateObjectMapping(String name, EntityType refType, boolean allowsNull);
 
@@ -81,6 +88,8 @@ public interface EntityTypeFactory {
      * @param createMissingTables
      */
     public void addToSession(DatabaseSession session, boolean createMissingTables);
+
+    public void addToSession(DatabaseSession session, boolean createMissingTables, boolean generateFKConstraints);
 
     public void configureSequencing(Sequence sequence, String numberName, String numberFieldName);
 

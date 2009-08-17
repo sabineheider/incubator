@@ -25,7 +25,6 @@ import javax.persistence.Persistence;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.internal.dynamic.RelationalEntityTypeFactory;
 import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.sessions.Session;
 
@@ -52,34 +51,16 @@ public class DynamicHelper {
             throw new IllegalArgumentException("No session provided");
         }
 
-        EntityType type = null;
-        try {
-            ClassDescriptor cd = session.getClassDescriptorForAlias(typeName);
-            type = getType(cd);
-        } catch (NullPointerException e) { // Workaround for bug ???
-            throw DynamicEntityException.invalidTypeName(typeName);
-        }
-        if (type == null) {
-            throw DynamicEntityException.invalidTypeName(typeName);
-        }
-
-        return type;
+        ClassDescriptor cd = session.getClassDescriptorForAlias(typeName);
+        return getType(cd);
     }
 
     public static EntityType getType(ClassDescriptor descriptor) {
-        EntityType type = (EntityType) descriptor.getProperty(EntityType.DESCRIPTOR_PROPERTY);
-
-        if (type == null) {
-            synchronized (descriptor) {
-                type = (EntityType) descriptor.getProperty(EntityType.DESCRIPTOR_PROPERTY);
-                if (type == null) {
-                    EntityTypeFactory factory = new RelationalEntityTypeFactory(descriptor);
-                    type = factory.getType();
-                }
-            }
+        if (descriptor == null) {
+            return null;
         }
 
-        return type;
+        return (EntityType) descriptor.getProperty(EntityType.DESCRIPTOR_PROPERTY);
     }
 
     public static boolean isDynamicType(ClassDescriptor descriptor) {
@@ -103,7 +84,7 @@ public class DynamicHelper {
         if (type != null) {
             session.getIdentityMapAccessor().initializeIdentityMap(type.getJavaClass());
 
-            ClassDescriptor descriptor = type.unwrap(ClassDescriptor.class);
+            ClassDescriptor descriptor = type.getDescriptor();
 
             session.getProject().getOrderedDescriptors().remove(descriptor);
             session.getProject().getDescriptors().remove(type.getJavaClass());

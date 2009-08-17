@@ -1,0 +1,160 @@
+/*******************************************************************************
+ * Copyright (c) 1998, 2008 Oracle. All rights reserved.
+ * This program and the accompanying materials are made available under the 
+ * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0 
+ * which accompanies this distribution. 
+ * The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+ * and the Eclipse Distribution License is available at 
+ * http://www.eclipse.org/org/documents/edl-v10.php.
+ *
+ * Contributors:
+ *     dclarke - Dynamic Persistence INCUBATION - Enhancement 200045
+ *               http://wiki.eclipse.org/EclipseLink/Development/JPA/Dynamic
+ *     
+ * This code is being developed under INCUBATION and is not currently included 
+ * in the automated EclipseLink build. The API in this code may change, or 
+ * may never be included in the product. Please provide feedback through mailing 
+ * lists or the bug database.
+ ******************************************************************************/
+package org.eclipse.persistence.internal.dynamic;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+
+import org.eclipse.persistence.exceptions.DescriptorException;
+import org.eclipse.persistence.indirection.ValueHolder;
+import org.eclipse.persistence.internal.descriptors.InstantiationPolicy;
+import org.eclipse.persistence.internal.helper.ClassConstants;
+import org.eclipse.persistence.internal.indirection.BasicIndirectionPolicy;
+import org.eclipse.persistence.internal.security.PrivilegedAccessHelper;
+import org.eclipse.persistence.internal.sessions.AbstractSession;
+import org.eclipse.persistence.mappings.CollectionMapping;
+import org.eclipse.persistence.mappings.DatabaseMapping;
+import org.eclipse.persistence.mappings.ForeignReferenceMapping;
+
+/**
+ * Simple {@link InstantiationPolicy} to call {@link EntityTypeImpl#newInstance()}
+ * 
+ * @author dclarke
+ * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
+ */
+public class EntityTypeInstantiationPolicy extends InstantiationPolicy {
+    
+    private EntityTypeImpl type;
+    
+    private Constructor<?> defaultConstructor = null;
+
+    public EntityTypeInstantiationPolicy(EntityTypeImpl type) {
+        this.type = type;
+        this.descriptor = type.getDescriptor();
+    }
+    
+    public EntityTypeImpl getType() {
+        return this.type;
+    }
+
+    /**
+     * Do Nothing since the factory method is hard-wired
+     */
+    @Override
+    public void initialize(AbstractSession session) throws DescriptorException {
+        try {
+            this.defaultConstructor = PrivilegedAccessHelper.getDeclaredConstructorFor(getType().getJavaClass(), new Class[] { EntityTypeImpl.class }, true);
+            this.defaultConstructor.setAccessible(true);
+        } catch (NoSuchMethodException exception) {
+            throw DescriptorException.noSuchMethodWhileInitializingInstantiationPolicy(getType().getName() + ".<Default Constructor>", getDescriptor(), exception);
+        }
+   }
+
+    /**
+     * Using privileged reflection create a new instance of the dynamic type
+     * passing in this {@link EntityTypeImpl} so the dynamic entity can have a
+     * reference to its type. After creation initialize all required attributes.
+     * 
+     * @see EntityTypeInstantiationPolicy
+     * @return new DynamicEntity with initialized attributes
+     */
+    @Override
+    public Object buildNewInstance() {
+        DynamicEntityImpl entity = null;
+
+        try {
+            entity = (DynamicEntityImpl) PrivilegedAccessHelper.invokeConstructor(this.getTypeConstructor(), new Object[] { getType() });
+        } catch (InvocationTargetException exception) {
+            throw DescriptorException.targetInvocationWhileConstructorInstantiation(this.getDescriptor(), exception);
+        } catch (IllegalAccessException exception) {
+            throw DescriptorException.illegalAccessWhileConstructorInstantiation(this.getDescriptor(), exception);
+        } catch (InstantiationException exception) {
+            throw DescriptorException.instantiationWhileConstructorInstantiation(this.getDescriptor(), exception);
+        } catch (NoSuchMethodError exception) {
+            // This exception is not documented but gets thrown.
+            throw DescriptorException.noSuchMethodWhileConstructorInstantiation(this.getDescriptor(), exception);
+        } catch (NullPointerException exception) {
+            // Some JVMs will throw a NULL pointer exception here
+            throw DescriptorException.nullPointerWhileConstructorInstantiation(this.getDescriptor(), exception);
+        }
+
+        for (DatabaseMapping mapping : getType().getMappingsRequiringInitialization()) {
+            initializeValue(mapping, entity);
+        }
+
+        return entity;
+    }
+
+    /**
+     * Initialize the default value handling primitives, collections and
+     * indirection.
+     * 
+     * @param mapping
+     * @param entity
+     */
+    private void initializeValue(DatabaseMapping mapping, DynamicEntityImpl entity) {
+        Object value = null;
+
+        if (mapping.isDirectToFieldMapping() && mapping.getAttributeClassification().isPrimitive()) {
+            Class<?> primClass = mapping.getAttributeClassification();
+
+            if (primClass == ClassConstants.PBOOLEAN) {
+                value = false;
+            } else if (primClass == ClassConstants.PINT) {
+                value = 0;
+            } else if (primClass == ClassConstants.PLONG) {
+                value = 0L;
+            } else if (primClass == ClassConstants.PCHAR) {
+                value = Character.MIN_VALUE;
+            } else if (primClass == ClassConstants.PDOUBLE) {
+                value = 0.0d;
+            } else if (primClass == ClassConstants.PFLOAT) {
+                value = 0.0f;
+            } else if (primClass == ClassConstants.PSHORT) {
+                value = Short.MIN_VALUE;
+            } else if (primClass == ClassConstants.PBYTE) {
+                value = Byte.MIN_VALUE;
+            }
+        } else if (mapping.isForeignReferenceMapping()) {
+            ForeignReferenceMapping refMapping = (ForeignReferenceMapping) mapping;
+
+            if (refMapping.usesIndirection() && refMapping.getIndirectionPolicy() instanceof BasicIndirectionPolicy) {
+                value = new ValueHolder(value);
+            } else if (refMapping.isCollectionMapping()) {
+                value = ((CollectionMapping) refMapping).getContainerPolicy().containerInstance();
+            }
+        } else if (mapping.isAggregateObjectMapping()) {
+            value = mapping.getReferenceDescriptor().getObjectBuilder().buildNewInstance();
+        }
+
+        mapping.setAttributeValueInObject(entity, value);
+    }
+
+    /**
+     * Return the default (zero-argument) constructor for the descriptor class.
+     */
+    protected Constructor<?> getTypeConstructor() throws DescriptorException {
+        // Lazy initialize, because the constructor cannot be serialized
+        if (defaultConstructor == null) {
+            initialize(null);
+        }
+        return defaultConstructor;
+    }
+
+ }

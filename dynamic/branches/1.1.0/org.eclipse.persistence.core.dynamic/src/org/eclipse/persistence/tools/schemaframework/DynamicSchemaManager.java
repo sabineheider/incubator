@@ -49,9 +49,13 @@ public class DynamicSchemaManager extends SchemaManager {
      * @param entityTypes
      */
     public void createTables(EntityType... entityTypes) {
+        createTables(true, entityTypes);
+    }
+    
+    public void createTables(boolean generateFKConstraints, EntityType... entityTypes) {
         AbstractSession createSession = getSession();
 
-        TableCreator creator = new DefaultTableGenerator(getSession().getProject(), true).generateFilteredDefaultTableCreator(createSession);
+        TableCreator creator = new DefaultTableGenerator(getSession().getProject(), generateFKConstraints).generateFilteredDefaultTableCreator(createSession);
         creator.setIgnoreDatabaseException(true);
         creator.createTables((DatabaseSession) getSession(), this);
     }

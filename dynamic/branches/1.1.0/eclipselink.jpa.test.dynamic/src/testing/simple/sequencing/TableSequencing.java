@@ -12,11 +12,11 @@ import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
 import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.dynamic.EntityTypeFactory;
+import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeFactory;
+import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
 import org.eclipse.persistence.sequencing.TableSequence;
 import org.eclipse.persistence.sessions.IdentityMapAccessor;
 import org.eclipse.persistence.sessions.server.Server;
@@ -136,8 +136,8 @@ public class TableSequencing {
         ((AbstractSession) session).getProject().getLogin().setDefaultSequence(sequence);
         sequence.onConnect(session.getPlatform());
 
-        EntityTypeFactory factory = new JPAEntityTypeFactory(session, "model.sequencing." + ENTITY_TYPE, TABLE_NAME);
-        factory.addPrimaryKeyFields("SID");
+        EntityTypeBuilder factory = new JPAEntityTypeBuilder(session, "model.sequencing." + ENTITY_TYPE, null, TABLE_NAME);
+        factory.setPrimaryKeyFields("SID");
         factory.addDirectMapping("id", int.class, "SID");
         factory.addDirectMapping("value1", String.class, "VAL_1");
         factory.configureSequencing(sequence, ENTITY_TYPE + "_SEQ", "SID");

@@ -22,6 +22,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { SimpleType.class, testing.simple.mappings.AllTests.class, testing.simple.sequencing.AllTests.class })
+@Suite.SuiteClasses( { SimpleType.class, SimpleTypeCompositeKey.class, testing.simple.mappings.AllTests.class, testing.simple.sequencing.AllTests.class })
 public class AllTests {
 }

@@ -15,12 +15,12 @@ import junit.framework.Assert;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
-import org.eclipse.persistence.dynamic.EntityTypeFactory;
+import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.internal.descriptors.changetracking.AggregateAttributeChangeListener;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeFactory;
+import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
 import org.eclipse.persistence.mappings.AggregateObjectMapping;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.sessions.server.Server;
@@ -196,18 +196,18 @@ public class SimpleTypes_AggregateObject {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
 
-        EntityTypeFactory bFactory = new JPAEntityTypeFactory(session, "model.SimpleB");
+        EntityTypeBuilder bFactory = new JPAEntityTypeBuilder(session, "model.SimpleB", null);
         bFactory.addDirectMapping("value2", boolean.class, "VAL_2");
         bFactory.addDirectMapping("value3", String.class, "VAL_3");
         bFactory.addToSession(session, false);
 
-        EntityTypeFactory cFactory = new JPAEntityTypeFactory(session, "model.SimpleC");
+        EntityTypeBuilder cFactory = new JPAEntityTypeBuilder(session, "model.SimpleC", null);
         cFactory.addDirectMapping("value4", double.class, "VAL_4");
         cFactory.addDirectMapping("value5", String.class, "VAL_5");
         cFactory.addToSession(session, false);
 
-        EntityTypeFactory aFactory = new JPAEntityTypeFactory(session, "model.SimpleA", "SIMPLE_TYPE_A");
-        aFactory.addPrimaryKeyFields("SID");
+        EntityTypeBuilder aFactory = new JPAEntityTypeBuilder(session, "model.SimpleA", null, "SIMPLE_TYPE_A");
+        aFactory.setPrimaryKeyFields("SID");
         aFactory.addDirectMapping("id", int.class, "SID");
         aFactory.addDirectMapping("value1", String.class, "VAL_1");
         aFactory.addAggregateObjectMapping("b", bFactory.getType(), true);

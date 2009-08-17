@@ -35,7 +35,7 @@ import example.employee.EntityTypeFactory;
  * @author dclarke
  * @since EclipseLink 1.1
  */
-@PersistenceContext(unitName = "custom-types")
+@PersistenceContext(unitName = "empty")
 public class MappingConfigTests extends EclipseLinkJPATest {
 
     @Test
@@ -49,7 +49,7 @@ public class MappingConfigTests extends EclipseLinkJPATest {
         assertEquals(1, session.getDefaultConnectionPool().getMinNumberOfConnections());
 
         assertTrue(session.getName().startsWith("file"));
-        assertTrue(session.getName().endsWith("custom-types"));
+        assertTrue(session.getName().endsWith("empty"));
     }
 
     @Test

@@ -18,23 +18,39 @@
  ******************************************************************************/
 package org.eclipse.persistence.internal.dynamic;
 
+import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.exceptions.DescriptorException;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.internal.helper.ClassConstants;
-import org.eclipse.persistence.mappings.*;
+import org.eclipse.persistence.mappings.AttributeAccessor;
+import org.eclipse.persistence.mappings.CollectionMapping;
+import org.eclipse.persistence.mappings.DatabaseMapping;
+import org.eclipse.persistence.mappings.ForeignReferenceMapping;
 
 /**
+ * ValueAccessor is a specialized AttributeAccessor enabling usage of the
+ * {@link DynamicEntityImpl#values} (Object[]) instead of a field/property
+ * access available in static domain classes.
  * 
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public class ValuesAccessor extends AttributeAccessor {
 
-    protected final static Object NULL_ENTRY = new Object();
+    /**
+     * NULL_VALUE is a singleton value used to indicate that a null value was
+     * explicitly put in a given 'slot' and not just there due to the default
+     * creation of an Object[].
+     */
+    protected final static Object NULL_VALUE = new Object();
 
-    private DatabaseMapping mapping;
+    protected DatabaseMapping mapping;
 
-    private int index;
+    /**
+     * Index in the values Object[] where the owning mapping's value is stored.
+     * This index assumes that the mappings remain in a static order.
+     */
+    protected int index;
 
     public ValuesAccessor(DatabaseMapping mapping, int index) {
         super();
@@ -54,26 +70,41 @@ public class ValuesAccessor extends AttributeAccessor {
         return ((DynamicEntityImpl) entity).values;
     }
 
-    public Object getAttributeValueFromObject(Object entity) throws DescriptorException {
-        Object[] values = getValues(entity);
-        Object value = values[getIndex()];
+    /**
+     * <b>INTERNAL</b>: Direct access to the value in the Object[] for this
+     * mapping. This method is provided for advanced users and can provide
+     * direct access to he NULL_VALUE. All application access should be done
+     * using the {@link DynamicEntity} API
+     */
+    public Object getRawValue(Object entity) {
+        return getValues(entity)[getIndex()];
+    }
 
-        if (value == NULL_ENTRY) {
-            value = null;
-        }
-        return value;
+    public Object getAttributeValueFromObject(Object entity) throws DescriptorException {
+        Object value = getRawValue(entity);
+
+        return value == NULL_VALUE ? null : value;
+    }
+
+    /**
+     * <b>INTERNAL</b>: Direct access to the value in the Object[] for this
+     * mapping. This method is provided for advanced users and BYPASSES THE USE
+     * OF NULL_VALUE. All application access should be done using the
+     * {@link DynamicEntity} API
+     */
+    public void setRawValue(Object entity, Object value) {
+        getValues(entity)[getIndex()] = value;
     }
 
     public void setAttributeValueInObject(Object entity, Object value) throws DescriptorException {
-        Object[] values = getValues(entity);
-        values[getIndex()] = value == null ? NULL_ENTRY : value;
+        setRawValue(entity, value == null ? NULL_VALUE : value);
     }
 
     protected boolean isSet(Object entity) throws DescriptorException {
         Object[] values = getValues(entity);
         Object value = values[getIndex()];
 
-        return value != null || value == NULL_ENTRY;
+        return value != null || value == NULL_VALUE;
     }
 
     @Override

@@ -3,23 +3,53 @@ package testing.simple.mappings;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 
-import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.Collection;
+
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 
 import junit.framework.Assert;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.EntityType;
+import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
-import org.eclipse.persistence.mappings.OneToOneMapping;
+import org.eclipse.persistence.mappings.OneToManyMapping;
 import org.eclipse.persistence.sessions.server.Server;
-import org.junit.*;
+import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class SimpleTypes_OneToOne {
+public class SimpleTypes_OneToMany {
 
     private static EntityManagerFactory emf;
+
+    private EntityType aType;
+    private EntityType bType;
+
+    public EntityType getAType() {
+        if (this.aType == null) {
+            this.aType = DynamicHelper.getType(JpaHelper.getServerSession(emf), "SimpleA");
+        }
+        return aType;
+    }
+
+    public EntityType getBType() {
+        if (this.bType == null) {
+            this.bType = DynamicHelper.getType(JpaHelper.getServerSession(emf), "SimpleB");
+        }
+        return bType;
+    }
 
     @Test
     public void verifyConfig() throws Exception {
@@ -28,7 +58,7 @@ public class SimpleTypes_OneToOne {
         ClassDescriptor descriptorA = session.getClassDescriptorForAlias("SimpleA");
         assertNotNull("No descriptor found for alias='SimpleA'", descriptorA);
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        EntityTypeImpl simpleTypeA = (EntityTypeImpl) getAType();
         assertNotNull("'SimpleA' EntityType not found", simpleTypeA);
         assertEquals(descriptorA, simpleTypeA.getDescriptor());
         DirectToFieldMapping a_id = (DirectToFieldMapping) descriptorA.getMappingForAttributeName("id");
@@ -47,7 +77,7 @@ public class SimpleTypes_OneToOne {
         DirectToFieldMapping b_value1 = (DirectToFieldMapping) descriptorB.getMappingForAttributeName("value1");
         assertEquals(String.class, b_value1.getAttributeClassification());
 
-        OneToOneMapping a_b = (OneToOneMapping) descriptorA.getMappingForAttributeName("b");
+        OneToManyMapping a_b = (OneToManyMapping) descriptorA.getMappingForAttributeName("b");
         assertEquals(descriptorB, a_b.getReferenceDescriptor());
     }
 
@@ -96,7 +126,7 @@ public class SimpleTypes_OneToOne {
     }
 
     @Test
-    public void createSimpleAwithSimpleB() {
+    public void createAwithB() {
         Server session = JpaHelper.getServerSession(emf);
         EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
         Assert.assertNotNull(simpleTypeA);
@@ -108,13 +138,15 @@ public class SimpleTypes_OneToOne {
         Assert.assertNotNull(JpaHelper.getServerSession(emf).getDescriptorForAlias("SimpleB"));
 
         DynamicEntity simpleInstanceB = simpleTypeB.newInstance();
-        simpleInstanceB.set("id", 2);
+        simpleInstanceB.set("id", 1);
         simpleInstanceB.set("value1", "B2");
 
         DynamicEntity simpleInstanceA = simpleTypeA.newInstance();
-        simpleInstanceA.set("id", 2);
+        simpleInstanceA.set("id", 1);
         simpleInstanceA.set("value1", "A2");
-        simpleInstanceA.set("b", simpleInstanceA);
+        simpleInstanceA.add("b", simpleInstanceA);
+
+        simpleInstanceB.set("a", simpleInstanceB);
 
         em.getTransaction().begin();
         em.persist(simpleInstanceB);
@@ -129,25 +161,65 @@ public class SimpleTypes_OneToOne {
         em.close();
     }
 
+    @Test
+    public void removeAwithB_PrivateOwned() {
+        createAwithB();
+
+        ((OneToManyMapping) getAType().getDescriptor().getMappingForAttributeName("b")).setCascadeRemove(true);
+
+        EntityManager em = emf.createEntityManager();
+
+        em.getTransaction().begin();
+
+        DynamicEntity a = (DynamicEntity) em.find(getAType().getJavaClass(), 1);
+        assertNotNull(a);
+        assertEquals(1, a.get("b", Collection.class).size());
+
+        em.remove(a);
+        // em.remove(a.get("b", List.class).get(0));
+
+        em.getTransaction().commit();
+    }
+
+    @Test
+    public void createAwithExistingB() {
+        // TODO Assert.fail("Not Yet Implemented");
+    }
+
+    @Test
+    public void removeBfromA() {
+        // TODO Assert.fail("Not Yet Implemented");
+    }
+
+    @Test
+    public void addAtoB() {
+        // TODO Assert.fail("Not Yet Implemented");
+    }
+
     @BeforeClass
     public static void setUp() {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
 
-        EntityTypeBuilder bFactory = new JPAEntityTypeBuilder(session, "model.SimpleB", null, "SIMPLE_TYPE_B");
-        bFactory.setPrimaryKeyFields("SID");
-        bFactory.addDirectMapping("id", int.class, "SID");
-        bFactory.addDirectMapping("value1", String.class, "VAL_1");
-
-        bFactory.addToSession(session, false);
-
         EntityTypeBuilder aFactory = new JPAEntityTypeBuilder(session, "model.SimpleA", null, "SIMPLE_TYPE_A");
         aFactory.setPrimaryKeyFields("SID");
+        EntityTypeBuilder bFactory = new JPAEntityTypeBuilder(session, "model.SimpleB", null, "SIMPLE_TYPE_B");
+        bFactory.setPrimaryKeyFields("SID");
+
+        bFactory.addDirectMapping("id", int.class, "SID");
+        bFactory.addDirectMapping("value1", String.class, "VAL_1");
+        bFactory.addOneToOneMapping("a", aFactory.getType(), "A_FK");
+
         aFactory.addDirectMapping("id", int.class, "SID");
         aFactory.addDirectMapping("value1", String.class, "VAL_1");
-        aFactory.addOneToOneMapping("b", bFactory.getType(), "B_FK");
+        aFactory.addOneToManyMapping("b", bFactory.getType(), "A_FK");
 
-        aFactory.addToSession(session, true);
+        Collection<ClassDescriptor> descriptors = new ArrayList<ClassDescriptor>();
+        descriptors.add(aFactory.getType().getDescriptor());
+        descriptors.add(bFactory.getType().getDescriptor());
+        session.addDescriptors(descriptors);
+
+        new DynamicSchemaManager(session).createTables(false, new EntityType[0]);
     }
 
     @After
@@ -155,8 +227,8 @@ public class SimpleTypes_OneToOne {
         EntityManager em = emf.createEntityManager();
 
         em.getTransaction().begin();
-        em.createQuery("DELETE FROM SimpleA").executeUpdate();
         em.createQuery("DELETE FROM SimpleB").executeUpdate();
+        em.createQuery("DELETE FROM SimpleA").executeUpdate();
         em.getTransaction().commit();
         em.close();
     }
@@ -166,8 +238,12 @@ public class SimpleTypes_OneToOne {
         EntityManager em = emf.createEntityManager();
 
         em.getTransaction().begin();
-        em.createNativeQuery("DROP TABLE SIMPLE_TYPE_A CASCADE CONSTRAINTS").executeUpdate();
-        em.createNativeQuery("DROP TABLE SIMPLE_TYPE_B CASCADE CONSTRAINTS").executeUpdate();
+        try {
+            em.createNativeQuery("DROP TABLE SIMPLE_TYPE_A CASCADE CONSTRAINTS").executeUpdate();
+            em.createNativeQuery("DROP TABLE SIMPLE_TYPE_B CASCADE CONSTRAINTS").executeUpdate();
+        } catch (DatabaseException dbe) {
+            // ignore
+        }
         em.getTransaction().commit();
 
         em.close();

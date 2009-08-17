@@ -156,7 +156,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
     }
 
     private Collection<?> getCollection(DatabaseMapping mapping) {
-        if (!mapping.isCollectionMapping() || Collection.class.isAssignableFrom(((CollectionMapping) mapping).getContainerPolicy().getContainerClass())) {
+        if (!mapping.isCollectionMapping() || !Collection.class.isAssignableFrom(((CollectionMapping) mapping).getContainerPolicy().getContainerClass())) {
             throw DynamicEntityException.propertyNotCollection(mapping);
         }
         return (Collection<?>) get(mapping);

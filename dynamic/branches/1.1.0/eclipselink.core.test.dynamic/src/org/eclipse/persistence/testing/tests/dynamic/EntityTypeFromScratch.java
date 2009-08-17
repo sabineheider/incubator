@@ -21,11 +21,11 @@ package org.eclipse.persistence.testing.tests.dynamic;
 import static junit.framework.Assert.assertEquals;
 
 import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.dynamic.EntityTypeFactory;
+import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.dynamic.RelationalEntityTypeFactory;
+import org.eclipse.persistence.internal.dynamic.ORMEntityTypeBuilder;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.sessions.DatabaseLogin;
 import org.eclipse.persistence.sessions.DatabaseSession;
@@ -64,8 +64,8 @@ public class EntityTypeFromScratch {
     }
 
     private EntityTypeImpl buildMyEntityType() {
-        EntityTypeFactory factory = new RelationalEntityTypeFactory(MyEntity.class, "MY_ENTITY");
-        factory.addPrimaryKeyFields("ID");
+        EntityTypeBuilder factory = new ORMEntityTypeBuilder(MyEntity.class, null, "MY_ENTITY");
+        factory.setPrimaryKeyFields("ID");
         factory.addDirectMapping("id", int.class, "ID");
         factory.addDirectMapping("name", String.class, "NAME");
 

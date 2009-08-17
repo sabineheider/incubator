@@ -5,7 +5,7 @@ import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
-import org.eclipse.persistence.dynamic.EntityTypeFactory;
+import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 
 @Entity
 @Table(name = "CUSTOM_REL_MTM")
@@ -28,7 +28,7 @@ public class ManyToManyRelationship extends OneToOneRelationship {
     }
 
     @Override
-    protected void addToType(EntityTypeFactory factory) {
+    protected void addToType(EntityTypeBuilder factory) {
         // TODO
         throw new UnsupportedOperationException();
     }
