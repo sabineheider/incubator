@@ -1,4 +1,3 @@
-package example;
 /*******************************************************************************
  * Copyright (c) 1998, 2008 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
@@ -17,7 +16,7 @@ package example;
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-
+package example;
 
 import java.util.List;
 
