@@ -34,32 +34,32 @@ public class SimpleType {
     protected static EntityManagerFactory emf;
 
     protected EntityType simpleType;
-    
+
     protected EntityType getSimpleType() {
         if (simpleType == null) {
             this.simpleType = DynamicHelper.getType(JpaHelper.getServerSession(emf), "Simple");
-            
+
             if (this.simpleType == null) {
                 createSimpleType();
             }
         }
         return this.simpleType;
     }
-    
+
     protected EntityType createSimpleType() {
         Server session = JpaHelper.getServerSession(emf);
 
-        EntityTypeBuilder factory = new JPAEntityTypeBuilder(session, "model.Simple", null, "SIMPLE_TYPE");
-        factory.setPrimaryKeyFields("SID");
-        factory.addDirectMapping("id", int.class, "SID");
-        factory.addDirectMapping("value1", String.class, "VAL_1");
-        factory.addDirectMapping("value2", boolean.class, "VAL_2");
-        factory.addDirectMapping("value3", Calendar.class, "VAL_3");
-        factory.addDirectMapping("value4", Character.class, "VAL_4");
+        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(session, "model.Simple", null, "SIMPLE_TYPE");
+        typeBuilder.setPrimaryKeyFields("SID");
+        typeBuilder.addDirectMapping("id", int.class, "SID");
+        typeBuilder.addDirectMapping("value1", String.class, "VAL_1");
+        typeBuilder.addDirectMapping("value2", boolean.class, "VAL_2");
+        typeBuilder.addDirectMapping("value3", Calendar.class, "VAL_3");
+        typeBuilder.addDirectMapping("value4", Character.class, "VAL_4");
 
-        factory.addToSession(session, true);
-        
-        return factory.getType();
+        EntityTypeBuilder.addToSession(session, true, true, typeBuilder.getType());
+
+        return typeBuilder.getType();
     }
 
     @Test
@@ -191,7 +191,7 @@ public class SimpleType {
     @After
     public void clearSimpleTypeInstances() {
         getSimpleType();
-        
+
         if (emf != null && emf.isOpen()) {
             EntityManager em = emf.createEntityManager();
             em.getTransaction().begin();

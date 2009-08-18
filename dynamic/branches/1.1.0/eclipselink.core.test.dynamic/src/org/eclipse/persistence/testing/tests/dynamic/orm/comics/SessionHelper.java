@@ -1,6 +1,7 @@
 package org.eclipse.persistence.testing.tests.dynamic.orm.comics;
 
-import org.eclipse.persistence.internal.helper.DynamicConversionManager;
+import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.sessions.factories.SessionManager;
 import org.eclipse.persistence.sessions.factories.XMLSessionConfigLoader;
 import org.eclipse.persistence.sessions.server.Server;
@@ -11,18 +12,21 @@ public class SessionHelper {
 
     public static Server getComicsSession() {
         if (!SessionManager.getManager().getSessions().containsKey(SESSION_NAME)) {
-            DynamicConversionManager dcm = DynamicConversionManager.lookup(null);
+            DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
 
-            dcm.getDynamicClassLoader().createDynamicClass("model.Issue");
-            dcm.getDynamicClassLoader().createDynamicClass("model.Publisher");
-            dcm.getDynamicClassLoader().createDynamicClass("model.Title");
+            new EntityTypeBuilder(dcl, "model.Issue", null);
+            new EntityTypeBuilder(dcl, "model.Publisher", null);
+            new EntityTypeBuilder(dcl, "model.Title", null);
 
             XMLSessionConfigLoader loader = new XMLSessionConfigLoader();
-            loader.setClassLoader(dcm.getLoader());
+            loader.setClassLoader(dcl);
             loader.setSessionName(SESSION_NAME);
 
-            return (Server) SessionManager.getManager().getSession(loader);
+            Server session = (Server) SessionManager.getManager().getSession(loader);
+            // new DynamicHelper.SessionCustomizer().customize(session);
+            return session;
         }
         return (Server) SessionManager.getManager().getSession(SESSION_NAME);
     }
+
 }

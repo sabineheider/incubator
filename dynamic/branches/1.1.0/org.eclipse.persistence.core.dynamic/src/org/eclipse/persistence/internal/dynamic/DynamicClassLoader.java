@@ -21,6 +21,9 @@ package org.eclipse.persistence.internal.dynamic;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.persistence.internal.helper.ConversionManager;
+import org.eclipse.persistence.sessions.Session;
+
 /**
  * TODO
  * 
@@ -29,93 +32,125 @@ import java.util.Map;
  */
 public class DynamicClassLoader extends ClassLoader {
 
-    private boolean createDynamicClasses = true;
+    private Map<String, DynamicClassWriter> classWriters = new HashMap<String, DynamicClassWriter>();
 
-    private Map<String, Class<?>> dynamicEntityClasses = new HashMap<String, Class<?>>();
-
-    private Class<?> defaultParentClass = DynamicEntityImpl.class;
-
-    private DynamicClassWriter defaultWriter = new DynamicClassWriter();
+    public DynamicClassWriter defaultWriter = new DynamicClassWriter();
 
     public DynamicClassLoader(ClassLoader delegate) {
         super(delegate);
     }
 
-    public boolean createDynamicClasses() {
-        return this.createDynamicClasses;
-    }
-
-    public void setCreateDynamicClasses(boolean createDynamicClasses) {
-        this.createDynamicClasses = createDynamicClasses;
-    }
-
-    private Map<String, Class<?>> getDynamicEntityClasses() {
-        return this.dynamicEntityClasses;
-    }
-
-    public Class<?> getDynamicEntityClass(String className) {
-        return getDynamicEntityClasses().get(className);
-    }
-
-    public Class<?> getDefaultParentClass() {
-        return defaultParentClass;
-    }
-
-    public void setDefaultParentClass(Class<?> defaultParentClass) {
-        this.defaultParentClass = defaultParentClass;
+    public DynamicClassLoader(ClassLoader delegate, DynamicClassWriter writer) {
+        this(delegate);
+        this.defaultWriter = writer;
     }
 
     public DynamicClassWriter getDefaultWriter() {
-        return defaultWriter;
+        return this.defaultWriter;
     }
 
-    public void setDefaultWriter(DynamicClassWriter defaultWriter) {
-        this.defaultWriter = defaultWriter;
+    protected Map<String, DynamicClassWriter> getClassWriters() {
+        return this.classWriters;
     }
 
-    public Class<?> createDynamicClass(String name) {
-        return createDynamicClass(name, getDefaultParentClass());
+    public boolean hasClassWriter(String className) {
+        return getClassWriter(className) != null;
     }
 
-    public Class<?> createDynamicClass(String name, Class<?> baseClass) {
-        return createDynamicClass(name, baseClass, getDefaultWriter());
+    public DynamicClassWriter getClassWriter(String className) {
+        synchronized (getClassWriters()) {
+            return getClassWriters().get(className);
+        }
+    }
+
+    public void addClass(String className) {
+        synchronized (getClassWriters()) {
+            getClassWriters().put(className, getDefaultWriter());
+        }
+    }
+
+    public void addClass(String className, Class<?> parentClass) {
+        synchronized (getClassWriters()) {
+            getClassWriters().put(className, new DynamicClassWriter(parentClass));
+        }
+    }
+
+    public void addClass(String className, DynamicClassWriter writer) {
+        synchronized (getClassWriters()) {
+            getClassWriters().put(className, writer == null ? getDefaultWriter() : writer);
+        }
+    }
+
+    public Class<?> creatDynamicClass(String className, DynamicClassWriter writer) {
+        if (!hasClassWriter(className)) {
+            addClass(className, writer);
+        }
+        try {
+            return loadClass(className);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("DyanmicClassLoader could not create class: " + className);
+        }
+    }
+
+    public Class<?> creatDynamicClass(String className) {
+        return creatDynamicClass(className, getDefaultWriter());
+    }
+
+    public Class<?> creatDynamicClass(String className, Class<?> parentClass) {
+        return creatDynamicClass(className, new DynamicClassWriter(parentClass));
     }
 
     /**
-     * Create a dynamic subclass if one does not already exist and register the
-     * created class for subsequent use.
+     * create a class, but only if we are in class-creation mode
      */
-    public Class<?> createDynamicClass(String name, Class<?> baseClass, DynamicClassWriter writer) {
-        Class<?> javaClass = getDynamicEntityClass(name);
+    @Override
+    protected Class<?> findClass(String className) throws ClassNotFoundException {
+        synchronized (getClassWriters()) {
+            DynamicClassWriter writer = getClassWriter(className);
+            if (writer != null) {
+                getClassWriters().remove(className);
 
-        if (javaClass != null) {
-            return javaClass;
-        }
-
-        if (name == null) {
-            return null;
-        }
-
-        synchronized (getDynamicEntityClasses()) {
-            javaClass = getDynamicEntityClass(name);
-
-            if (javaClass == null) {
-                byte[] bytes = writer.writeClass(baseClass, name);
-                javaClass = super.defineClass(name, bytes, 0, bytes.length);
-                getDynamicEntityClasses().put(name, javaClass);
+                try {
+                    byte[] bytes = writer.writeClass(className);
+                    return defineClass(className, bytes, 0, bytes.length);
+                } catch (ClassFormatError cfe) {
+                    throw new ClassNotFoundException(className, cfe);
+                }
             }
         }
 
-        return javaClass;
+        return super.findClass(className);
     }
 
-    @Override
-    protected Class<?> findClass(String name) throws ClassNotFoundException {
-        if (!createDynamicClasses()) {
-            return super.findClass(name);
+    /**
+     * Lookup the DynamicConversionManager for the given session. If the
+     * existing ConversionManager is not an instance of DynamicConversionManager
+     * then create a new one and replace the existing one.
+     * 
+     * @param session
+     * @return
+     */
+    public static DynamicClassLoader lookup(Session session) {
+        ConversionManager cm = null;
+
+        if (session == null) {
+            cm = ConversionManager.getDefaultManager();
+        } else {
+            cm = session.getPlatform().getConversionManager();
         }
 
-        return createDynamicClass(name);
+        if (cm.getLoader() instanceof DynamicClassLoader) {
+            return (DynamicClassLoader) cm.getLoader();
+        }
+
+        DynamicClassLoader dcl = new DynamicClassLoader(cm.getLoader());
+        cm.setLoader(dcl);
+
+        if (session == null) {
+            ConversionManager.setDefaultLoader(dcl);
+        }
+
+        return dcl;
     }
 
 }

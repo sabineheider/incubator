@@ -20,11 +20,12 @@ package org.eclipse.persistence.jpa.dynamic;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.internal.dynamic.ORMEntityTypeBuilder;
+import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.jpa.CMP3Policy;
 import org.eclipse.persistence.sessions.DatabaseSession;
 
-public class JPAEntityTypeBuilder extends ORMEntityTypeBuilder {
+public class JPAEntityTypeBuilder extends EntityTypeBuilder {
 
     public JPAEntityTypeBuilder(DatabaseSession session, String className, EntityType parentType, String... tableNames) {
         super(session, className, parentType, tableNames);
@@ -36,8 +37,8 @@ public class JPAEntityTypeBuilder extends ORMEntityTypeBuilder {
         this.entityType.getDescriptor().setCMPPolicy(new CMP3Policy());
     }
     
-    public JPAEntityTypeBuilder(ClassDescriptor descriptor, EntityType parentType) {
-        super(descriptor, parentType);
+    public JPAEntityTypeBuilder(DynamicClassLoader dcl,ClassDescriptor descriptor, EntityType parentType) {
+        super(dcl, descriptor, parentType);
     }
 
     /**

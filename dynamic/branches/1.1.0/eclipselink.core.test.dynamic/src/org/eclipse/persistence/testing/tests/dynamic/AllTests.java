@@ -18,10 +18,11 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.tests.dynamic;
 
+import org.eclipse.persistence.testing.tests.dynamic.orm.projectxml.DynamicMetaDataTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { DynamicConversionManagerTests.class, EntityTypeFromDescriptor.class, EntityTypeFromScratch.class, org.eclipse.persistence.testing.tests.dynamic.orm.comics.AllTests.class })
+@Suite.SuiteClasses( { DynamicClassLoaderTests.class, EntityTypeFromDescriptor.class, EntityTypeFromScratch.class, org.eclipse.persistence.testing.tests.dynamic.orm.comics.AllTests.class, DynamicMetaDataTestSuite.class })
 public class AllTests {
 }

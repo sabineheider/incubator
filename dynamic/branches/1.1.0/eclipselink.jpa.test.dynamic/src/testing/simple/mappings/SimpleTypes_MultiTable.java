@@ -147,15 +147,16 @@ public class SimpleTypes_MultiTable {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
 
-        EntityTypeBuilder factory = new JPAEntityTypeBuilder(session, "model.SimpleA", null, "SIMPLE_TYPE_A", "SIMPLE_TYPE_B", "SIMPLE_TYPE_C");
-        factory.setPrimaryKeyFields("SIMPLE_TYPE_A.SID");
-        factory.addDirectMapping("id", int.class, "SIMPLE_TYPE_A.SID");
-        factory.addDirectMapping("value1", String.class, "SIMPLE_TYPE_A.VAL_1");
-        factory.addDirectMapping("value2", boolean.class, "SIMPLE_TYPE_B.VAL_2");
-        factory.addDirectMapping("value3", String.class, "SIMPLE_TYPE_B.VAL_3");
-        factory.addDirectMapping("value4", double.class, "SIMPLE_TYPE_C.VAL_4");
-        factory.addDirectMapping("value5", String.class, "SIMPLE_TYPE_C.VAL_5");
-        factory.addToSession(session, true);
+        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(session, "model.SimpleA", null, "SIMPLE_TYPE_A", "SIMPLE_TYPE_B", "SIMPLE_TYPE_C");
+        typeBuilder.setPrimaryKeyFields("SIMPLE_TYPE_A.SID");
+        typeBuilder.addDirectMapping("id", int.class, "SIMPLE_TYPE_A.SID");
+        typeBuilder.addDirectMapping("value1", String.class, "SIMPLE_TYPE_A.VAL_1");
+        typeBuilder.addDirectMapping("value2", boolean.class, "SIMPLE_TYPE_B.VAL_2");
+        typeBuilder.addDirectMapping("value3", String.class, "SIMPLE_TYPE_B.VAL_3");
+        typeBuilder.addDirectMapping("value4", double.class, "SIMPLE_TYPE_C.VAL_4");
+        typeBuilder.addDirectMapping("value5", String.class, "SIMPLE_TYPE_C.VAL_5");
+        
+        EntityTypeBuilder.addToSession(session, true, true, typeBuilder.getType());
     }
 
     @After

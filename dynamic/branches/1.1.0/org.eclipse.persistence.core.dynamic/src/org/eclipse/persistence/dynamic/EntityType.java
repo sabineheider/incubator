@@ -21,7 +21,6 @@ package org.eclipse.persistence.dynamic;
 import java.util.List;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.mappings.DatabaseMapping;
 
 /**
  * An EntityType provides a metadata facade into the EclipseLink
@@ -34,11 +33,18 @@ import org.eclipse.persistence.mappings.DatabaseMapping;
 public interface EntityType {
 
     /**
-     * Return the entity type's name. This is the short name of the class or the {@link ClassDescriptor#getAlias()}
+     * Return the entity type's name. This is the short name of the class or the
+     * {@link ClassDescriptor#getAlias()}
+     * 
      * @return
      */
     public String getName();
-    
+
+    /**
+     * @return Fully qualified name of mapped class.
+     */
+    public String getClassName();
+
     public EntityType getParentType();
 
     public int getNumberOfProperties();
@@ -46,8 +52,6 @@ public interface EntityType {
     public List<String> getPropertiesNames();
 
     public boolean containsProperty(String propertyName);
-
-    public List<DatabaseMapping> getMappings();
 
     public int getPropertyIndex(String propertyName);
 
@@ -58,13 +62,15 @@ public interface EntityType {
     public Class<?> getPropertyType(int propertyIndex);
 
     public Class<?> getPropertyType(String propertyName);
-    
+
     public ClassDescriptor getDescriptor();
-    
+
     /**
-     * Property name used to store the EntityTypeImpl on each descriptor.
+     * Property name used to store the EntityTypeImpl on each descriptor in its
+     * {@link ClassDescriptor#properties}. The EntityType instance is generally
+     * populated by the {@link EntityTypeBuilder} and should only be done when
+     * properly initialized.
      */
     public static final String DESCRIPTOR_PROPERTY = "ENTITY_TYPE";
 
-    
 }

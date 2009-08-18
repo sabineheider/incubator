@@ -25,7 +25,6 @@ import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.dynamic.ORMEntityTypeBuilder;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.sessions.DatabaseLogin;
 import org.eclipse.persistence.sessions.DatabaseSession;
@@ -64,7 +63,7 @@ public class EntityTypeFromScratch {
     }
 
     private EntityTypeImpl buildMyEntityType() {
-        EntityTypeBuilder factory = new ORMEntityTypeBuilder(MyEntity.class, null, "MY_ENTITY");
+        EntityTypeBuilder factory = new EntityTypeBuilder(MyEntity.class, null, "MY_ENTITY");
         factory.setPrimaryKeyFields("ID");
         factory.addDirectMapping("id", int.class, "ID");
         factory.addDirectMapping("name", String.class, "NAME");

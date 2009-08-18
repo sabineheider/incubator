@@ -22,7 +22,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({ DynamicConversionManager_Tests.class, SimpleDynamicMap_NativeExample_Tests.class, SimpleDynamicMap_JPAExample_Tests.class, SimpleDynamicMap_WithRelationships_JPAExample_Tests.class })
+@Suite.SuiteClasses( { SimpleDynamicMap_NativeExample_Tests.class, SimpleDynamicMap_JPAExample_Tests.class, SimpleDynamicMap_WithRelationships_JPAExample_Tests.class })
 public class AllTests {
 
 }

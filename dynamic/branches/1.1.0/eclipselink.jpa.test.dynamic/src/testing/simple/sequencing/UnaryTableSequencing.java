@@ -134,13 +134,13 @@ public class UnaryTableSequencing {
         ((AbstractSession) session).getProject().getLogin().setDefaultSequence(sequence);
         sequence.onConnect(session.getPlatform());
 
-        EntityTypeBuilder factory = new JPAEntityTypeBuilder(session, "model.sequencing." + ENTITY_TYPE, null, TABLE_NAME);
-        factory.setPrimaryKeyFields("SID");
-        factory.addDirectMapping("id", int.class, "SID");
-        factory.addDirectMapping("value1", String.class, "VAL_1");
-        factory.configureSequencing(sequence, "TEST_SEQ", "SID");
+        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(session, "model.sequencing." + ENTITY_TYPE, null, TABLE_NAME);
+        typeBuilder.setPrimaryKeyFields("SID");
+        typeBuilder.addDirectMapping("id", int.class, "SID");
+        typeBuilder.addDirectMapping("value1", String.class, "VAL_1");
+        typeBuilder.configureSequencing(sequence, "TEST_SEQ", "SID");
 
-        factory.addToSession(session, true);
+        EntityTypeBuilder.addToSession(session, true, true, typeBuilder.getType());
     }
 
     @Before

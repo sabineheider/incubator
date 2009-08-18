@@ -50,7 +50,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample_Tests {
 
     private static EntityManagerFactory emf;
 
-    private static EntityManagerFactory getEMF() {
+    private static EntityManagerFactory getEMF() throws Exception {
         if (emf == null) {
             emf = example.createEMF();
 
@@ -68,7 +68,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample_Tests {
         return emf;
     }
 
-    private static void createDynamicTypes() {
+    private static void createDynamicTypes() throws Exception {
         example.createDynamicTypes(getEMF());
         Server session = JpaHelper.getServerSession(emf);
         assertEquals(3, session.getDescriptors().size());
@@ -126,7 +126,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample_Tests {
     }
 
     @Test
-    public void persistSimpleTypeInstances() {
+    public void persistSimpleTypeInstances() throws Exception {
         EntityManager em = getEMF().createEntityManager();
         assertEquals(0, ((Number) em.createQuery("SELECT COUNT(a) FROM SimpleTypeA a").getSingleResult()).intValue());
         assertEquals(0, ((Number) em.createQuery("SELECT COUNT(b) FROM SimpleTypeB b").getSingleResult()).intValue());
@@ -154,7 +154,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample_Tests {
     }
 
     @Test
-    public void querySimpleTypeInstances() {
+    public void querySimpleTypeInstances() throws Exception {
         List<Map> entities = example.queryDynamicInstances(getEMF());
 
         assertNotNull(entities);
@@ -176,7 +176,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample_Tests {
     }
 
     @Test
-    public void updateSimpleTypeInstances() {
+    public void updateSimpleTypeInstances() throws Exception {
         example.updateDyanmicInstances(getEMF());
 
         JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
@@ -191,7 +191,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample_Tests {
     }
 
     @Test
-    public void deleteSimpleTypeInstances() {
+    public void deleteSimpleTypeInstances() throws Exception {
         example.deleteDynamicInstances(getEMF());
 
         EntityManager em = getEMF().createEntityManager();
@@ -204,7 +204,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample_Tests {
     }
 
     @Test
-    public void removeSimpleType() {
+    public void removeSimpleType() throws Exception {
         example.removeDynamicTypes(getEMF());
 
         assertEquals(0, JpaHelper.getServerSession(getEMF()).getDescriptors().size());

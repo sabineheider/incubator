@@ -34,18 +34,18 @@ public class SimpleTypeCompositeKey extends SimpleType {
     protected EntityType createSimpleType() {
         Server session = JpaHelper.getServerSession(emf);
 
-        EntityTypeBuilder factory = new JPAEntityTypeBuilder(session, "model.Simple", null, "SIMPLE_TYPE");
-        factory.setPrimaryKeyFields("SID1", "SID2");
-        factory.addDirectMapping("id1", int.class, "SID1");
-        factory.addDirectMapping("id2", int.class, "SID2");
-        factory.addDirectMapping("value1", String.class, "VAL_1");
-        factory.addDirectMapping("value2", boolean.class, "VAL_2");
-        factory.addDirectMapping("value3", Calendar.class, "VAL_3");
-        factory.addDirectMapping("value4", Character.class, "VAL_4");
+        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(session, "model.Simple", null, "SIMPLE_TYPE");
+        typeBuilder.setPrimaryKeyFields("SID1", "SID2");
+        typeBuilder.addDirectMapping("id1", int.class, "SID1");
+        typeBuilder.addDirectMapping("id2", int.class, "SID2");
+        typeBuilder.addDirectMapping("value1", String.class, "VAL_1");
+        typeBuilder.addDirectMapping("value2", boolean.class, "VAL_2");
+        typeBuilder.addDirectMapping("value3", Calendar.class, "VAL_3");
+        typeBuilder.addDirectMapping("value4", Character.class, "VAL_4");
 
-        factory.addToSession(session, true, false);
+        EntityTypeBuilder.addToSession(session, true, false, typeBuilder.getType());
 
-        return factory.getType();
+        return typeBuilder.getType();
     }
 
     @Override

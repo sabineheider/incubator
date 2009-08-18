@@ -188,14 +188,14 @@ public class CustomType {
         }
 
         Server session = JpaHelper.getServerSession(emf);
-        EntityTypeBuilder factory = new JPAEntityTypeBuilder(session, getClassName(), null, getTableName());
+        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(session, getClassName(), null, getTableName());
 
         for (CustomField field : getFields()) {
-            field.addToType(factory);
+            field.addToType(typeBuilder);
         }
 
-        factory.addToSession(session, true);
-        return factory.getType();
+        EntityTypeBuilder.addToSession(session, true, true, typeBuilder.getType());
+        return typeBuilder.getType();
     }
 
     public String getIdFieldName() {

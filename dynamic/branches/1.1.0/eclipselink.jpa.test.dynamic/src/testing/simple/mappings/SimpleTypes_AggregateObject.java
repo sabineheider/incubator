@@ -199,12 +199,10 @@ public class SimpleTypes_AggregateObject {
         EntityTypeBuilder bFactory = new JPAEntityTypeBuilder(session, "model.SimpleB", null);
         bFactory.addDirectMapping("value2", boolean.class, "VAL_2");
         bFactory.addDirectMapping("value3", String.class, "VAL_3");
-        bFactory.addToSession(session, false);
 
         EntityTypeBuilder cFactory = new JPAEntityTypeBuilder(session, "model.SimpleC", null);
         cFactory.addDirectMapping("value4", double.class, "VAL_4");
         cFactory.addDirectMapping("value5", String.class, "VAL_5");
-        cFactory.addToSession(session, false);
 
         EntityTypeBuilder aFactory = new JPAEntityTypeBuilder(session, "model.SimpleA", null, "SIMPLE_TYPE_A");
         aFactory.setPrimaryKeyFields("SID");
@@ -212,7 +210,8 @@ public class SimpleTypes_AggregateObject {
         aFactory.addDirectMapping("value1", String.class, "VAL_1");
         aFactory.addAggregateObjectMapping("b", bFactory.getType(), true);
         aFactory.addAggregateObjectMapping("c", cFactory.getType(), false);
-        aFactory.addToSession(session, true);
+
+        EntityTypeBuilder.addToSession(session, true, true, aFactory.getType(), bFactory.getType(), cFactory.getType());
 
     }
 

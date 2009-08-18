@@ -18,27 +18,43 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.tests.dynamic;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertSame;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.helper.*;
+import org.eclipse.persistence.internal.helper.ConversionManager;
+import org.eclipse.persistence.internal.helper.SerializationHelper;
 import org.junit.Test;
 
-public class DynamicConversionManagerTests {
+public class DynamicClassLoaderTests {
 
     @Test
-    public void testDynamicEntity() throws Exception {
-        DynamicConversionManager dcm = new DynamicConversionManager(ConversionManager.getDefaultManager());
+    public void testCreate_DynamicEntityImpl() throws Exception {
+        DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
 
-        Class dynamicClass = dcm.getDynamicClassLoader().createDynamicClass("test.MyClass");
+        dcl.addClass("test.MyClass");
+        Class dynamicClass = dcl.loadClass("test.MyClass");
 
         assertNotNull(dynamicClass);
-        assertSame(dynamicClass, dcm.getDynamicClassLoader().createDynamicClass("test.MyClass"));
         assertEquals("test.MyClass", dynamicClass.getName());
+        assertSame(DynamicEntityImpl.class, dynamicClass.getSuperclass());
+
+        assertSame(dynamicClass, dcl.loadClass("test.MyClass"));
+        
+        ConversionManager.setDefaultLoader(dcl);
+        ConversionManager.getDefaultManager().setLoader(dcl);
+        
+        assertSame(dynamicClass, ConversionManager.getDefaultManager().convertClassNameToClass("test.MyClass"));
+        assertSame(dynamicClass, ConversionManager.getDefaultManager().convertObject("test.MyClass", Class.class));
+        assertSame(dynamicClass, ConversionManager.getDefaultLoader().loadClass("test.MyClass"));
+        assertSame(dynamicClass, ConversionManager.loadClass("test.MyClass"));
 
         InstantiationException instEx = null;
         try {
@@ -61,13 +77,15 @@ public class DynamicConversionManagerTests {
     }
 
     @Test
-    public void testDefaultConstructor() throws Exception {
-        DynamicConversionManager dcm = new DynamicConversionManager(ConversionManager.getDefaultManager());
+    public void testCreate_DefaultConstructor() throws Exception {
+        DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
 
-        Class dynamicClass = dcm.getDynamicClassLoader().createDynamicClass("test.MyClass", DefaultConstructor.class);
+        dcl.addClass("test.MyClass", DefaultConstructor.class);
+        Class dynamicClass = dcl.loadClass("test.MyClass");
 
         assertNotNull(dynamicClass);
-        assertSame(dynamicClass, dcm.getDynamicClassLoader().createDynamicClass("test.MyClass", DefaultConstructor.class));
+        assertSame(dynamicClass, dcl.loadClass("test.MyClass"));
+        assertSame(DefaultConstructor.class, dynamicClass.getSuperclass());
 
         DefaultConstructor entity = (DefaultConstructor) dynamicClass.newInstance();
 
@@ -75,13 +93,15 @@ public class DynamicConversionManagerTests {
     }
 
     @Test
-    public void testStringConstructor() throws Exception {
-        DynamicConversionManager dcm = new DynamicConversionManager(ConversionManager.getDefaultManager());
+    public void testCreate_StringConstructor() throws Exception {
+        DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
 
-        Class dynamicClass = dcm.getDynamicClassLoader().createDynamicClass("test.MyClass", StringConstructor.class);
+        dcl.addClass("test.MyClass", StringConstructor.class);
+        Class dynamicClass = dcl.loadClass("test.MyClass");
 
         assertNotNull(dynamicClass);
-        assertSame(dynamicClass, dcm.getDynamicClassLoader().createDynamicClass("test.MyClass", StringConstructor.class));
+        assertSame(dynamicClass, dcl.loadClass("test.MyClass"));
+        assertSame(StringConstructor.class, dynamicClass.getSuperclass());
 
         InstantiationException instEx = null;
         try {
@@ -110,13 +130,16 @@ public class DynamicConversionManagerTests {
      * @throws Exception
      */
     @Test
-    public void testWriteReplace() throws Exception {
-        DynamicConversionManager dcm = new DynamicConversionManager(ConversionManager.getDefaultManager());
+    public void test_WriteReplace() throws Exception {
+        DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
 
-        Class dynamicClass = dcm.getDynamicClassLoader().createDynamicClass("test.MyClass", WriteReplace.class);
+        dcl.addClass("test.MyClass", WriteReplace.class);
+        Class dynamicClass = dcl.loadClass("test.MyClass");
 
         assertNotNull(dynamicClass);
-        assertSame(dynamicClass, dcm.getDynamicClassLoader().createDynamicClass("test.MyClass", WriteReplace.class));
+        assertEquals("test.MyClass", dynamicClass.getName());
+        assertSame(WriteReplace.class, dynamicClass.getSuperclass());
+        assertSame(dynamicClass, dcl.loadClass("test.MyClass"));
 
         WriteReplace entity = (WriteReplace) dynamicClass.newInstance();
 

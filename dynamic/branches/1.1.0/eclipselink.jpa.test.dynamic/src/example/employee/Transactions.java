@@ -54,7 +54,7 @@ public class Transactions {
 
         DynamicEntity emp = (DynamicEntity) empDescriptor.getInstantiationPolicy().buildNewInstance();
         emp.set("firstName", "Sample");
-        emp.set("astName", "Employee");
+        emp.set("lastName", "Employee");
         emp.set("gender", "Male");
         emp.set("salary", 123456);
 
@@ -85,7 +85,7 @@ public class Transactions {
 
         DynamicEntity emp = (DynamicEntity) empDescriptor.getInstantiationPolicy().buildNewInstance();
         emp.set("firstName", "Sample");
-        emp.set("astName", "Employee");
+        emp.set("lastName", "Employee");
         emp.set("gender", "Male");
         emp.set("salary", 123456);
 
@@ -150,7 +150,7 @@ public class Transactions {
         // Lock Employee using query with hint
         DynamicEntity emp = (DynamicEntity) em.createQuery("SELECT e FROM Employee e WHERE e.id = :ID").setParameter("ID", minId).setHint(QueryHints.PESSIMISTIC_LOCK, PessimisticLock.Lock).getSingleResult();
 
-        emp.set("alary", emp.get("salary", Integer.class) - 1);
+        emp.set("salary", emp.get("salary", Integer.class) - 1);
 
         em.flush();
     }

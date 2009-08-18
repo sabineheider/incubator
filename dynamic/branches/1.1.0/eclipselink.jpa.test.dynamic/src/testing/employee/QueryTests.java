@@ -125,6 +125,18 @@ public class QueryTests extends EclipseLinkJPATest {
 
         EntityTypeFactory.createTypes(emf, "example.model.employee", true);
 
+        EntityManager em = emf.createEntityManager();
+        Sample samples = new Sample(emf);
+
+        samples.resetDatabase(em);
+        em.clear();
+
+        em.getTransaction().begin();
+        samples.persistAll(em);
+        em.getTransaction().commit();
+
+        em.close();
+
         return emf;
     }
 }

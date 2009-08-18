@@ -23,8 +23,8 @@ import java.util.Calendar;
 import javax.persistence.EntityManagerFactory;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.dynamic.ORMEntityTypeBuilder;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
 import org.eclipse.persistence.mappings.OneToManyMapping;
@@ -52,15 +52,18 @@ public class EntityTypeFactory {
         JPAEntityTypeBuilder smallProject = new JPAEntityTypeBuilder(session, packagePrefix + "SmallProject", project.getType(), "D_PROJECT");
         JPAEntityTypeBuilder largeProject = new JPAEntityTypeBuilder(session, packagePrefix + "LargeProject", project.getType(), "D_LPROJECT");
 
+        
         configureAddress(address);
-        configureEmployee(employee, address, phone, period);
+        configureEmployee(employee, address, phone, period, project);
         configurePhone(phone, employee);
         configurePeriod(period);
         configureProject(project, smallProject, largeProject, employee);
         configureSmallProject(smallProject, project);
         configureLargeProject(largeProject, project);
 
-        ORMEntityTypeBuilder.addToSession(session, true, true, employee.getType(), address.getType(), phone.getType(), period.getType(), project.getType(), smallProject.getType(), largeProject.getType());
+        employee.addManyToManyMapping("projects", project.getType(), "D_PROJ_EMP");
+
+        EntityTypeBuilder.addToSession(session, true, true, employee.getType(), address.getType(), phone.getType(), period.getType(), project.getType(), smallProject.getType(), largeProject.getType());
     }
 
     private static void configurePhone(JPAEntityTypeBuilder phone, JPAEntityTypeBuilder employee) {
@@ -87,7 +90,7 @@ public class EntityTypeFactory {
         address.configureSequencing("ADDR_SEQ", "ADDR_ID");
     }
 
-    private static void configureEmployee(JPAEntityTypeBuilder employee, JPAEntityTypeBuilder address, JPAEntityTypeBuilder phone, JPAEntityTypeBuilder period) {
+    private static void configureEmployee(JPAEntityTypeBuilder employee, JPAEntityTypeBuilder address, JPAEntityTypeBuilder phone, JPAEntityTypeBuilder period, JPAEntityTypeBuilder project) {
         employee.setPrimaryKeyFields("EMP_ID");
 
         employee.addDirectMapping("id", int.class, "D_EMPLOYEE.EMP_ID");

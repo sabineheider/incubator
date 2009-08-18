@@ -12,7 +12,12 @@
  ******************************************************************************/
 package testing.employee;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
@@ -21,6 +26,7 @@ import javax.persistence.PersistenceContext;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.mappings.OneToManyMapping;
 import org.eclipse.persistence.mappings.OneToOneMapping;
 import org.eclipse.persistence.sessions.server.Server;
 import org.junit.Test;
@@ -65,12 +71,19 @@ public class MappingConfigTests extends EclipseLinkJPATest {
         OneToOneMapping addrMapping = (OneToOneMapping) descriptor.getMappingForAttributeName("address");
         assertNotNull(addrMapping);
         assertTrue(addrMapping.isPrivateOwned());
+        assertSame(session.getDescriptorForAlias("Address"), addrMapping.getReferenceDescriptor());
 
         // PhoenNumber Mapping
-        // OneToManyMapping phoneMapping = (OneToManyMapping)
-        // descriptor.getMappingForAttributeName("phoneNumbers");
-        // assertNotNull(phoneMapping);
-        // assertTrue(phoneMapping.isPrivateOwned());
+        OneToManyMapping phoneMapping = (OneToManyMapping) descriptor.getMappingForAttributeName("phoneNumbers");
+        assertNotNull(phoneMapping);
+        assertTrue(phoneMapping.isPrivateOwned());
+        assertSame(session.getDescriptorForAlias("PhoneNumber"), phoneMapping.getReferenceDescriptor());
+
+        // Manager Mapping
+        OneToOneMapping managerMapping = (OneToOneMapping) descriptor.getMappingForAttributeName("manager");
+        assertNotNull(managerMapping);
+        assertFalse(managerMapping.isPrivateOwned());
+        assertSame(descriptor, managerMapping.getReferenceDescriptor());
     }
 
     @Test
@@ -129,7 +142,7 @@ public class MappingConfigTests extends EclipseLinkJPATest {
 
         Server session = JpaHelper.getServerSession(newEMF);
         if (session.getDescriptors().isEmpty()) {
-            EntityTypeFactory.createTypes(newEMF, "model.dynamic.employee", true);
+            EntityTypeFactory.createTypes(newEMF, "model.dynamic.employee", false);
         }
 
         return newEMF;

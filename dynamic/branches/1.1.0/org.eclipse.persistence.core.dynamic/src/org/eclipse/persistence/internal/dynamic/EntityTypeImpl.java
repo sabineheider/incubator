@@ -57,7 +57,7 @@ public class EntityTypeImpl implements EntityType {
      * 
      * @param descriptor
      */
-    protected EntityTypeImpl(ClassDescriptor descriptor, EntityType parentType) {
+    public EntityTypeImpl(ClassDescriptor descriptor, EntityType parentType) {
         this.descriptor = descriptor;
         this.parentType = parentType;
     }
@@ -79,6 +79,10 @@ public class EntityTypeImpl implements EntityType {
      */
     public String getName() {
         return getDescriptor().getAlias();
+    }
+
+    public String getClassName() {
+        return getDescriptor().getJavaClassName();
     }
 
     public int getNumberOfProperties() {

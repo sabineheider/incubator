@@ -18,19 +18,26 @@
  ******************************************************************************/
 package example;
 
-import java.io.*;
-import java.util.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
-import org.eclipse.persistence.internal.helper.DynamicConversionManager;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.queries.ReadAllQuery;
 import org.eclipse.persistence.queries.ReadObjectQuery;
-import org.eclipse.persistence.sessions.*;
+import org.eclipse.persistence.sessions.DatabaseLogin;
+import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.Project;
+import org.eclipse.persistence.sessions.UnitOfWork;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 
 public class SimpleDynamicMap_NativeExample {
@@ -76,12 +83,18 @@ public class SimpleDynamicMap_NativeExample {
      * </code>
      */
     public ClassDescriptor createDynamicType(DatabaseSession session) {
-        DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
-        Class javaClass = dcm.getDynamicClassLoader().createDynamicClass("model.SimpleType", DynamicMapEntity.class);
-
         RelationalDescriptor descriptor = new RelationalDescriptor();
+        descriptor.setJavaClassName("model.SimpleType");
 
-        descriptor.setJavaClass(javaClass);
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+        dcl.addClass("model.SimpleType", DynamicMapEntity.class);
+        try {
+            descriptor.setJavaClass(dcl.loadClass(descriptor.getJavaClassName()));
+        } catch (ClassNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
         descriptor.setTableName("DYNAMIC_SIMPLE");
         descriptor.setPrimaryKeyFieldName("ID");
 

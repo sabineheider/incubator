@@ -26,6 +26,7 @@ import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.sessions.server.Server;
+import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.junit.Test;
 
 import testing.util.EclipseLinkJPATest;
@@ -126,6 +127,17 @@ public class TransactionTests extends EclipseLinkJPATest {
         EntityManagerFactory emf = super.createEMF(unitName, properties);
 
         EntityTypeFactory.createTypes(emf, "example.model.employee", true);
+        
+        Server session = JpaHelper.getServerSession(emf);
+        
+        DynamicSchemaManager dsm = new DynamicSchemaManager(session);
+        dsm.replaceDefaultTables(false, true);
+        
+        EntityManager em = emf.createEntityManager();
+        em.getTransaction().begin();
+        new Sample(emf).persistAll(em);
+        em.getTransaction().commit();
+        em.close();
 
         return emf;
     }

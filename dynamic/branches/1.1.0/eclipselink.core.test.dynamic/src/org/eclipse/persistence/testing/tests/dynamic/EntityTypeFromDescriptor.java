@@ -18,16 +18,22 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.tests.dynamic;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.fail;
 
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.exceptions.DescriptorException;
 import org.eclipse.persistence.exceptions.IntegrityException;
-import org.eclipse.persistence.internal.dynamic.*;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
+import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.mappings.foundation.AbstractDirectMapping;
-import org.eclipse.persistence.sessions.*;
+import org.eclipse.persistence.sessions.DatabaseLogin;
+import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.Project;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 import org.junit.Test;
 
@@ -38,102 +44,104 @@ import org.junit.Test;
  */
 public class EntityTypeFromDescriptor {
 
-	@Test
-	public void entityTypeFromDescriptor() throws Exception {
-		EntityTypeImpl entityType = (EntityTypeImpl) new ORMEntityTypeBuilder(buildMyEntityDescriptor(), null).getType();
+    @Test
+    public void entityTypeFromDescriptor() throws Exception {
+        DatabaseSession session = new Project(buildDatabaseLogin()).createDatabaseSession();
+        session.getSessionLog().setLevel(SessionLog.FINE);
+        session.login();
 
-		assertEquals(MyEntity.class, entityType.getJavaClass());
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
 
-		DatabaseSession session = new Project(buildDatabaseLogin()).createDatabaseSession();
-		session.getSessionLog().setLevel(SessionLog.FINE);
-		session.login();
+        EntityTypeImpl entityType = (EntityTypeImpl) new EntityTypeBuilder(dcl, buildMyEntityDescriptor(), null).getType();
 
-		session.addDescriptor(entityType.getDescriptor());
-		new SchemaManager(session).replaceDefaultTables();
-		
-		DynamicEntity entity = entityType.newInstance();
-		entity.set("id", 1);
-		entity.set("name", "Name");
-		
-		session.insertObject(entity);
+        assertEquals(MyEntity.class, entityType.getJavaClass());
 
-		session.logout();
+        session.addDescriptor(entityType.getDescriptor());
+        new SchemaManager(session).replaceDefaultTables();
 
-	}
+        DynamicEntity entity = entityType.newInstance();
+        entity.set("id", 1);
+        entity.set("name", "Name");
 
-	/**
-	 * Verify that the descriptor for a dynamic type fails without the
-	 * additional configuration which is applied to the descriptor during the
-	 * EntityType creation.
-	 */
-	@Test
-	public void invalidDescriptorWithoutEntityType() throws Exception {
-		RelationalDescriptor descriptor = buildMyEntityDescriptor();
+        session.insertObject(entity);
 
-		DatabaseSession session = new Project(buildDatabaseLogin()).createDatabaseSession();
-		session.getSessionLog().setLevel(SessionLog.FINE);
-		session.addDescriptor(descriptor);
+        session.logout();
 
-		try {
-			session.login();
-		} catch (IntegrityException ie) {
-			assertEquals(descriptor.getMappings().size() + 1, ie.getIntegrityChecker().getCaughtExceptions().size());
-			
-			// Verify NoSuchField errors for each mapping
-			for (int index = 0 ; index < descriptor.getMappings().size(); index++) {
-				DescriptorException ex = (DescriptorException) ie.getIntegrityChecker().getCaughtExceptions().get(index);
-				assertEquals(DescriptorException.NO_SUCH_FIELD_WHILE_INITIALIZING_ATTRIBUTES_IN_INSTANCE_VARIABLE_ACCESSOR, ex.getErrorCode());
-			}
-			DescriptorException de = (DescriptorException) ie.getIntegrityChecker().getCaughtExceptions().lastElement();
-			assertEquals(DescriptorException.NO_SUCH_METHOD_WHILE_INITIALIZING_INSTANTIATION_POLICY, de.getErrorCode());
-			
-			return;
-		}
-		
-		fail("Expected IntegrityException not thrown");
-	}
+    }
 
-	private RelationalDescriptor buildMyEntityDescriptor() {
-		RelationalDescriptor descriptor = new RelationalDescriptor();
+    /**
+     * Verify that the descriptor for a dynamic type fails without the
+     * additional configuration which is applied to the descriptor during the
+     * EntityType creation.
+     */
+    @Test
+    public void invalidDescriptorWithoutEntityType() throws Exception {
+        RelationalDescriptor descriptor = buildMyEntityDescriptor();
 
-		descriptor.setJavaClass(MyEntity.class);
-		descriptor.setTableName("MY_ENTITY");
-		descriptor.addPrimaryKeyFieldName("ID");
+        DatabaseSession session = new Project(buildDatabaseLogin()).createDatabaseSession();
+        session.getSessionLog().setLevel(SessionLog.FINE);
+        session.addDescriptor(descriptor);
 
-		AbstractDirectMapping mapping = (AbstractDirectMapping) descriptor.addDirectMapping("id", "ID");
-		mapping.setAttributeClassification(int.class);
-		mapping = (AbstractDirectMapping) descriptor.addDirectMapping("name", "NAME");
-		mapping.setAttributeClassification(String.class);
+        try {
+            session.login();
+        } catch (IntegrityException ie) {
+            assertEquals(descriptor.getMappings().size() + 1, ie.getIntegrityChecker().getCaughtExceptions().size());
 
-		return descriptor;
-	}
+            // Verify NoSuchField errors for each mapping
+            for (int index = 0; index < descriptor.getMappings().size(); index++) {
+                DescriptorException ex = (DescriptorException) ie.getIntegrityChecker().getCaughtExceptions().get(index);
+                assertEquals(DescriptorException.NO_SUCH_FIELD_WHILE_INITIALIZING_ATTRIBUTES_IN_INSTANCE_VARIABLE_ACCESSOR, ex.getErrorCode());
+            }
+            DescriptorException de = (DescriptorException) ie.getIntegrityChecker().getCaughtExceptions().lastElement();
+            assertEquals(DescriptorException.NO_SUCH_METHOD_WHILE_INITIALIZING_INSTANTIATION_POLICY, de.getErrorCode());
 
-	/**
-	 * Return
-	 */
-	private DatabaseLogin buildDatabaseLogin() {
-		DatabaseLogin login = new DatabaseLogin();
+            return;
+        }
 
-		login.useOracleThinJDBCDriver();
-		login.setDatabaseURL("localhost:1521:ORCL");
-		login.setUserName("scott");
-		login.setPassword("tiger");
+        fail("Expected IntegrityException not thrown");
+    }
 
-		// TODO - override with values from system properties
-		
-		return login;
-	}
+    private RelationalDescriptor buildMyEntityDescriptor() {
+        RelationalDescriptor descriptor = new RelationalDescriptor();
 
-	/**
-	 * Simple concrete subclass of DynamicEntityImpl to test the functionality
-	 * of EntityType independently of the {@link DynamicClassLoader}
-	 * functionality which typically generates subclasses.
-	 */
-	public static class MyEntity extends DynamicEntityImpl {
+        descriptor.setJavaClass(MyEntity.class);
+        descriptor.setTableName("MY_ENTITY");
+        descriptor.addPrimaryKeyFieldName("ID");
 
-		protected MyEntity(EntityTypeImpl type) {
-			super(type);
-		}
+        AbstractDirectMapping mapping = (AbstractDirectMapping) descriptor.addDirectMapping("id", "ID");
+        mapping.setAttributeClassification(int.class);
+        mapping = (AbstractDirectMapping) descriptor.addDirectMapping("name", "NAME");
+        mapping.setAttributeClassification(String.class);
 
-	}
+        return descriptor;
+    }
+
+    /**
+     * Return
+     */
+    private DatabaseLogin buildDatabaseLogin() {
+        DatabaseLogin login = new DatabaseLogin();
+
+        login.useOracleThinJDBCDriver();
+        login.setDatabaseURL("localhost:1521:ORCL");
+        login.setUserName("scott");
+        login.setPassword("tiger");
+
+        // TODO - override with values from system properties
+
+        return login;
+    }
+
+    /**
+     * Simple concrete subclass of DynamicEntityImpl to test the functionality
+     * of EntityType independently of the {@link DynamicClassLoader}
+     * functionality which typically generates subclasses.
+     */
+    public static class MyEntity extends DynamicEntityImpl {
+
+        protected MyEntity(EntityTypeImpl type) {
+            super(type);
+        }
+
+    }
 }

@@ -45,7 +45,7 @@ public class SimpleDynamicMap_JPAExample_Tests {
 
     private static EntityManagerFactory emf;
 
-    private static EntityManagerFactory getEMF() {
+    private static EntityManagerFactory getEMF() throws Exception {
         if (emf == null) {
             emf = example.createEMF();
 
@@ -70,7 +70,7 @@ public class SimpleDynamicMap_JPAExample_Tests {
         }
     }
 
-    private static void createSimpleType() {
+    private static void createSimpleType() throws Exception {
         ClassDescriptor descriptor = example.createDynamicType(getEMF());
         Server session = JpaHelper.getServerSession(emf);
 
@@ -95,7 +95,7 @@ public class SimpleDynamicMap_JPAExample_Tests {
     }
 
     @Test
-    public void persistSimpleTypeInstances() {
+    public void persistSimpleTypeInstances() throws Exception {
         ClassDescriptor descriptor = DynamicMapHelper.getDescriptor(getEMF(), "SimpleType");
 
         Map newEntity = example.persistDynamicInstances(getEMF(), descriptor);
@@ -109,7 +109,7 @@ public class SimpleDynamicMap_JPAExample_Tests {
     }
 
     @Test
-    public void querySimpleTypeInstances() {
+    public void querySimpleTypeInstances() throws Exception {
         ClassDescriptor descriptor = DynamicMapHelper.getDescriptor(getEMF(), "SimpleType");
 
         List<Map> entities = example.queryDynamicInstances(getEMF(), descriptor);
@@ -121,7 +121,7 @@ public class SimpleDynamicMap_JPAExample_Tests {
     }
 
     @Test
-    public void updateSimpleTypeInstances() {
+    public void updateSimpleTypeInstances() throws Exception {
         ClassDescriptor descriptor = DynamicMapHelper.getDescriptor(getEMF(), "SimpleType");
 
         Map entity = example.updateDyanmicInstances(getEMF(), descriptor);
@@ -132,7 +132,7 @@ public class SimpleDynamicMap_JPAExample_Tests {
     }
 
     @Test
-    public void deleteSimpleTypeInstances() {
+    public void deleteSimpleTypeInstances() throws Exception {
         ClassDescriptor descriptor = DynamicMapHelper.getDescriptor(getEMF(), "SimpleType");
 
         example.deleteDynamicInstances(getEMF(), descriptor);
@@ -144,7 +144,7 @@ public class SimpleDynamicMap_JPAExample_Tests {
     }
 
     @Test
-    public void removeSimpleType() {
+    public void removeSimpleType() throws Exception {
         ClassDescriptor descriptor = DynamicMapHelper.getDescriptor(getEMF(), "SimpleType");
 
         example.removeDynamicType(getEMF(), descriptor);

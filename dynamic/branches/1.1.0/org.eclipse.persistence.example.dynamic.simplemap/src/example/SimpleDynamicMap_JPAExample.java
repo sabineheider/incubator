@@ -32,7 +32,7 @@ import javax.persistence.Persistence;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
-import org.eclipse.persistence.internal.helper.DynamicConversionManager;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.queries.ReadObjectQuery;
@@ -44,7 +44,7 @@ public class SimpleDynamicMap_JPAExample {
     /**
      * 
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         SimpleDynamicMap_JPAExample example = new SimpleDynamicMap_JPAExample();
 
         EntityManagerFactory emf = example.createEMF();
@@ -81,15 +81,14 @@ public class SimpleDynamicMap_JPAExample {
      * }
      * </code>
      */
-    public ClassDescriptor createDynamicType(EntityManagerFactory emf) {
+    public ClassDescriptor createDynamicType(EntityManagerFactory emf) throws ClassNotFoundException {
         Server session = JpaHelper.getServerSession(emf);
-        DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
 
-        Class javaClass = dcm.getDynamicClassLoader().createDynamicClass("model.SimpleType", DynamicMapEntity.class);
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+        dcl.addClass("model.SimpleType", DynamicMapEntity.class);
 
         RelationalDescriptor descriptor = new RelationalDescriptor();
-
-        descriptor.setJavaClass(javaClass);
+        descriptor.setJavaClass(dcl.loadClass("model.SimpleType"));
         descriptor.setTableName("DYNAMIC_SIMPLE");
         descriptor.setPrimaryKeyFieldName("ID");
 

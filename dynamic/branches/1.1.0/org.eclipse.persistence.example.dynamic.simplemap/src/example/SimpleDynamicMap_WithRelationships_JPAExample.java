@@ -35,7 +35,7 @@ import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.indirection.IndirectList;
-import org.eclipse.persistence.internal.helper.DynamicConversionManager;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.jpa.CMP3Policy;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
@@ -51,7 +51,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
     /**
      * 
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         SimpleDynamicMap_WithRelationships_JPAExample example = new SimpleDynamicMap_WithRelationships_JPAExample();
 
         EntityManagerFactory emf = example.createEMF();
@@ -86,14 +86,17 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
      * 
      * SimpleTypeC -> DYNAMIC_C int id -> C_ID byte[] value -> LOB
      */
-    public void createDynamicTypes(EntityManagerFactory emf) {
+    public void createDynamicTypes(EntityManagerFactory emf) throws ClassNotFoundException {
         ServerSession session = (ServerSession) JpaHelper.getServerSession(emf);
-        DynamicConversionManager dcm = DynamicConversionManager.lookup(session);
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+
+        Class aClass = dcl.creatDynamicClass("model." + TYPE_A, DynamicMapEntity.class);
+        Class bClass = dcl.creatDynamicClass("model." + TYPE_B, DynamicMapEntity.class);
+        Class cClass = dcl.creatDynamicClass("model." + TYPE_C, DynamicMapEntity.class);
 
         // Create SimpleTypeA with direct mappings
-        Class javaClassA = dcm.getDynamicClassLoader().createDynamicClass("model." + TYPE_A, DynamicMapEntity.class);
         RelationalDescriptor descriptorA = new RelationalDescriptor();
-        descriptorA.setJavaClass(javaClassA);
+        descriptorA.setJavaClass(aClass);
         descriptorA.setTableName("DYNAMIC_A");
         descriptorA.setPrimaryKeyFieldName("A_ID");
         descriptorA.setCMPPolicy(new CMP3Policy());
@@ -103,9 +106,8 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
         mapping.setAttributeAccessor(new ValueAccessor(mapping, String.class));
 
         // Create SimpleTypeB with direct mappings
-        Class javaClassB = dcm.getDynamicClassLoader().createDynamicClass("model." + TYPE_B, DynamicMapEntity.class);
         RelationalDescriptor descriptorB = new RelationalDescriptor();
-        descriptorB.setJavaClass(javaClassB);
+        descriptorB.setJavaClass(bClass);
         descriptorB.setTableName("DYNAMIC_B");
         descriptorB.setPrimaryKeyFieldName("B_ID");
         descriptorB.setCMPPolicy(new CMP3Policy());
@@ -115,9 +117,8 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
         mapping.setAttributeAccessor(new ValueAccessor(mapping, Calendar.class));
 
         // Create SimpleTypeC with direct mappings
-        Class javaClassC = dcm.getDynamicClassLoader().createDynamicClass("model." + TYPE_C, DynamicMapEntity.class);
         RelationalDescriptor descriptorC = new RelationalDescriptor();
-        descriptorC.setJavaClass(javaClassC);
+        descriptorC.setJavaClass(cClass);
         descriptorC.setTableName("DYNAMIC_C");
         descriptorC.setPrimaryKeyFieldName("C_ID");
         descriptorC.setCMPPolicy(new CMP3Policy());
@@ -129,7 +130,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
         // Add 1:M: A.bs
         OneToManyMapping aToBMapping = new OneToManyMapping();
         aToBMapping.setAttributeName("bs");
-        aToBMapping.setReferenceClass(descriptorB.getJavaClass());
+        aToBMapping.setReferenceClass(bClass);
         aToBMapping.useTransparentList();
         aToBMapping.setCascadeAll(true);
         aToBMapping.setAttributeAccessor(new ValueAccessor(aToBMapping, IndirectList.class));
@@ -139,7 +140,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
         // Add M:M: A.cs
         ManyToManyMapping aToCMapping = new ManyToManyMapping();
         aToCMapping.setAttributeName("cs");
-        aToCMapping.setReferenceClass(descriptorC.getJavaClass());
+        aToCMapping.setReferenceClass(cClass);
         aToCMapping.useTransparentList();
         aToCMapping.setCascadeAll(true);
         aToCMapping.setAttributeAccessor(new ValueAccessor(aToCMapping, IndirectList.class));
@@ -151,7 +152,7 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
         // Add 1:1: B.a (fetch=EAGER)
         OneToOneMapping bToAMapping = new OneToOneMapping();
         bToAMapping.setAttributeName("a");
-        bToAMapping.setReferenceClass(descriptorA.getJavaClass());
+        bToAMapping.setReferenceClass(aClass);
         bToAMapping.dontUseIndirection();
         bToAMapping.setAttributeAccessor(new ValueAccessor(bToAMapping, descriptorA.getJavaClass()));
         bToAMapping.addForeignKeyFieldName("A_FK", "A_ID");

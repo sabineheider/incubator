@@ -21,21 +21,8 @@ package org.eclipse.persistence.dynamic;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 
 /**
- * This abstract class is used to represent an entity which typically is not
- * realized in Java code. In combination with the DynamicClassLoader ASM is used
- * to generate subclasses that will work within EclipseLink's framework. Since
- * no concrete fields or methods exist on this class the mappings used must be
- * customized to use a custom AttributeAccessor (
- * {@link EntityPropertyImpl.DynamicAttributeAccessor}).
- * <p>
- * <b>Type/Property Meta-model</b>: This dynamic entity approach also includes a
- * meta-model facade to simplify access to the types and property information so
- * that clients can more easily understand the model. Each {@link EntityType}
- * wraps the underlying EclipseLink relational-descriptor and the
- * {@link EntityProperty} wraps each mapping. The client application can use
- * these types and properties to facilitate generic access to the entity
- * instances and are required for creating new instances as well as for
- * accessing the Java class needed for JPA and EclipseLink native API calls.
+ * DynamicEntity is the public interface for dealing with dynamic persistent
+ * objects.
  * 
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
@@ -75,4 +62,4 @@ public interface DynamicEntity {
     public boolean isSet(int propertyIndex);
 
     public boolean isSet(DatabaseMapping mapping);
-    }
+}

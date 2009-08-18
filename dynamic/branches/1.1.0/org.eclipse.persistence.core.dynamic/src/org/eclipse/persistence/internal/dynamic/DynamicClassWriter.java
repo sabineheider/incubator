@@ -38,21 +38,58 @@ import org.eclipse.persistence.internal.libraries.asm.Type;
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public class DynamicClassWriter {
+    
     protected static final String INIT = "<init>";
+    
+    protected Class<?> parentClass;
+    
+    private String parentClassName;
+    
+    private DynamicClassLoader loader;
+    
     private static final String WRITE_REPLACE = "writeReplace";
-
-    public byte[] writeClass(Class<?> parentClass, String className) {
-        if (parentClass == null || parentClass.isPrimitive() || parentClass.isArray() || parentClass.isEnum() || parentClass.isInterface() || Modifier.isFinal(parentClass.getModifiers())) {
-            throw new IllegalArgumentException("Invalid parent class: " + parentClass);
+    
+    public DynamicClassWriter() {
+        this(DynamicEntityImpl.class);
+    }
+    
+    public DynamicClassWriter(Class<?> parentClass) {
+        this.parentClass = parentClass;
+    }
+    
+    public DynamicClassWriter(DynamicClassLoader loader,String parentClassName) {
+        this.loader = loader;
+        this.parentClassName = parentClassName;
+    }
+    
+    protected DynamicClassLoader getLoader() {
+        return this.loader;
+    }
+    
+    public Class<?> getParentClass() {
+        if (this.parentClass == null && this.parentClassName != null) {
+            try {
+                this.parentClass = getLoader().loadClass(this.parentClassName);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException("", e);
+            }
+        }
+        
+        return this.parentClass;
+    }
+    
+    public byte[] writeClass(String className) {
+        if (getParentClass() == null || getParentClass().isPrimitive() || getParentClass().isArray() || getParentClass().isEnum() || parentClass.isInterface() || Modifier.isFinal(parentClass.getModifiers())) {
+            throw new IllegalArgumentException("Invalid parent class: " + getParentClass());
         }
 
         ClassWriter cw = new ClassWriter(true);
-        cw.visit(V1_2, ACC_PUBLIC + ACC_SUPER, className.replace('.', '/'), Type.getType(parentClass).getInternalName(), getInterfaces(), null);
+        cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, className.replace('.', '/'), Type.getType(getParentClass()).getInternalName(), getInterfaces(), null);
 
-        addFields(cw, parentClass);
-        addConstructors(cw, parentClass);
-        addMethods(cw, parentClass);
-        addWriteReplace(cw, parentClass);
+        addFields(cw);
+        addConstructors(cw);
+        addMethods(cw);
+        addWriteReplace(cw);
 
         cw.visitEnd();
         return cw.toByteArray();
@@ -74,8 +111,8 @@ public class DynamicClassWriter {
      * 
      * @see #addConstructor(ClassWriter, Constructor)
      */
-    protected void addConstructors(ClassWriter cw, Class<?> parentClass) {
-        Constructor<?>[] constructors = parentClass.getDeclaredConstructors();
+    protected void addConstructors(ClassWriter cw) {
+        Constructor<?>[] constructors = getParentClass().getDeclaredConstructors();
 
         for (int index = 0; index < constructors.length; index++) {
             if (Modifier.isPublic(constructors[index].getModifiers()) || Modifier.isProtected(constructors[index].getModifiers())) {
@@ -117,20 +154,20 @@ public class DynamicClassWriter {
      * method exist as a method on the {@link Serializable} class and not
      * provided through inheritance.
      */
-    protected void addWriteReplace(ClassWriter cw, Class<?> parentClass) {
+    protected void addWriteReplace(ClassWriter cw) {
         boolean parentHasWriteReplace = false;
 
         try {
-            parentClass.getDeclaredMethod(WRITE_REPLACE, new Class[0]);
+            getParentClass().getDeclaredMethod(WRITE_REPLACE, new Class[0]);
             parentHasWriteReplace = true;
         } catch (NoSuchMethodException e) {
             parentHasWriteReplace = false;
         }
 
-        if (Serializable.class.isAssignableFrom(parentClass) && parentHasWriteReplace) {
+        if (Serializable.class.isAssignableFrom(getParentClass()) && parentHasWriteReplace) {
             Method method;
             try {
-                method = parentClass.getDeclaredMethod(WRITE_REPLACE, new Class[0]);
+                method = getParentClass().getDeclaredMethod(WRITE_REPLACE, new Class[0]);
             } catch (NoSuchMethodException e) {
                 return;
             }
@@ -140,7 +177,7 @@ public class DynamicClassWriter {
 
             CodeVisitor mv = cw.visitMethod(ACC_PROTECTED, method.getName(), methodDesc, exceptionsDesc, null);
             mv.visitVarInsn(ALOAD, 0);
-            mv.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(parentClass), method.getName(), methodDesc);
+            mv.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(getParentClass()), method.getName(), methodDesc);
             mv.visitInsn(ARETURN);
             mv.visitMaxs(0, 0);
         }
@@ -149,7 +186,7 @@ public class DynamicClassWriter {
     /**
      * Provided to allow subclasses to add their own fields.
      */
-    protected void addFields(ClassWriter cw, Class<?> parentClass) {
+    protected void addFields(ClassWriter cw) {
     }
 
     /**
@@ -157,6 +194,6 @@ public class DynamicClassWriter {
      * additional methods needed to implement any interfaces returned from
      * {@link #getInterfaces()}
      */
-    protected void addMethods(ClassWriter cw, Class<?> parentClass) {
+    protected void addMethods(ClassWriter cw) {
     }
 }

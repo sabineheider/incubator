@@ -214,7 +214,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         writer.write(getType().getName());
         writer.write("(");
 
-        for (DatabaseMapping mapping : getType().getMappings()) {
+        for (DatabaseMapping mapping : getType().getDescriptor().getMappings()) {
             if (getTypeImpl().getDescriptor().getObjectBuilder().getPrimaryKeyMappings().contains(mapping)) {
                 writer.write(mapping.getAttributeName());
                 writer.write("=" + mapping.getAttributeValueFromObject(this));

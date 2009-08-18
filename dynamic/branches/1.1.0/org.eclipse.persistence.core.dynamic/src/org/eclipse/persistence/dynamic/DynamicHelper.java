@@ -19,12 +19,9 @@
 package org.eclipse.persistence.dynamic;
 
 import java.util.Iterator;
-import java.util.Map;
 
-import javax.persistence.Persistence;
-
-import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.sessions.Session;
 
@@ -98,24 +95,11 @@ public class DynamicHelper {
     public static class SessionCustomizer implements org.eclipse.persistence.config.SessionCustomizer {
 
         public void customize(Session session) throws Exception {
+            DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+
             for (Iterator<?> i = session.getProject().getDescriptors().values().iterator(); i.hasNext();) {
-                getType((ClassDescriptor) i.next());
+                new EntityTypeBuilder(dcl, (ClassDescriptor) i.next(), null);
             }
-        }
-    }
-
-    /**
-     * DescriptorCustomizer implementation provided to simplify configuration of
-     * an entity type as dynamic. This method can be invoked directly against a
-     * descriptor read from standard metadata or it can be invoked using a
-     * {@link PersistenceUnitProperties#DESCRIPTOR_CUSTOMIZER_} in the
-     * persistence.xml or properties passed to
-     * {@link Persistence#createEntityManagerFactory(String, Map)}
-     */
-    public static class DescriptorCustomizer implements org.eclipse.persistence.config.DescriptorCustomizer {
-
-        public void customize(ClassDescriptor descriptor) throws Exception {
-            getType(descriptor);
         }
     }
 

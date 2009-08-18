@@ -589,11 +589,11 @@ public class Sample {
         DynamicEntity employee = this.employees[empIndex];
 
         for (int index = 0; index < smallProjIndeces.length; index++) {
-            //employee.add("project", this.smallProjects[smallProjIndeces[index]]);
+            employee.add("projects", this.smallProjects[smallProjIndeces[index]]);
         }
 
         for (int index = 0; index < largeProjIndeces.length; index++) {
-            //employee.add("project", this.largeProjects[largeProjIndeces[index]]);
+            employee.add("projects", this.largeProjects[largeProjIndeces[index]]);
         }
     }
 
@@ -610,7 +610,7 @@ public class Sample {
         assertCount(em, "Employee", 0);
         assertCount(em, "Address", 0);
         assertCount(em, "PhoneNumber", 0);
-        // (em, "Project", 0);
+        assertCount(em, "Project", 0);
 
         for (int index = 0; index < this.employees.length; index++) {
             em.persist(this.employees[index]);

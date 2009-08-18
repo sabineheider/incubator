@@ -3,7 +3,6 @@ package testing.simple.mappings;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 
-import java.util.ArrayList;
 import java.util.Collection;
 
 import javax.persistence.EntityManager;
@@ -24,7 +23,6 @@ import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.mappings.OneToManyMapping;
 import org.eclipse.persistence.sessions.server.Server;
-import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -165,7 +163,7 @@ public class SimpleTypes_OneToMany {
     public void removeAwithB_PrivateOwned() {
         createAwithB();
 
-        ((OneToManyMapping) getAType().getDescriptor().getMappingForAttributeName("b")).setCascadeRemove(true);
+        ((OneToManyMapping) getAType().getDescriptor().getMappingForAttributeName("b")).setIsPrivateOwned(true);
 
         EntityManager em = emf.createEntityManager();
 
@@ -176,7 +174,7 @@ public class SimpleTypes_OneToMany {
         assertEquals(1, a.get("b", Collection.class).size());
 
         em.remove(a);
-        // em.remove(a.get("b", List.class).get(0));
+        //em.remove(a.get("b", List.class).get(0));
 
         em.getTransaction().commit();
     }
@@ -214,12 +212,7 @@ public class SimpleTypes_OneToMany {
         aFactory.addDirectMapping("value1", String.class, "VAL_1");
         aFactory.addOneToManyMapping("b", bFactory.getType(), "A_FK");
 
-        Collection<ClassDescriptor> descriptors = new ArrayList<ClassDescriptor>();
-        descriptors.add(aFactory.getType().getDescriptor());
-        descriptors.add(bFactory.getType().getDescriptor());
-        session.addDescriptors(descriptors);
-
-        new DynamicSchemaManager(session).createTables(false, new EntityType[0]);
+        EntityTypeBuilder.addToSession(session, true, true, aFactory.getType(), bFactory.getType());
     }
 
     @After
