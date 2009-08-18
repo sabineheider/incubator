@@ -1,3 +1,5 @@
+package example;
+
 /*******************************************************************************
  * Copyright (c) 1998, 2008 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
@@ -16,7 +18,6 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package example.employee;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -44,13 +45,13 @@ import org.eclipse.persistence.queries.ReportQuery;
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 @SuppressWarnings("deprecation")
-public class Sample {
+public class Samples {
     private EntityManagerFactory emf;
     public DynamicEntity[] employees;
     public DynamicEntity[] smallProjects;
     public DynamicEntity[] largeProjects;
 
-    public Sample(EntityManagerFactory emf) {
+    public Samples(EntityManagerFactory emf) {
         this.emf = emf;
 
         this.employees = new DynamicEntity[] { basicEmployeeExample1(), basicEmployeeExample2(), basicEmployeeExample3(), basicEmployeeExample4(), basicEmployeeExample5(), basicEmployeeExample6(), basicEmployeeExample7(), basicEmployeeExample8(), basicEmployeeExample9(), basicEmployeeExample10(), basicEmployeeExample11(), basicEmployeeExample12() };
@@ -93,7 +94,7 @@ public class Sample {
         return (DynamicEntity) descriptor.getInstantiationPolicy().buildNewInstance();
     }
 
-    private Class getDynamicClass(String entityAlias) {
+    private Class<?> getDynamicClass(String entityAlias) {
         ClassDescriptor descriptor = JpaHelper.getServerSession(this.emf).getDescriptorForAlias(entityAlias);
         return descriptor.getJavaClass();
     }
@@ -617,7 +618,7 @@ public class Sample {
      * @param count
      */
     public void assertCount(EntityManager em, String entityAlias, int count) {
-        Class entityClass = getDynamicClass(entityAlias);
+        Class<?> entityClass = getDynamicClass(entityAlias);
         ReportQuery query = new ReportQuery(entityClass, new ExpressionBuilder());
         query.addCount();
         query.setShouldReturnSingleValue(true);
@@ -635,7 +636,7 @@ public class Sample {
     public void assertSame(List<DynamicEntity> dbEmps) {
         Assert.assertEquals("Incorrect quantity of employees", this.employees.length, dbEmps.size());
         Collections.sort(dbEmps, new DynamicEntityComparator());
-        
+
         List<DynamicEntity> sampleEmps = new ArrayList<DynamicEntity>();
         for (int index = 0; index < this.employees.length; index++) {
             sampleEmps.add(this.employees[index]);
@@ -656,7 +657,7 @@ public class Sample {
      * Simple comparator used to order the employees for use within assertSame
      */
     class DynamicEntityComparator implements Comparator<DynamicEntity> {
-        
+
         public int compare(DynamicEntity emp1, DynamicEntity emp2) {
             return emp1.get("id", Integer.class) - emp2.get("id", Integer.class);
         }

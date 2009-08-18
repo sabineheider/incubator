@@ -128,7 +128,12 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
     }
 
     public Object get(DatabaseMapping mapping) {
-        return mapping.getAttributeValueFromObject(this);
+        Object value = mapping.getAttributeValueFromObject(this);
+        
+        if (value instanceof ValueHolderInterface) {
+            value = ((ValueHolderInterface) value).getValue();
+        }
+        return value;
     }
 
     @SuppressWarnings("unchecked")

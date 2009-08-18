@@ -1,3 +1,4 @@
+package example;
 /*******************************************************************************
  * Copyright (c) 1998, 2008 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
@@ -16,7 +17,7 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package example.employee;
+
 
 import java.util.List;
 
@@ -165,6 +166,7 @@ public class Transactions {
      * @param em
      * @throws Exception
      */
+    @SuppressWarnings("unchecked")
     public void updateEmployeeWithCity(EntityManager em) throws Exception {
         em.getTransaction().begin();
 

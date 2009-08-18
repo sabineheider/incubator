@@ -26,13 +26,14 @@ import javax.persistence.PersistenceContext;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.mappings.ManyToManyMapping;
 import org.eclipse.persistence.mappings.OneToManyMapping;
 import org.eclipse.persistence.mappings.OneToOneMapping;
 import org.eclipse.persistence.sessions.server.Server;
 import org.junit.Test;
 
 import testing.util.EclipseLinkJPATest;
-import example.employee.EntityTypeFactory;
+import example.employee.EmployeeDynamicMappings;
 
 /**
  * Set of tests to ensure the mappings are properly populated from the provided
@@ -84,7 +85,19 @@ public class MappingConfigTests extends EclipseLinkJPATest {
         assertNotNull(managerMapping);
         assertFalse(managerMapping.isPrivateOwned());
         assertSame(descriptor, managerMapping.getReferenceDescriptor());
-    }
+
+        // Managed Employees Mapping
+        OneToManyMapping managedEmployeesMapping = (OneToManyMapping) descriptor.getMappingForAttributeName("managedEmployees");
+        assertNotNull(managedEmployeesMapping);
+        assertFalse(managedEmployeesMapping.isPrivateOwned());
+        assertSame(descriptor, managedEmployeesMapping.getReferenceDescriptor());
+
+        // Projects Mapping
+        ManyToManyMapping projectsMapping = (ManyToManyMapping) descriptor.getMappingForAttributeName("projects");
+        assertNotNull(projectsMapping);
+        assertFalse(projectsMapping.isPrivateOwned());
+        assertSame(session.getDescriptorForAlias("Project"), projectsMapping.getReferenceDescriptor());
+}
 
     @Test
     public void verifyAddressDescriptor() throws Exception {
@@ -142,7 +155,7 @@ public class MappingConfigTests extends EclipseLinkJPATest {
 
         Server session = JpaHelper.getServerSession(newEMF);
         if (session.getDescriptors().isEmpty()) {
-            EntityTypeFactory.createTypes(newEMF, "model.dynamic.employee", false);
+            EmployeeDynamicMappings.createTypes(newEMF, "model.dynamic.employee", false);
         }
 
         return newEMF;

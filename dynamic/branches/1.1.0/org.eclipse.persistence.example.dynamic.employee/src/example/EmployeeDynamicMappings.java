@@ -1,3 +1,4 @@
+package example;
 /*******************************************************************************
  * Copyright (c) 1998, 2008 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
@@ -16,7 +17,7 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package example.employee;
+
 
 import java.util.Calendar;
 
@@ -38,7 +39,7 @@ import org.eclipse.persistence.sessions.server.Server;
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
-public class EntityTypeFactory {
+public class EmployeeDynamicMappings {
 
     public static void createTypes(EntityManagerFactory emf, String packageName, boolean createMissingTables) {
         String packagePrefix = packageName.endsWith(".") ? packageName : packageName + ".";
@@ -110,7 +111,7 @@ public class EntityTypeFactory {
         phoneMapping.setIsPrivateOwned(true);
 
         employee.addAggregateObjectMapping("period", period.getType(), true);
-        employee.addOneToManyMapping("managedEmployees", phone.getType(), "MANAGER_ID");
+        employee.addOneToManyMapping("managedEmployees", employee.getType(), "MANAGER_ID");
 
         employee.configureSequencing("EMP_SEQ", "EMP_ID");
     }

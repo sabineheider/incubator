@@ -1,3 +1,4 @@
+package example;
 /*******************************************************************************
  * Copyright (c) 1998, 2008 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
@@ -16,7 +17,7 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package example.employee;
+
 
 import java.util.List;
 
@@ -42,14 +43,17 @@ public class Queries {
      * Simple example using dynamic JP QL to retrieve all Employee instances
      * sorted by lastName and firstName.
      */
+    @SuppressWarnings("unchecked")
     public List<DynamicEntity> readAllEmployeesUsingJPQL(EntityManager em) {
         return em.createQuery("SELECT e FROM Employee e ORDER BY e.id ASC").getResultList();
     }
 
+    @SuppressWarnings("unchecked")
     public List<DynamicEntity> joinFetchJPQL(EntityManager em) {
         return em.createQuery("SELECT e FROM Employee e JOIN FETCH e.address ORDER BY e.lastName ASC, e.firstName ASC").getResultList();
     }
 
+    @SuppressWarnings("unchecked")
     public List<DynamicEntity> joinFetchHint(EntityManager em) {
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.manager.address.city = 'Ottawa' ORDER BY e.lastName ASC, e.firstName ASC");
         query.setHint(QueryHints.FETCH, "e.address");
@@ -75,10 +79,12 @@ public class Queries {
         return (DynamicEntity) q.getSingleResult();
     }
 
+    @SuppressWarnings("unchecked")
     public List<DynamicEntity> findEmployeesUsingGenderIn(EntityManager em) {
         return em.createQuery("SELECT e FROM Employee e WHERE e.gender IN (:GENDER1, :GENDER2)").setParameter("GENDER1", "Male").setParameter("GENDER2", "Female").getResultList();
     }
 
+    @SuppressWarnings("unchecked")
     public List<DynamicEntity> findUsingNativeReadAllQuery(EntityManager em) {
         ClassDescriptor descriptor = JpaHelper.getEntityManager(em).getServerSession().getDescriptorForAlias("Employee");
         ReadAllQuery raq = new ReadAllQuery(descriptor.getJavaClass());

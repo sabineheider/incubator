@@ -22,15 +22,14 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 
-import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.expressions.Expression;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.queries.ReadAllQuery;
+import org.eclipse.persistence.sessions.server.Server;
+import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.junit.Test;
 
 import testing.util.EclipseLinkJPATest;
-import example.employee.EntityTypeFactory;
+import example.employee.EmployeeDynamicMappings;
 import example.employee.Queries;
 import example.employee.Sample;
 
@@ -45,8 +44,17 @@ public class QueryTests extends EclipseLinkJPATest {
 
     private Queries examples = new Queries();
 
+    private Sample samples;
+    
     public Queries getExamples() {
         return this.examples;
+    }
+    
+    public Sample getSamples() {
+        if (this.samples == null) {
+            this.samples = new Sample(getEMF());
+        }
+        return this.samples;
     }
 
     /**
@@ -59,7 +67,7 @@ public class QueryTests extends EclipseLinkJPATest {
 
         List<DynamicEntity> emps = getExamples().readAllEmployeesUsingJPQL(em);
 
-        new Sample(getEMF()).assertSame(emps);
+        getSamples().assertSame(emps);
     }
 
     @Test
@@ -96,45 +104,23 @@ public class QueryTests extends EclipseLinkJPATest {
         assertNotNull(emps);
     }
 
-    @Test
-    public void largeStackOR() {
-        ClassDescriptor descriptor = JpaHelper.getServerSession(getEMF()).getDescriptorForAlias("Employee");
-
-        ReadAllQuery query = new ReadAllQuery();
-        query.setReferenceClass(descriptor.getJavaClass());
-        Expression expressionRoot = query.getExpressionBuilder();
-
-        Expression expression = null;
-
-        for (int i = 0; i < 2002; i++) {
-            Expression filter = expressionRoot.get("firstName").equal("" + i);
-            expression = filter.or(expression);
-        }
-
-        query.setSelectionCriteria(expression);
-
-        List<DynamicEntity> results = JpaHelper.createQuery(query, getEntityManager()).getResultList();
-
-        assertNotNull(results);
-
-    }
-
     @Override
     protected EntityManagerFactory createEMF(String unitName, Map properties) {
         EntityManagerFactory emf = super.createEMF(unitName, properties);
 
-        EntityTypeFactory.createTypes(emf, "example.model.employee", true);
+        EmployeeDynamicMappings.createTypes(emf, "example.model.employee", true);
+
+        Server session = JpaHelper.getServerSession(emf);
+
+        DynamicSchemaManager dsm = new DynamicSchemaManager(session);
+        dsm.replaceDefaultTables(false, true);
+        
+        this.samples = new Sample(emf);
 
         EntityManager em = emf.createEntityManager();
-        Sample samples = new Sample(emf);
-
-        samples.resetDatabase(em);
-        em.clear();
-
         em.getTransaction().begin();
-        samples.persistAll(em);
+        getSamples().persistAll(em);
         em.getTransaction().commit();
-
         em.close();
 
         return emf;

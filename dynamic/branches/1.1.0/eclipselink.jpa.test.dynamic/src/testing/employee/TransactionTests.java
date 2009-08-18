@@ -22,15 +22,16 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 
-import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.junit.Test;
 
 import testing.util.EclipseLinkJPATest;
-import example.employee.EntityTypeFactory;
+import example.employee.EmployeeDynamicMappings;
 import example.employee.Queries;
 import example.employee.Sample;
 import example.employee.Transactions;
@@ -44,14 +45,6 @@ public class TransactionTests extends EclipseLinkJPATest {
     @Test
     public void pessimisticLocking() throws Exception {
         transactions.pessimisticLocking(getEntityManager());
-    }
-
-    @Test
-    public void updateEmployeeWithCity() throws Exception {
-        EntityManager em = getEntityManager();
-
-        transactions.updateEmployeeWithCity(em);
-        getSample().resetDatabase(em);
     }
 
     @Test
@@ -94,12 +87,13 @@ public class TransactionTests extends EclipseLinkJPATest {
     public void mergeDetached() throws Exception {
         EntityManager em = getEntityManager();
 
-        Server session = JpaHelper.getServerSession(getEMF());
-        ClassDescriptor descriptor = session.getDescriptorForAlias("Employee");
+        EntityType empType = DynamicHelper.getType(JpaHelper.getServerSession(getEMF()), "Employee");
 
         int minId = Queries.minimumEmployeeId(em);
-        DynamicEntity emp = (DynamicEntity) em.find(descriptor.getJavaClass(), minId);
+        DynamicEntity emp = (DynamicEntity) em.find(empType.getJavaClass(), minId);
         assertNotNull(emp);
+
+        em.clear();
 
         emp.set("salary", emp.get("salary", Integer.class) + 1);
 
@@ -111,7 +105,7 @@ public class TransactionTests extends EclipseLinkJPATest {
         em.merge(emp);
 
         em.flush();
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
+        assertEquals(1, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
 
     }
 
@@ -126,13 +120,13 @@ public class TransactionTests extends EclipseLinkJPATest {
     protected EntityManagerFactory createEMF(String unitName, Map properties) {
         EntityManagerFactory emf = super.createEMF(unitName, properties);
 
-        EntityTypeFactory.createTypes(emf, "example.model.employee", true);
-        
+        EmployeeDynamicMappings.createTypes(emf, "example.model.employee", true);
+
         Server session = JpaHelper.getServerSession(emf);
-        
+
         DynamicSchemaManager dsm = new DynamicSchemaManager(session);
-        dsm.replaceDefaultTables(false, true);
-        
+        dsm.replaceDefaultTables(true, true);
+
         EntityManager em = emf.createEntityManager();
         em.getTransaction().begin();
         new Sample(emf).persistAll(em);
