@@ -24,18 +24,37 @@ import java.util.Map;
 import org.eclipse.persistence.internal.helper.ConversionManager;
 import org.eclipse.persistence.sessions.Session;
 
+import com.sun.xml.internal.ws.org.objectweb.asm.ClassWriter;
+
 /**
- * TODO
+ * This custom ClassLoader provides support for dynamically generating classes
+ * within an EclipseLink application using byte codes created using a
+ * {@link DynamicClassWriter}. A DynamicClassLoader requires a parent or
+ * delegate class-loader which is provided to the constructor. This delegate
+ * class loader handles the lookup and storage of all created classes.
  * 
- * @author dclarke
+ * @author dclarke, mnorman
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public class DynamicClassLoader extends ClassLoader {
 
+    /**
+     * Map of {@link ClassWriter} used to dynamically create a class in the
+     * {@link #findClass(String)} call. The application must register classes
+     * using addClass or createDynameClass prior to the
+     * {@link #findClass(String)} being invoked.
+     */
     private Map<String, DynamicClassWriter> classWriters = new HashMap<String, DynamicClassWriter>();
 
+    /**
+     * Default writer to use if one is not specified.
+     */
     public DynamicClassWriter defaultWriter = new DynamicClassWriter();
 
+    /**
+     * 
+     * @param delegate
+     */
     public DynamicClassLoader(ClassLoader delegate) {
         super(delegate);
     }
@@ -63,6 +82,11 @@ public class DynamicClassLoader extends ClassLoader {
         }
     }
 
+    /**
+     * Add a class to be dynamically written.
+     * 
+     * @param className
+     */
     public void addClass(String className) {
         synchronized (getClassWriters()) {
             getClassWriters().put(className, getDefaultWriter());
@@ -86,7 +110,13 @@ public class DynamicClassLoader extends ClassLoader {
             addClass(className, writer);
         }
         try {
-            return loadClass(className);
+            Class<?> dynamicClass = loadClass(className);
+            if (hasClassWriter(className)) {
+                synchronized (getClassWriters()) {
+                    getClassWriters().remove(className);
+                }
+            }
+            return dynamicClass;
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("DyanmicClassLoader could not create class: " + className);
         }
