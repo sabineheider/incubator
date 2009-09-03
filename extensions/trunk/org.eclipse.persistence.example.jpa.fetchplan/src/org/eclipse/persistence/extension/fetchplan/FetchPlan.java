@@ -8,10 +8,10 @@
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *     dclarke - Bug ?: FetchPlan Example
+ *     dclarke - Bug 288307: FetchPlan Example
  *     ssmith  - various minor edits
  ******************************************************************************/
-package org.eclipse.persistence.queries;
+package org.eclipse.persistence.extension.fetchplan;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -19,9 +19,8 @@ import java.util.List;
 
 import org.eclipse.persistence.internal.sessions.AbstractRecord;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
-import org.eclipse.persistence.sessions.Record;
-import org.eclipse.persistence.sessions.Session;
-import org.eclipse.persistence.sessions.SessionEvent;
+import org.eclipse.persistence.queries.*;
+import org.eclipse.persistence.sessions.*;
 
 /**
  * FetchPlan handles specifying a set of relationships in a query result that
