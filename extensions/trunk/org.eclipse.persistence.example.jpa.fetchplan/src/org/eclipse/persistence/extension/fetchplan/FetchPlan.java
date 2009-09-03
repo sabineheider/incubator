@@ -33,13 +33,13 @@ public class FetchPlan implements Serializable {
 
     private List<FetchItem> items;
 
-    private ReadAllQuery query;
+    private ObjectLevelReadQuery query;
 
     private static final String QUERY_PROPERTY = FetchPlan.class.getName();
 
     private static final long serialVersionUID = 1L;
 
-    public static FetchPlan getFetchPlan(ReadAllQuery query) {
+    public static FetchPlan getFetchPlan(ObjectLevelReadQuery query) {
         FetchPlan fetchPlan = (FetchPlan) query.getProperty(QUERY_PROPERTY);
 
         if (fetchPlan == null) {
@@ -50,13 +50,13 @@ public class FetchPlan implements Serializable {
         return fetchPlan;
     }
 
-    private FetchPlan(ReadAllQuery query) {
+    private FetchPlan(ObjectLevelReadQuery query) {
         this.query = query;
         this.items = new ArrayList<FetchItem>();
         query.setRedirector(new FetchPlanRedirector());
     }
 
-    public ReadAllQuery getQuery() {
+    public ObjectLevelReadQuery getQuery() {
         return this.query;
     }
 
@@ -86,18 +86,6 @@ public class FetchPlan implements Serializable {
         }
 
         getItems().add(fetchItem);
-        return this;
-    }
-
-    public FetchPlan addBatch(String attributePath) {
-        // TODO Handle multi-level
-        getQuery().addBatchReadAttribute(attributePath);
-        return this;
-    }
-
-    public FetchPlan addFetchJoin(String attributePath) {
-        // TODO Handle multi-level
-        getQuery().addJoinedAttribute(attributePath);
         return this;
     }
 
