@@ -1,0 +1,120 @@
+### Eclipse Workspace Patch 1.0
+#P org.eclipse.persistence.core
+Index: src/org/eclipse/persistence/internal/sessions/PropertiesHandler.java
+===================================================================
+--- src/org/eclipse/persistence/internal/sessions/PropertiesHandler.java	(revision 4767)
++++ src/org/eclipse/persistence/internal/sessions/PropertiesHandler.java	(working copy)
+@@ -26,6 +26,7 @@
+ import org.eclipse.persistence.config.*;
+ import org.eclipse.persistence.internal.localization.ExceptionLocalization;
+ import org.eclipse.persistence.logging.SessionLog;
++import org.eclipse.persistence.platform.server.sap.SAPNetWeaver_7_1_Platform;
+ import org.eclipse.persistence.sessions.factories.ReferenceMode;
+ 
+ /**
+@@ -514,7 +515,8 @@
+                 {TargetServer.WebLogic, pcg + "wls.WebLogicPlatform"},
+                 {TargetServer.WebLogic_9, pcg + "wls.WebLogic_9_Platform"},
+                 {TargetServer.WebLogic_10, pcg + "wls.WebLogic_10_Platform"},
+-                {TargetServer.JBoss, pcg + "jboss.JBossPlatform"}
++                {TargetServer.JBoss, pcg + "jboss.JBossPlatform"},
++                {TargetServer.SAPNetWeaver_7_1, SAPNetWeaver_7_1_Platform.class.getName()}
+             };
+         }  
+     }
+Index: src/org/eclipse/persistence/transaction/sap/SAPNetWeaverTransactionController.java
+===================================================================
+--- src/org/eclipse/persistence/transaction/sap/SAPNetWeaverTransactionController.java	(revision 0)
++++ src/org/eclipse/persistence/transaction/sap/SAPNetWeaverTransactionController.java	(revision 0)
+@@ -0,0 +1,15 @@
++package org.eclipse.persistence.transaction.sap;
++
++import javax.transaction.TransactionManager;
++
++import org.eclipse.persistence.transaction.JTATransactionController;
++
++public class SAPNetWeaverTransactionController extends JTATransactionController {
++    public static final String JNDI_TRANSACTION_MANAGER_NAME = "TransactionManager";
++
++    @Override
++    protected TransactionManager acquireTransactionManager() throws Exception {
++        return (TransactionManager)jndiLookup(JNDI_TRANSACTION_MANAGER_NAME);
++    }
++}
++
+Index: src/org/eclipse/persistence/config/TargetServer.java
+===================================================================
+--- src/org/eclipse/persistence/config/TargetServer.java	(revision 4767)
++++ src/org/eclipse/persistence/config/TargetServer.java	(working copy)
+@@ -33,6 +33,7 @@
+     public static final String  WebLogic_9 = "WebLogic_9";
+     public static final String  WebLogic_10 = "WebLogic_10";
+     public static final String  JBoss = "JBoss";
++    public static final String  SAPNetWeaver_7_1 = "NetWeaver_7_1";
+  
+     public static final String DEFAULT = None;
+ }
+Index: src/org/eclipse/persistence/platform/server/sap/SAPNetWeaver_7_1_Platform.java
+===================================================================
+--- src/org/eclipse/persistence/platform/server/sap/SAPNetWeaver_7_1_Platform.java	(revision 0)
++++ src/org/eclipse/persistence/platform/server/sap/SAPNetWeaver_7_1_Platform.java	(revision 0)
+@@ -0,0 +1,47 @@
++package org.eclipse.persistence.platform.server.sap;
++
++import javax.persistence.spi.PersistenceUnitInfo;
++
++import org.eclipse.persistence.internal.helper.JPAClassLoaderHolder;
++import org.eclipse.persistence.logging.AbstractSessionLog;
++import org.eclipse.persistence.platform.server.ServerPlatformBase;
++import org.eclipse.persistence.sessions.DatabaseSession;
++import org.eclipse.persistence.transaction.sap.SAPNetWeaverTransactionController;
++
++public class SAPNetWeaver_7_1_Platform extends ServerPlatformBase {
++
++	private static final boolean NO_TEMP_CLASS_LOADER = false;
++
++	public SAPNetWeaver_7_1_Platform(DatabaseSession newDatabaseSession) {
++		super(newDatabaseSession);
++	}
++
++	@Override
++	public Class getExternalTransactionControllerClass() {
++    	if (externalTransactionControllerClass == null){
++    		externalTransactionControllerClass = SAPNetWeaverTransactionController.class;
++    	}
++        return externalTransactionControllerClass;
++	}
++
++	@Override
++	public String getServerNameAndVersion() {
++		String version = System.getProperty("SAP_J2EE_Engine_Version");
++		if (version != null) {
++			return version;
++		}
++		return super.getServerNameAndVersion();
++	}
++
++	@Override
++	/**
++	 * SAP NetWeaver does not support dynamic byte code weaving. We return the original class loader
++	 * in order to prevent dynamic weaving. 
++	 */
++    public JPAClassLoaderHolder getNewTempClassLoader(PersistenceUnitInfo puInfo) {
++        ClassLoader realClassLoader = puInfo.getClassLoader();
++        AbstractSessionLog.getLog().log(AbstractSessionLog.WARNING, "persistence_unit_processor_sap_temp_classloader_bypassed",//
++                puInfo.getPersistenceUnitName(), realClassLoader);
++        return new JPAClassLoaderHolder(realClassLoader, NO_TEMP_CLASS_LOADER);
++    }    
++}
+Index: src/org/eclipse/persistence/internal/localization/i18n/LoggingLocalizationResource.java
+===================================================================
+--- src/org/eclipse/persistence/internal/localization/i18n/LoggingLocalizationResource.java	(revision 4767)
++++ src/org/eclipse/persistence/internal/localization/i18n/LoggingLocalizationResource.java	(working copy)
+@@ -345,6 +345,7 @@
+         { "persistence_unit_processor_null_temp_classloader", "The classLoader for PersistenceLoadProcessor [{0}] is null. Weaving has been disabled for this session. EclipseLink may be unable to get a spec mandated temporary class loader from the server, you may be able to use static weaving as an optional workaround. "},        
+         { "persistence_unit_processor_npe_temp_classloader", "The classLoader [{0}] for PersistenceLoadProcessor [{1}] is causing a NPE on loadClass. Switching classLoader to [{2}].  Weaving has been disabled for this session. EclipseLink may be unable to get a spec mandated temporary class loader from the server, you may be able to use static weaving as an optional workaround. "},
+         { "persistence_unit_processor_jboss_temp_classloader_bypassed", "The temporary classLoader for PersistenceLoadProcessor [{0}] is not available.  Switching classLoader to [{1}].  Weaving has been disabled for this session. EclipseLink may be unable to get a spec mandated temporary class loader from the server, you may be able to use static weaving as an optional workaround. "},        
++        { "persistence_unit_processor_sap_temp_classloader_bypassed", "The temporary classLoader for PersistenceLoadProcessor [{0}] is not available.  Switching classLoader to [{1}].  Weaving has been disabled for this session. EclipseLink may be unable to get a spec mandated temporary class loader from the server, you may be able to use static weaving as an optional workaround. "},        
+         { "persistence_unit_processor_error_in_class_forname_weaving_disabled", "The classLoader [{0}]: failed to load class [{1}]. Weaving has been disabled for this session. EclipseLink may be unable to get a spec mandated temporary class loader from the server, you may be able to use static weaving as an optional workaround. "},        
+         { "entity_manager_sets_properties_while_context_is_active", "setProperties method called on EntityManager when active persistence context already exists therefore properties used to create persistence context will be ignored. "},
+         { "osgi_initializer_failed", "Construction of environment specific OSGi initializer, [{0}] failed with message: [{1}]."},
