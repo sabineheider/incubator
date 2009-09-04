@@ -22,7 +22,10 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 
 public class Main {
@@ -32,27 +35,34 @@ public class Main {
      */
     public static void main(String[] args) throws Exception {
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("empty");
-        
+
         // Add dynamic types
         EmployeeDynamicMappings.createTypes(emf, "example.jpa.dynamic.model.employee", false);
-        
+
         // Create database and populate
-        new SchemaManager(JpaHelper.getServerSession(emf)).replaceDefaultTables();
+        Server session = JpaHelper.getServerSession(emf);
+        new SchemaManager(session).replaceDefaultTables();
         EntityManager em = emf.createEntityManager();
         em.getTransaction().begin();
         new Samples(emf).persistAll(em);
         em.getTransaction().commit();
         em.clear();
-        
+
+        // Lookup types
+        EntityType empType = DynamicHelper.getType(session, "Employee");
+
         // Run Queries
         Queries queries = new Queries();
+
+        int minEmpId = queries.minimumEmployeeId(em);
+        queries.findEmployee(em, empType, minEmpId);
         queries.findEmployeesUsingGenderIn(em);
-        
+
         // Example transactions
         Transactions txn = new Transactions();
-        
+
         txn.createUsingPersist(em);
-        
+
         em.close();
         emf.close();
     }

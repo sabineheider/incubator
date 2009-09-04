@@ -1,4 +1,3 @@
-package example;
 /*******************************************************************************
  * Copyright (c) 1998, 2008 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
@@ -17,7 +16,7 @@ package example;
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-
+package example;
 
 import java.util.Calendar;
 
@@ -25,7 +24,6 @@ import javax.persistence.EntityManagerFactory;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.EntityTypeBuilder;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
 import org.eclipse.persistence.mappings.OneToManyMapping;
@@ -33,8 +31,7 @@ import org.eclipse.persistence.mappings.OneToOneMapping;
 import org.eclipse.persistence.sessions.server.Server;
 
 /**
- * Factory for the creation of the dynamic {@link EntityTypeImpl}'s required for
- * the employee example.
+ * Factory for the creation of the dynamic mappings for the Employee demo.
  * 
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
@@ -53,7 +50,6 @@ public class EmployeeDynamicMappings {
         JPAEntityTypeBuilder smallProject = new JPAEntityTypeBuilder(session, packagePrefix + "SmallProject", project.getType(), "D_PROJECT");
         JPAEntityTypeBuilder largeProject = new JPAEntityTypeBuilder(session, packagePrefix + "LargeProject", project.getType(), "D_LPROJECT");
 
-        
         configureAddress(address);
         configureEmployee(employee, address, phone, period, project);
         configurePhone(phone, employee);
@@ -62,6 +58,8 @@ public class EmployeeDynamicMappings {
         configureSmallProject(smallProject, project);
         configureLargeProject(largeProject, project);
 
+        // Must be done here since it requires the PK configurations on Employee
+        // and Project
         employee.addManyToManyMapping("projects", project.getType(), "D_PROJ_EMP");
 
         EntityTypeBuilder.addToSession(session, true, true, employee.getType(), address.getType(), phone.getType(), period.getType(), project.getType(), smallProject.getType(), largeProject.getType());
@@ -112,6 +110,8 @@ public class EmployeeDynamicMappings {
 
         employee.addAggregateObjectMapping("period", period.getType(), true);
         employee.addOneToManyMapping("managedEmployees", employee.getType(), "MANAGER_ID");
+
+        employee.addDirectCollectionMapping("responsibilities", "D_RESPONS", "RESPON_DESC", String.class, "EMP_ID");
 
         employee.configureSequencing("EMP_SEQ", "EMP_ID");
     }

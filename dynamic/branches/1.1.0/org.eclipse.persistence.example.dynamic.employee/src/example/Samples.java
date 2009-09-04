@@ -35,16 +35,9 @@ package example;
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Query;
+import javax.persistence.*;
 
 import junit.framework.Assert;
 
@@ -150,8 +143,8 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        // employee.add("responsibilities", "Water the office plants.");
-        // employee.add("responsibilities", "Maintain the kitchen facilities.");
+        employee.add("responsibilities", "Water the office plants.");
+        employee.add("responsibilities", "Maintain the kitchen facilities.");
         addPhoneNumber(employee, "Work", "613", "5558812");
 
         return employee;
@@ -248,10 +241,8 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        // employee.add("responsibilities",
-        // "Hire people when more people are required.");
-        // employee.add("responsibilities",
-        // "Lay off employees when less people are required.");
+        employee.add("responsibilities", "Hire people when more people are required.");
+        employee.add("responsibilities", "Lay off employees when less people are required.");
         addPhoneNumber(employee, "Work", "613", "5558812");
         addPhoneNumber(employee, "ISDN", "905", "5553691");
 
@@ -276,8 +267,7 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        // employee.add("responsibilities",
-        // "Perform code reviews as required.");
+        employee.add("responsibilities", "Perform code reviews as required.");
         addPhoneNumber(employee, "Pager", "976", "5556666");
         addPhoneNumber(employee, "ISDN", "905", "5553691");
 
@@ -302,8 +292,7 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        // employee.add("responsibilities",
-        // "Have to fix the Database problem.");
+        employee.add("responsibilities", "Have to fix the Database problem.");
         addPhoneNumber(employee, "Work Fax", "613", "5555943");
         addPhoneNumber(employee, "Cellular", "416", "5551111");
         addPhoneNumber(employee, "Pager", "976", "5556666");
@@ -330,7 +319,7 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        // employee.add("responsibilities", "Write code documentation.");
+        employee.add("responsibilities", "Write code documentation.");
         addPhoneNumber(employee, "Work", "613", "5558812");
         addPhoneNumber(employee, "ISDN", "905", "5553691");
         addPhoneNumber(employee, "Home", "613", "5551234");
@@ -356,7 +345,7 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        // employee.add("responsibilities", "Write user specifications.");
+        employee.add("responsibilities", "Write user specifications.");
         addPhoneNumber(employee, "ISDN", "905", "5553691");
         addPhoneNumber(employee, "Work", "613", "5558812");
 

@@ -26,6 +26,7 @@ import javax.persistence.Query;
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.ReadAllQuery;
@@ -37,18 +38,22 @@ import org.eclipse.persistence.queries.ReadAllQuery;
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public class Queries {
-
+    
+    public DynamicEntity findEmployee(EntityManager em, EntityType type, Object id) {
+        return (DynamicEntity) em.find(type.getJavaClass(), id);
+    }
+    
     /**
      * Simple example using dynamic JP QL to retrieve all Employee instances
      * sorted by lastName and firstName.
      */
     @SuppressWarnings("unchecked")
-    public List<DynamicEntity> readAllEmployeesUsingJPQL(EntityManager em) {
+    public List<DynamicEntity> readAllEmployeesUsing(EntityManager em) {
         return em.createQuery("SELECT e FROM Employee e ORDER BY e.id ASC").getResultList();
     }
 
     @SuppressWarnings("unchecked")
-    public List<DynamicEntity> joinFetchJPQL(EntityManager em) {
+    public List<DynamicEntity> joinFetchEmployeeWithAddress(EntityManager em) {
         return em.createQuery("SELECT e FROM Employee e JOIN FETCH e.address ORDER BY e.lastName ASC, e.firstName ASC").getResultList();
     }
 
@@ -68,7 +73,7 @@ public class Queries {
         return emps;
     }
 
-    public static int minimumEmployeeId(EntityManager em) {
+    public int minimumEmployeeId(EntityManager em) {
         return ((Number) em.createQuery("SELECT MIN(e.id) FROM Employee e").getSingleResult()).intValue();
     }
 

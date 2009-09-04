@@ -146,7 +146,7 @@ public class Transactions {
     public void pessimisticLocking(EntityManager em) throws Exception {
 
         // Find the Employee with the minimum ID
-        int minId = Queries.minimumEmployeeId(em);
+        int minId = new Queries().minimumEmployeeId(em);
 
         em.getTransaction().begin();
 
