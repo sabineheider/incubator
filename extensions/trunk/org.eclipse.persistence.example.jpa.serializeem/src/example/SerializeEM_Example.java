@@ -1,18 +1,24 @@
 package example;
 
 import java.sql.Time;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.persistence.*;
-
-import junit.framework.Assert;
-import model.Employee;
-import model.Gender;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.internal.helper.SerializationHelper;
 import org.eclipse.persistence.internal.jpa.EntityManagerHandle;
+
+import junit.framework.Assert;
+
+import model.Address;
+import model.Employee;
+import model.Gender;
+import model.PhoneNumber;
 
 public class SerializeEM_Example {
 
@@ -28,7 +34,7 @@ public class SerializeEM_Example {
         Employee emp = new Queries().minEmployeeWithAddressAndPhones(em);
         emp.setSalary(emp.getSalary() + 1);
         emp.setEndTime(new Time(System.currentTimeMillis()));
-
+        emp.getPeriod().setEndDate(Calendar.getInstance());
         Employee newEmp = new Employee();
         newEmp.setId(666666666);
         newEmp.setFirstName("Doug");

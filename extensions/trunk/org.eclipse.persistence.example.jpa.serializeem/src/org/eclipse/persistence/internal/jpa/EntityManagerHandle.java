@@ -15,17 +15,29 @@ package org.eclipse.persistence.internal.jpa;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
 
 import javax.persistence.EntityManager;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
-import org.eclipse.persistence.indirection.*;
+import org.eclipse.persistence.indirection.IndirectContainer;
+import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.internal.descriptors.changetracking.AttributeChangeListener;
-import org.eclipse.persistence.internal.indirection.*;
-import org.eclipse.persistence.internal.sessions.*;
+import org.eclipse.persistence.internal.identitymaps.CacheKey;
+import org.eclipse.persistence.internal.indirection.BasicIndirectionPolicy;
+import org.eclipse.persistence.internal.indirection.UnitOfWorkQueryValueHolder;
+import org.eclipse.persistence.internal.indirection.UnitOfWorkValueHolder;
+import org.eclipse.persistence.internal.sessions.AggregateChangeRecord;
+import org.eclipse.persistence.internal.sessions.AggregateCollectionChangeRecord;
+import org.eclipse.persistence.internal.sessions.AggregateObjectChangeSet;
+import org.eclipse.persistence.internal.sessions.ChangeRecord;
+import org.eclipse.persistence.internal.sessions.ObjectChangeSet;
+import org.eclipse.persistence.internal.sessions.RepeatableWriteUnitOfWork;
+import org.eclipse.persistence.internal.sessions.UnitOfWorkChangeSet;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.mappings.ForeignReferenceMapping;
@@ -60,19 +72,19 @@ public class EntityManagerHandle implements Serializable {
      * Map of clones to {@link ObjectChangeSet} captured from ...
      */
     private Map<Object, ObjectChangeSet> changeSets;
-    
+
     private Map<Object, Object> newObjectsCloneToOriginal;
 
     public EntityManagerHandle(EntityManager em) {
         this.entityManager = (EntityManagerImpl) JpaHelper.getEntityManager(em);
     }
 
-    protected EntityManagerHandle(EntityManager em, Map<Object, Object> cloneMapping, Map<Object, ObjectChangeSet> changetSets,Map<Object, Object> newObjectsCloneToOriginal) {
+    protected EntityManagerHandle(EntityManager em, Map<Object, Object> cloneMapping, Map<Object, ObjectChangeSet> changetSets, Map<Object, Object> newObjectsCloneToOriginal) {
         this.entityManager = (EntityManagerImpl) JpaHelper.getEntityManager(em);
 
         this.uowCloneMapping = cloneMapping;
         this.newObjectsCloneToOriginal = newObjectsCloneToOriginal;
-        
+
         this.changeSets = changetSets;
     }
 
@@ -106,15 +118,10 @@ public class EntityManagerHandle implements Serializable {
      * is done lazily to ensure it is only done in receivers that require it to
      * continue functioning and not just storage in case of fail-over cases.
      */
-    @SuppressWarnings("unchecked")
     protected synchronized void initialize() {
         RepeatableWriteUnitOfWork uow = (RepeatableWriteUnitOfWork) getEntityManagerImpl().getUnitOfWork();
 
         if (getUowCloneMapping() != null) {
-            if (this.newObjectsCloneToOriginal != null) {
-                uow.getNewObjectsCloneToOriginal().putAll(this.newObjectsCloneToOriginal);
-            }
-
             for (Object clone : getUowCloneMapping().keySet()) {
                 initialize(uow, clone, getUowCloneMapping().get(clone));
             }
@@ -136,14 +143,34 @@ public class EntityManagerHandle implements Serializable {
      */
     @SuppressWarnings("unchecked")
     private void initialize(RepeatableWriteUnitOfWork uow, Object clone, Object backupClone) {
-        uow.getCloneMapping().put(clone, backupClone);
-
         Server session = getEntityManagerImpl().getServerSession();
         ClassDescriptor descriptor = session.getClassDescriptor(clone);
+        // need to put clone in identityMap as well.
+        if (getChangeSets().containsKey(clone)) {
+            ObjectChangeSet ocs = getChangeSets().get(clone);
+            if (!ocs.isNew()) {
+                uow.getIdentityMapAccessor().putInIdentityMap(clone);
+                uow.getCloneMapping().put(clone, backupClone);
+            } else {
+                uow.registerNewObject(clone);
+            }
+        } else {
+            if (this.newObjectsCloneToOriginal.containsKey(clone)) {
+                uow.registerNewObject(clone);
+            } else {
+                // has no changes.
+                uow.getCloneMapping().put(clone, backupClone);
+                uow.getIdentityMapAccessor().putInIdentityMap(clone);
+            }
+        }
+
+        if (ChangeTracker.class.isAssignableFrom(clone.getClass())) {
+            initializeChangeTracker((ChangeTracker) clone, uow, descriptor);
+        }
 
         for (DatabaseMapping mapping : descriptor.getMappings()) {
             ValueHolderInterface vhi = getValueHolder(mapping, clone);
-            
+
             if (vhi != null && !vhi.isInstantiated()) {
                 UnitOfWorkValueHolder uowVH = (UnitOfWorkValueHolder) vhi;
                 uowVH.setSession(uow);
@@ -152,10 +179,6 @@ public class EntityManagerHandle implements Serializable {
                 ValueHolderInterface wrappedHolder = getValueHolder(mapping, original);
                 uowVH = new UnitOfWorkQueryValueHolder(wrappedHolder, clone, (ForeignReferenceMapping) mapping, uowVH.getRow(), uow);
                 setValueHolder((ForeignReferenceMapping) mapping, clone, uowVH);
-
-                if (ChangeTracker.class.isAssignableFrom(clone.getClass())) {
-                    initializeChangeTracker((ChangeTracker) clone, uow, descriptor);
-                }
 
                 uowVH = new UnitOfWorkQueryValueHolder(wrappedHolder, backupClone, (ForeignReferenceMapping) mapping, uowVH.getRow(), uow);
                 setValueHolder((ForeignReferenceMapping) mapping, backupClone, uowVH);
@@ -196,10 +219,47 @@ public class EntityManagerHandle implements Serializable {
             newOCS.setCacheKey(ocs.getCacheKey());
 
             ocs.getClassType(uow);
+            ocs.setUOWChangeSet((UnitOfWorkChangeSet) new UnitOfWorkChangeSet());
+            for (ChangeRecord entry : (Vector<ChangeRecord>) ocs.getChanges()) {
+                // reset transient mappings in ChangeRecords.
+                DatabaseMapping mapping = descriptor.getMappingForAttributeName(entry.getAttribute());
+                if (mapping.isAggregateObjectMapping()) {
+                    Object aggregate = mapping.getRealAttributeValueFromObject(changeTracker, uow);
+                    AggregateObjectChangeSet aocs = new AggregateObjectChangeSet(new Vector(0), aggregate.getClass(), aggregate, (UnitOfWorkChangeSet) uow.getUnitOfWorkChangeSet(), true);
+                    ((UnitOfWorkChangeSet) uow.getUnitOfWorkChangeSet()).addObjectChangeSetForIdentity(aocs, aggregate);
+                    aocs.mergeObjectChanges((ObjectChangeSet) ((AggregateChangeRecord) entry).getChangedObject(), (UnitOfWorkChangeSet) uow.getUnitOfWorkChangeSet(), (UnitOfWorkChangeSet) ocs.getUOWChangeSet());
+                    ((AggregateChangeRecord) entry).setChangedObject(aocs);
+                    for (ChangeRecord record : (Vector<ChangeRecord>) aocs.getChanges()) {
+                        record.setMapping(mapping.getReferenceDescriptor().getMappingForAttributeName(record.getAttribute()));
+                    }
+
+                } else if (mapping.isAggregateCollectionMapping()) {
+                    Object attributeValue = mapping.getRealAttributeValueFromObject(changeTracker, uow);
+                    Vector<ObjectChangeSet> changes = (Vector<ObjectChangeSet>) ((AggregateCollectionChangeRecord) entry).getChangedValues();
+                    Object iterator = mapping.getContainerPolicy().iteratorFor(attributeValue);
+
+                    while (mapping.getContainerPolicy().hasNext(iterator)) {
+                        Object aggregate = mapping.getContainerPolicy().next(iterator, uow);
+                        CacheKey cacheKey = new CacheKey(mapping.getReferenceDescriptor().getObjectBuilder().extractPrimaryKeyFromObject(aggregate, uow));
+                        int index = changes.indexOf(cacheKey);
+                        if (index >= 0) {
+                            ObjectChangeSet aggChangeSet = changes.get(index);
+                            ObjectChangeSet newAggChangeSet = new ObjectChangeSet(aggregate, (UnitOfWorkChangeSet) uow.getUnitOfWorkChangeSet(), true);
+                            ((UnitOfWorkChangeSet) uow.getUnitOfWorkChangeSet()).addObjectChangeSetForIdentity(newAggChangeSet, aggregate);
+                            newAggChangeSet.mergeObjectChanges(aggChangeSet, (UnitOfWorkChangeSet) uow.getUnitOfWorkChangeSet(), (UnitOfWorkChangeSet) ocs.getUOWChangeSet());
+                            for (ChangeRecord record : (Vector<ChangeRecord>) newAggChangeSet.getChanges()) {
+                                record.setMapping(mapping.getReferenceDescriptor().getMappingForAttributeName(record.getAttribute()));
+                            }
+
+                        }
+                    }
+                }
+                entry.setMapping(mapping);
+            }
 
             listener.setObjectChangeSet(newOCS);
             ((UnitOfWorkChangeSet) uow.getUnitOfWorkChangeSet()).addObjectChangeSetForIdentity(newOCS, changeTracker);
-            newOCS.mergeObjectChanges(ocs, (UnitOfWorkChangeSet) uow.getUnitOfWorkChangeSet(), (UnitOfWorkChangeSet) ocs.getUOWChangeSet());
+            newOCS.mergeObjectChanges(ocs, (UnitOfWorkChangeSet) uow.getUnitOfWorkChangeSet(), (UnitOfWorkChangeSet) ocs.getUnitOfWorkClone());
             if (newOCS.hasChanges()) {
                 // The listener's changes will not be recorded unless the
                 // listener has received a change notification
@@ -207,10 +267,6 @@ public class EntityManagerHandle implements Serializable {
                 // into the current UOW changeset
                 ((UnitOfWorkChangeSet) uow.getUnitOfWorkChangeSet()).addObjectChangeSet(newOCS, uow, newOCS.isNew());
                 uow.addToChangeTrackedHardList(changeTracker);
-                for (Map.Entry<String, ChangeRecord> entry : (Set<Map.Entry<String, ChangeRecord>>) newOCS.getAttributesToChanges().entrySet()) {
-                    // reset transient mappings in ChangeRecords.
-                    entry.getValue().setMapping(descriptor.getMappingForAttributeName(entry.getKey()));
-                }
             }
         }
     }

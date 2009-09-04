@@ -43,7 +43,6 @@ public class SerializedEntityManager implements Serializable {
             UnitOfWorkChangeSet uowcs = (UnitOfWorkChangeSet) uow.getUnitOfWorkChangeSet();
             if (uowcs != null) {
                 this.changeSets = uowcs.getCloneToObjectChangeSet();
-                uowcs.getAllChangeSets();
             }
         }
     }
