@@ -31,13 +31,7 @@ import org.eclipse.persistence.internal.dynamic.EntityTypeInstantiationPolicy;
 import org.eclipse.persistence.internal.dynamic.ValuesAccessor;
 import org.eclipse.persistence.internal.helper.DatabaseField;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
-import org.eclipse.persistence.mappings.AggregateObjectMapping;
-import org.eclipse.persistence.mappings.DatabaseMapping;
-import org.eclipse.persistence.mappings.DirectToFieldMapping;
-import org.eclipse.persistence.mappings.ForeignReferenceMapping;
-import org.eclipse.persistence.mappings.ManyToManyMapping;
-import org.eclipse.persistence.mappings.OneToManyMapping;
-import org.eclipse.persistence.mappings.OneToOneMapping;
+import org.eclipse.persistence.mappings.*;
 import org.eclipse.persistence.sequencing.Sequence;
 import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
@@ -266,6 +260,27 @@ public class EntityTypeBuilder {
         mapping.useTransparentList();
 
         return (OneToManyMapping) addMapping(mapping);
+    }
+
+    public DirectCollectionMapping addDirectCollectionMapping(String name, String targetTable, String valueColumn, Class<?> valueType, String... fkFieldNames) {
+        if (fkFieldNames == null || getType().getDescriptor().getPrimaryKeyFields().size() != fkFieldNames.length) {
+            throw new IllegalArgumentException("Invalid FK field names: " + fkFieldNames + " for target: ");// TODO
+        }
+
+        DirectCollectionMapping mapping = new DirectCollectionMapping();
+        mapping.setAttributeName(name);
+        mapping.setReferenceTableName(targetTable);
+        mapping.setDirectFieldName(valueColumn);
+        mapping.setDirectFieldClassification(valueType);
+
+        for (int index = 0; index < fkFieldNames.length; index++) {
+            String targetField = getType().getDescriptor().getPrimaryKeyFields().get(index).getName();
+            mapping.addReferenceKeyFieldName(fkFieldNames[index], targetField);
+        }
+
+        mapping.useTransparentList();
+
+        return (DirectCollectionMapping) addMapping(mapping);
     }
 
     public AggregateObjectMapping addAggregateObjectMapping(String name, EntityType refType, boolean allowsNull) {
