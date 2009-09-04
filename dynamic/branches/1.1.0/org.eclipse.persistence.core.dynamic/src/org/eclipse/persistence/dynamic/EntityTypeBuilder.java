@@ -38,8 +38,10 @@ import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 
 /**
- * The ORMEntityTypeBuilder is a utility class for creating dynamic types and
- * their mappings. It targets the creation of native-ORM mappings.
+ * The EntityTypeBuilder is a utility class for creating dynamic types and their
+ * mappings. It targets the creation of native-ORM mappings. This builder works
+ * as a factory for the type that it wraps. A new builder is required for each
+ * typed being constructed.
  * 
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
@@ -297,11 +299,11 @@ public class EntityTypeBuilder {
         mapping.setAttributeName(name);
         mapping.setReferenceClass(refType.getJavaClass());
         mapping.setRelationTableName(relationshipTableName);
-        
-        for (DatabaseField sourcePK: getType().getDescriptor().getPrimaryKeyFields()) {
+
+        for (DatabaseField sourcePK : getType().getDescriptor().getPrimaryKeyFields()) {
             mapping.addSourceRelationKeyFieldName(sourcePK.getName(), sourcePK.getQualifiedName());
         }
-        for (DatabaseField targetPK: refType.getDescriptor().getPrimaryKeyFields()) {
+        for (DatabaseField targetPK : refType.getDescriptor().getPrimaryKeyFields()) {
             String relField = targetPK.getName();
             if (mapping.getSourceRelationKeyFieldNames().contains(relField)) {
                 relField = refType.getName() + "_" + relField;
@@ -309,7 +311,7 @@ public class EntityTypeBuilder {
             mapping.addTargetRelationKeyFieldName(relField, targetPK.getQualifiedName());
         }
         mapping.useTransparentList();
-        
+
         addMapping(mapping);
     }
 

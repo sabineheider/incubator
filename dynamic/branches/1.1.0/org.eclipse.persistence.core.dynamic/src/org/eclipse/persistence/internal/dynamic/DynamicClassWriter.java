@@ -28,7 +28,9 @@ import org.eclipse.persistence.internal.libraries.asm.*;
 import org.eclipse.persistence.internal.libraries.asm.Type;
 
 /**
- * Write the byte codes of a dynamic entity class.
+ * Write the byte codes of a dynamic entity class. The class writer will create
+ * the byte codes for a dynamic class that subclasses any provided class
+ * replicating its constructors and writeReplace method (if one exists).
  * <p>
  * The intent is to provide a common writer for dynamic JPA entities but also
  * allow for subclasses of this to be used in more complex writing situations
@@ -38,34 +40,34 @@ import org.eclipse.persistence.internal.libraries.asm.Type;
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public class DynamicClassWriter {
-    
+
     protected static final String INIT = "<init>";
-    
+
     protected Class<?> parentClass;
-    
+
     private String parentClassName;
-    
+
     private DynamicClassLoader loader;
-    
+
     private static final String WRITE_REPLACE = "writeReplace";
-    
+
     public DynamicClassWriter() {
         this(DynamicEntityImpl.class);
     }
-    
+
     public DynamicClassWriter(Class<?> parentClass) {
         this.parentClass = parentClass;
     }
-    
-    public DynamicClassWriter(DynamicClassLoader loader,String parentClassName) {
+
+    public DynamicClassWriter(DynamicClassLoader loader, String parentClassName) {
         this.loader = loader;
         this.parentClassName = parentClassName;
     }
-    
+
     protected DynamicClassLoader getLoader() {
         return this.loader;
     }
-    
+
     public Class<?> getParentClass() {
         if (this.parentClass == null && this.parentClassName != null) {
             try {
@@ -74,10 +76,10 @@ public class DynamicClassWriter {
                 throw new IllegalStateException("", e);
             }
         }
-        
+
         return this.parentClass;
     }
-    
+
     public byte[] writeClass(String className) {
         if (getParentClass() == null || getParentClass().isPrimitive() || getParentClass().isArray() || getParentClass().isEnum() || parentClass.isInterface() || Modifier.isFinal(parentClass.getModifiers())) {
             throw new IllegalArgumentException("Invalid parent class: " + getParentClass());
