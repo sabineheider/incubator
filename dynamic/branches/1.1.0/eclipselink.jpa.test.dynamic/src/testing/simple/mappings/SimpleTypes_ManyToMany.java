@@ -3,19 +3,15 @@ package testing.simple.mappings;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 
+import java.util.Collection;
 import java.util.List;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
+import javax.persistence.*;
 
 import junit.framework.Assert;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.dynamic.DynamicHelper;
-import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
@@ -23,10 +19,7 @@ import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.mappings.ManyToManyMapping;
 import org.eclipse.persistence.sessions.server.Server;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 public class SimpleTypes_ManyToMany {
 
@@ -142,7 +135,7 @@ public class SimpleTypes_ManyToMany {
         DynamicEntity simpleInstanceA = simpleTypeA.newInstance();
         simpleInstanceA.set("id", 1);
         simpleInstanceA.set("value1", "A2");
-        simpleInstanceA.add("b", simpleInstanceA);
+        simpleInstanceA.get("b", Collection.class).add(simpleInstanceA);
 
         simpleInstanceB.set("a", simpleInstanceB);
 
@@ -169,17 +162,17 @@ public class SimpleTypes_ManyToMany {
         Server session = JpaHelper.getServerSession(emf);
         EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
         createAwithB();
-        
+
         EntityManager em = emf.createEntityManager();
         em.getTransaction().begin();
-        
+
         DynamicEntity a = (DynamicEntity) em.find(simpleTypeA.getJavaClass(), 1);
         assertNotNull(a);
         List<DynamicEntity> bs = a.get("b", List.class);
         assertNotNull(bs);
         assertEquals(1, bs.size());
         bs.remove(0);
-        
+
         em.getTransaction().commit();
     }
 

@@ -108,13 +108,14 @@ public class Samples {
         return descriptor.getJavaClass();
     }
 
+    @SuppressWarnings("unchecked")
     private DynamicEntity addPhoneNumber(DynamicEntity employee, String type, String areaCode, String number) {
         DynamicEntity phone = newInstance("PhoneNumber");
         phone.set("type", type);
         phone.set("areaCode", areaCode);
         phone.set("number", number);
         phone.set("owner", employee);
-        employee.add("phoneNumbers", phone);
+        employee.get("phoneNumbers", Collection.class).add(phone);
         return phone;
     }
 
@@ -125,6 +126,7 @@ public class Samples {
         employee.set("period", period);
     }
 
+    @SuppressWarnings("unchecked")
     public DynamicEntity basicEmployeeExample1() {
         DynamicEntity employee = newInstance("Employee");
 
@@ -143,8 +145,8 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        employee.add("responsibilities", "Water the office plants.");
-        employee.add("responsibilities", "Maintain the kitchen facilities.");
+        employee.get("responsibilities", Collection.class).add("Water the office plants.");
+        employee.get("responsibilities", Collection.class).add("Maintain the kitchen facilities.");
         addPhoneNumber(employee, "Work", "613", "5558812");
 
         return employee;
@@ -223,6 +225,7 @@ public class Samples {
         return employee;
     }
 
+    @SuppressWarnings("unchecked")
     public DynamicEntity basicEmployeeExample2() {
         DynamicEntity employee = newInstance("Employee");
 
@@ -241,14 +244,15 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        employee.add("responsibilities", "Hire people when more people are required.");
-        employee.add("responsibilities", "Lay off employees when less people are required.");
+        employee.get("responsibilities", Collection.class).add("Hire people when more people are required.");
+        employee.get("responsibilities", Collection.class).add("Lay off employees when less people are required.");
         addPhoneNumber(employee, "Work", "613", "5558812");
         addPhoneNumber(employee, "ISDN", "905", "5553691");
 
         return employee;
     }
 
+    @SuppressWarnings("unchecked")
     public DynamicEntity basicEmployeeExample3() {
         DynamicEntity employee = newInstance("Employee");
 
@@ -267,13 +271,14 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        employee.add("responsibilities", "Perform code reviews as required.");
+        employee.get("responsibilities", Collection.class).add("Perform code reviews as required.");
         addPhoneNumber(employee, "Pager", "976", "5556666");
         addPhoneNumber(employee, "ISDN", "905", "5553691");
 
         return employee;
     }
 
+    @SuppressWarnings("unchecked")
     public DynamicEntity basicEmployeeExample4() {
         DynamicEntity employee = newInstance("Employee");
 
@@ -292,7 +297,7 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        employee.add("responsibilities", "Have to fix the Database problem.");
+        employee.get("responsibilities", Collection.class).add("Have to fix the Database problem.");
         addPhoneNumber(employee, "Work Fax", "613", "5555943");
         addPhoneNumber(employee, "Cellular", "416", "5551111");
         addPhoneNumber(employee, "Pager", "976", "5556666");
@@ -301,6 +306,7 @@ public class Samples {
         return employee;
     }
 
+    @SuppressWarnings("unchecked")
     public DynamicEntity basicEmployeeExample5() {
         DynamicEntity employee = newInstance("Employee");
 
@@ -319,7 +325,7 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        employee.add("responsibilities", "Write code documentation.");
+        employee.get("responsibilities", Collection.class).add("Write code documentation.");
         addPhoneNumber(employee, "Work", "613", "5558812");
         addPhoneNumber(employee, "ISDN", "905", "5553691");
         addPhoneNumber(employee, "Home", "613", "5551234");
@@ -327,6 +333,7 @@ public class Samples {
         return employee;
     }
 
+    @SuppressWarnings("unchecked")
     public DynamicEntity basicEmployeeExample6() {
         DynamicEntity employee = newInstance("Employee");
 
@@ -345,7 +352,7 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        employee.add("responsibilities", "Write user specifications.");
+        employee.get("responsibilities", Collection.class).add("Write user specifications.");
         addPhoneNumber(employee, "ISDN", "905", "5553691");
         addPhoneNumber(employee, "Work", "613", "5558812");
 
@@ -558,25 +565,28 @@ public class Samples {
         return smallProject;
     }
 
+    @SuppressWarnings("unchecked")
     private void addManagedEmployees(int managerIndex, int[] employeeIndeces) {
         DynamicEntity manager = this.employees[managerIndex];
 
         if (manager.get("managedEmployees", List.class).isEmpty()) {
             for (int index = 0; index < employeeIndeces.length; index++) {
-                manager.add("managedEmployees", this.employees[employeeIndeces[index]]);
+                manager.get("managedEmployees", Collection.class).add(this.employees[employeeIndeces[index]]);
             }
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void addProjects(int empIndex, int[] smallProjIndeces, int[] largeProjIndeces) {
         DynamicEntity employee = this.employees[empIndex];
+        Collection<DynamicEntity> projects = employee.get("projects", Collection.class);
 
         for (int index = 0; index < smallProjIndeces.length; index++) {
-            employee.add("projects", this.smallProjects[smallProjIndeces[index]]);
+            projects.add(this.smallProjects[smallProjIndeces[index]]);
         }
 
         for (int index = 0; index < largeProjIndeces.length; index++) {
-            employee.add("projects", this.largeProjects[largeProjIndeces[index]]);
+            projects.add(this.largeProjects[largeProjIndeces[index]]);
         }
     }
 

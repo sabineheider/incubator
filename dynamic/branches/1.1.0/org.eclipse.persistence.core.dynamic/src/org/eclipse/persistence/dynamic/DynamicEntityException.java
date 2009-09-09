@@ -19,6 +19,7 @@
 package org.eclipse.persistence.dynamic;
 
 import org.eclipse.persistence.exceptions.EclipseLinkException;
+import org.eclipse.persistence.internal.dynamic.*;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 
 /**
@@ -31,44 +32,49 @@ import org.eclipse.persistence.mappings.DatabaseMapping;
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public class DynamicEntityException extends EclipseLinkException {
-	public static final String ILLEGAL_MODIFY_SHARED = "Illegal attempt to modify shared cache instance on: ";
+    public static final String ILLEGAL_MODIFY_SHARED = "Illegal attempt to modify shared cache instance on: ";
 
-	public DynamicEntityException(String message) {
-		super(message);
-	}
+    public DynamicEntityException(String message) {
+        super(message);
+    }
 
-	public static DynamicEntityException invalidTypeName(String typeName) {
-		return new DynamicEntityException("Invalid DynamicEntity type name: "
-				+ typeName);
-	}
+    /**
+     * Exception throw when attempting to access a dynamic property by name
+     * which does not have an associated mapping. Make sure the property name
+     * exists in {@link EntityType#getPropertiesNames()}
+     * 
+     * @see EntityTypeImpl#getMapping(String)
+     */
+    public static DynamicEntityException invalidPropertyName(EntityType type, String propertyName) {
+        return new DynamicEntityException("Invalid DynamicEntity[" + type + "] property name: " + propertyName);
+    }
 
-	public static DynamicEntityException invalidPropertyName(EntityType type,
-			String propertyName) {
-		return new DynamicEntityException("Invalid DynamicEntity[" + type
-				+ "] property name: " + propertyName);
-	}
+    /**
+     * Exception throw when attempting to access a dynamic property by index
+     * which does not have an associated mapping. Make sure the index used is
+     * less then {@link EntityType#getNumberOfProperties()}.
+     * 
+     * @see EntityTypeImpl#getMapping(int)
+     */
+    public static DynamicEntityException invalidPropertyIndex(EntityType type, int propertyIndex) {
+        return new DynamicEntityException("Invalid DynamicEntity[" + type + "] property index: " + propertyIndex);
+    }
 
-	public static DynamicEntityException invalidPropertyIndex(EntityType type,
-			int propertyIndex) {
-		return new DynamicEntityException("Invalid DynamicEntity[" + type
-				+ "] property index: " + propertyIndex);
-	}
+    /**
+     * 
+     * @see DynamicEntityImpl#getCollection(DatabaseMapping)
+     * @see DynamicEntityImpl#getMap
+     */
+    public static DynamicEntityException invalidPropertyType(DatabaseMapping mapping, Class<?> type) {
+        return new DynamicEntityException("DynamicEntity:: Cannot return: " + mapping + " as: " + type);
+    }
 
-	public static DynamicEntityException illegalMergeOfManagedInstance(
-			DynamicEntity entity) {
-		return new DynamicEntityException("Illegal Merge attempt of: " + entity
-				+ " of type: " + entity.getClass());
-	}
-
-	public static DynamicEntityException propertyNotReference(
-			DatabaseMapping mapping) {
-		return new DynamicEntityException(
-				"DynamicEntity:: Cannot return reference for: " + mapping);
-	}
-
-	public static DynamicEntityException propertyNotCollection(
-			DatabaseMapping mapping) {
-		return new DynamicEntityException(
-				"DynamicEntity:: Cannot return collection for: " + mapping);
-	}
+    /**
+     * A {@link DynamicClassWriter} was attempted to be instantiated with a null
+     * loader or invalid parentClassName. The parentClassName must not be null
+     * or an empty string.
+     */
+    public static DynamicEntityException illegalDynamicClassWriter(DynamicClassLoader loader, String parentClassName) {
+        return new DynamicEntityException("Illegal DynamicClassWriter(" + loader + ", " + parentClassName + ")");
+    }
 }

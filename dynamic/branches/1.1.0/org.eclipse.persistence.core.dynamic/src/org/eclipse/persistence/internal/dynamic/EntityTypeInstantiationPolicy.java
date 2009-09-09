@@ -33,38 +33,42 @@ import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.mappings.ForeignReferenceMapping;
 
 /**
- * Simple {@link InstantiationPolicy} to call {@link EntityTypeImpl#newInstance()}
+ * Simple {@link InstantiationPolicy} to call
+ * {@link EntityTypeImpl#newInstance()}
  * 
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public class EntityTypeInstantiationPolicy extends InstantiationPolicy {
-    
+
     private EntityTypeImpl type;
-    
-    private Constructor<?> defaultConstructor = null;
+
+    /*
+     * Needed since InstantiationPolicy.defaultConstructor is not accessible 
+     */
+    private transient Constructor<?> constructor = null;
 
     public EntityTypeInstantiationPolicy(EntityTypeImpl type) {
         this.type = type;
         this.descriptor = type.getDescriptor();
     }
-    
+
     public EntityTypeImpl getType() {
         return this.type;
     }
 
     /**
-     * Do Nothing since the factory method is hard-wired
+     * Lookup the constructor.
      */
     @Override
     public void initialize(AbstractSession session) throws DescriptorException {
         try {
-            this.defaultConstructor = PrivilegedAccessHelper.getDeclaredConstructorFor(getType().getJavaClass(), new Class[] { EntityTypeImpl.class }, true);
-            this.defaultConstructor.setAccessible(true);
+            this.constructor = PrivilegedAccessHelper.getDeclaredConstructorFor(getType().getJavaClass(), new Class[] { EntityTypeImpl.class }, true);
+            this.constructor.setAccessible(true);
         } catch (NoSuchMethodException exception) {
             throw DescriptorException.noSuchMethodWhileInitializingInstantiationPolicy(getType().getName() + ".<Default Constructor>", getDescriptor(), exception);
         }
-   }
+    }
 
     /**
      * Using privileged reflection create a new instance of the dynamic type
@@ -73,6 +77,12 @@ public class EntityTypeInstantiationPolicy extends InstantiationPolicy {
      * 
      * @see EntityTypeInstantiationPolicy
      * @return new DynamicEntity with initialized attributes
+     */
+    /*
+     * It would be easier to subclass InstantiationPolicy if its build methods
+     * accepted an Object[] of args or requested the args from the policy. This
+     * would avoid the large block of code below required to pass the type into
+     * the constructor. Enhancement 288918 filed
      */
     @Override
     public Object buildNewInstance() {
@@ -150,11 +160,10 @@ public class EntityTypeInstantiationPolicy extends InstantiationPolicy {
      * Return the default (zero-argument) constructor for the descriptor class.
      */
     protected Constructor<?> getTypeConstructor() throws DescriptorException {
-        // Lazy initialize, because the constructor cannot be serialized
-        if (defaultConstructor == null) {
+        if (this.constructor == null) {
             initialize(null);
         }
-        return defaultConstructor;
+        return this.constructor;
     }
 
- }
+}

@@ -35,8 +35,6 @@ public interface EntityType {
     /**
      * Return the entity type's name. This is the short name of the class or the
      * {@link ClassDescriptor#getAlias()}
-     * 
-     * @return
      */
     public String getName();
 
@@ -45,10 +43,26 @@ public interface EntityType {
      */
     public String getClassName();
 
+    /**
+     * @return The parent type or null if this type does not have a persistent
+     *         superclass
+     */
     public EntityType getParentType();
 
+    /**
+     * The current number of properties.
+     * <p>
+     * Note: Some implementations support adding mapped attributes at runtime so
+     * it is best to avoid caching the result.
+     */
     public int getNumberOfProperties();
 
+    /**
+     * The current names of properties.
+     * <p>
+     * Note: Some implementations support adding mapped attributes at runtime so
+     * it is best to avoid caching the result.
+     */
     public List<String> getPropertiesNames();
 
     public boolean containsProperty(String propertyName);
@@ -63,6 +77,9 @@ public interface EntityType {
 
     public Class<?> getPropertyType(String propertyName);
 
+    /**
+     * @return the underlying {@link ClassDescriptor} for the mapped type
+     */
     public ClassDescriptor getDescriptor();
 
     /**

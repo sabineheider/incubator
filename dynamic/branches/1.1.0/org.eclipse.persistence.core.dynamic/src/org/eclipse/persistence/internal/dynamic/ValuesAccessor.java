@@ -19,13 +19,11 @@
 package org.eclipse.persistence.internal.dynamic;
 
 import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.exceptions.DescriptorException;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.internal.helper.ClassConstants;
-import org.eclipse.persistence.mappings.AttributeAccessor;
-import org.eclipse.persistence.mappings.CollectionMapping;
-import org.eclipse.persistence.mappings.DatabaseMapping;
-import org.eclipse.persistence.mappings.ForeignReferenceMapping;
+import org.eclipse.persistence.mappings.*;
 
 /**
  * ValueAccessor is a specialized AttributeAccessor enabling usage of the
@@ -47,13 +45,19 @@ public class ValuesAccessor extends AttributeAccessor {
     protected DatabaseMapping mapping;
 
     /**
+     * {@link EntityType} used to reset Object[] size when needed.
+     */
+    protected EntityType type;
+
+    /**
      * Index in the values Object[] where the owning mapping's value is stored.
      * This index assumes that the mappings remain in a static order.
      */
     protected int index;
 
-    public ValuesAccessor(DatabaseMapping mapping, int index) {
+    public ValuesAccessor(EntityType type, DatabaseMapping mapping, int index) {
         super();
+        this.type = type;
         this.mapping = mapping;
         this.index = index;
     }
@@ -66,15 +70,34 @@ public class ValuesAccessor extends AttributeAccessor {
         return this.index;
     }
 
+    public EntityType getType() {
+        return this.type;
+    }
+
+    /**
+     * Access the Object[] from the {@link DynamicEntity}.
+     * <p>
+     * If the length of the array is incorrect this is where it will be lazily
+     * fixed.
+     */
     private Object[] getValues(Object entity) {
-        return ((DynamicEntityImpl) entity).values;
+        Object[] values = ((DynamicEntityImpl) entity).values;
+
+        if (getIndex() >= values.length) {
+            Object[] newValues = new Object[getType().getNumberOfProperties()];
+            System.arraycopy(values, 0, newValues, 0, values.length);
+            ((DynamicEntityImpl) entity).values = newValues;
+            values = newValues;
+        }
+
+        return values;
     }
 
     /**
      * <b>INTERNAL</b>: Direct access to the value in the Object[] for this
      * mapping. This method is provided for advanced users and can provide
      * direct access to he NULL_VALUE. All application access should be done
-     * using the {@link DynamicEntity} API
+     * using the {@link DynamicEntity} get/set API.
      */
     public Object getRawValue(Object entity) {
         return getValues(entity)[getIndex()];

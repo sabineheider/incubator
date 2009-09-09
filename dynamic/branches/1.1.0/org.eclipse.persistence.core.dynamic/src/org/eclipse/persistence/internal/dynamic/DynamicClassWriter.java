@@ -24,6 +24,7 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.reflect.*;
 
+import org.eclipse.persistence.dynamic.DynamicEntityException;
 import org.eclipse.persistence.internal.libraries.asm.*;
 import org.eclipse.persistence.internal.libraries.asm.Type;
 
@@ -59,7 +60,21 @@ public class DynamicClassWriter {
         this.parentClass = parentClass;
     }
 
+    /**
+     * Create using a loader and class name so that the parent class can be
+     * lazily loaded when the writer is used to generate a dynamic class.
+     * <p>
+     * The loader must not be null and the parentClassName must not be null and
+     * not an empty String. The parentClassName will be converted to a class
+     * using the provided loader lazily.
+     * 
+     * @see #getParentClass()
+     * @see DynamicEntityException#illegalDynamicClassWriter(DynamicClassLoader, String)
+     */
     public DynamicClassWriter(DynamicClassLoader loader, String parentClassName) {
+        if (loader == null || parentClassName == null || parentClassName.isEmpty()) {
+            throw DynamicEntityException.illegalDynamicClassWriter(loader, parentClassName);
+        }
         this.loader = loader;
         this.parentClassName = parentClassName;
     }
@@ -68,19 +83,20 @@ public class DynamicClassWriter {
         return this.loader;
     }
 
-    public Class<?> getParentClass() {
+    /**
+     * 
+     * @throws ClassNotFoundException
+     *             if the parentClassName could not be converted into a class
+     */
+    public Class<?> getParentClass() throws ClassNotFoundException {
         if (this.parentClass == null && this.parentClassName != null) {
-            try {
-                this.parentClass = getLoader().loadClass(this.parentClassName);
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException("", e);
-            }
+            this.parentClass = getLoader().loadClass(this.parentClassName);
         }
 
         return this.parentClass;
     }
 
-    public byte[] writeClass(String className) {
+    public byte[] writeClass(String className) throws ClassNotFoundException {
         if (getParentClass() == null || getParentClass().isPrimitive() || getParentClass().isArray() || getParentClass().isEnum() || parentClass.isInterface() || Modifier.isFinal(parentClass.getModifiers())) {
             throw new IllegalArgumentException("Invalid parent class: " + getParentClass());
         }
@@ -113,7 +129,7 @@ public class DynamicClassWriter {
      * 
      * @see #addConstructor(ClassWriter, Constructor)
      */
-    protected void addConstructors(ClassWriter cw) {
+    protected void addConstructors(ClassWriter cw) throws ClassNotFoundException {
         Constructor<?>[] constructors = getParentClass().getDeclaredConstructors();
 
         for (int index = 0; index < constructors.length; index++) {
@@ -156,7 +172,7 @@ public class DynamicClassWriter {
      * method exist as a method on the {@link Serializable} class and not
      * provided through inheritance.
      */
-    protected void addWriteReplace(ClassWriter cw) {
+    protected void addWriteReplace(ClassWriter cw) throws ClassNotFoundException {
         boolean parentHasWriteReplace = false;
 
         try {

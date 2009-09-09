@@ -18,22 +18,24 @@
  ******************************************************************************/
 package org.eclipse.persistence.dynamic;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.descriptors.changetracking.AttributeChangeTrackingPolicy;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.internal.dynamic.DynamicClassWriter;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.dynamic.EntityTypeInstantiationPolicy;
-import org.eclipse.persistence.internal.dynamic.ValuesAccessor;
+import org.eclipse.persistence.internal.dynamic.*;
+import org.eclipse.persistence.internal.helper.ConversionManager;
 import org.eclipse.persistence.internal.helper.DatabaseField;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
+import org.eclipse.persistence.internal.sessions.factories.ObjectPersistenceWorkbenchXMLProject;
 import org.eclipse.persistence.mappings.*;
+import org.eclipse.persistence.oxm.XMLContext;
+import org.eclipse.persistence.oxm.XMLUnmarshaller;
+import org.eclipse.persistence.platform.database.DatabasePlatform;
 import org.eclipse.persistence.sequencing.Sequence;
-import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.*;
 import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 
@@ -67,7 +69,6 @@ public class EntityTypeBuilder {
         configure(tableNames);
     }
 
-    // TODO: What if parent type is not properly registered for creation?
     public EntityTypeBuilder(Class<?> dynamicClass, EntityType parentType, String... tableNames) {
         RelationalDescriptor descriptor = new RelationalDescriptor();
         descriptor.setJavaClass(dynamicClass);
@@ -91,10 +92,9 @@ public class EntityTypeBuilder {
     }
 
     /**
-     * 
-     * @param dcl
-     * @param className
-     * @param parentType
+     * Register a {@link DynamicClassWriter} with the provided
+     * {@link DynamicClassLoader} so that a dynamic class can be generated when
+     * needed.
      */
     protected void addDynamicClasses(DynamicClassLoader dcl, String className, EntityType parentType) {
         DynamicClassWriter writer = null;
@@ -104,11 +104,10 @@ public class EntityTypeBuilder {
                 dcl.addClass(parentType.getClassName());
                 writer = new DynamicClassWriter(dcl, parentType.getClassName());
             } else {
-                writer = new DynamicClassWriter(parentType.getJavaClass());
+                writer = new DynamicClassWriter(dcl, parentType.getClassName());
             }
         }
 
-        // Add new entity class
         dcl.addClass(className, writer);
     }
 
@@ -340,7 +339,7 @@ public class EntityTypeBuilder {
             }
         }
 
-        mapping.setAttributeAccessor(new ValuesAccessor(mapping, index));
+        mapping.setAttributeAccessor(new ValuesAccessor(getType(), mapping, index));
 
         if (requiresInitialization(mapping)) {
             // TODO: Remove impl dependency
@@ -386,4 +385,102 @@ public class EntityTypeBuilder {
         }
     }
 
+    /**
+     * Load a dynamic project from deployment XML creating dynamic types for all
+     * descriptors where the provided class name does not exist.
+     * 
+     * @param resourcePath
+     * @return a Project with {@link DynamicClassLoader} and associated
+     *         {@link DynamicClassWriter} configured. Ensure if a new
+     *         Login/Platform is being configured that the
+     *         {@link ConversionManager#getLoader()} is maintained.
+     *         <p>
+     *         <tt>null</tt> is returned if the resourcePath cannot locate a
+     *         deployment XML
+     * @throws IOException
+     */
+    public static Project loadDynamicProject(String resourcePath, DatabaseLogin login) throws IOException {
+        // Build an OXM project that loads the deployment XML without converting
+        // the class names into classes
+        ObjectPersistenceWorkbenchXMLProject runtimeProject = new ObjectPersistenceWorkbenchXMLProject();
+        XMLContext context = new XMLContext(runtimeProject);
+        // Session opmSession = context.getSession(runtimeProject);
+        // opmSession.getEventManager().addListener(new
+        // MissingDescriptorListener());
+        XMLUnmarshaller unmarshaller = context.createUnmarshaller();
+
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(null);
+
+        Project project = null;
+        InputStream in = dcl.getResourceAsStream(resourcePath);
+
+        if (in != null) {
+            try {
+                project = (Project) unmarshaller.unmarshal(in);
+            } finally {
+                in.close();
+            }
+
+            if (login == null) {
+                if (project.getLogin() == null) {
+                    project.setLogin(new DatabaseLogin());
+                }
+            } else {
+                project.setLogin(login);
+            }
+            if (project.getLogin().getPlatform() == null) {
+                project.getLogin().setPlatform(new DatabasePlatform());
+            }
+
+            project.getLogin().getPlatform().getConversionManager().setLoader(dcl);
+
+            for (Iterator<?> i = project.getAliasDescriptors().values().iterator(); i.hasNext();) {
+                ClassDescriptor descriptor = (ClassDescriptor) i.next();
+                if (descriptor.getJavaClass() == null) {
+                    createType(dcl, descriptor, project);
+                }
+            }
+            project.convertClassNamesToClasses(dcl);
+        }
+
+        return project;
+    }
+
+    private static EntityType createType(DynamicClassLoader dcl, ClassDescriptor descriptor, Project project) {
+        try {
+            dcl.loadClass(descriptor.getJavaClassName());
+        } catch (ClassNotFoundException e) {
+            EntityType parent = null;
+
+            if (descriptor.hasInheritance() && descriptor.getInheritancePolicy().getParentClassName() != null) {
+                ClassDescriptor parentDesc = null;
+                for (Iterator<?> i = project.getOrderedDescriptors().iterator(); parentDesc == null && i.hasNext();) {
+                    ClassDescriptor d = (ClassDescriptor) i.next();
+                    if (d.getJavaClassName().equals(descriptor.getInheritancePolicy().getParentClassName())) {
+                        parentDesc = d;
+                    }
+                }
+
+                if (parentDesc == null) {
+                    // TODO
+                    throw new IllegalStateException();
+                }
+
+                parent = DynamicHelper.getType(parentDesc);
+
+                if (parent == null) {
+                    parent = createType(dcl, parentDesc, project);
+                }
+            }
+
+            EntityType type = DynamicHelper.getType(descriptor);
+            if (type == null) {
+                type = new EntityTypeBuilder(dcl, descriptor, parent).getType();
+            }
+
+            return type;
+        }
+
+        return null;
+    }
 }

@@ -19,6 +19,7 @@ package example;
  ******************************************************************************/
 
 
+import java.util.Collection;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -50,6 +51,7 @@ public class Transactions {
      * Employee has its relationship to Address and PhoneNumber configured with
      * cascade-all so the associated new entities will also be persisted.
      */
+    @SuppressWarnings("unchecked")
     public DynamicEntity createUsingPersist(EntityManager em) {
         EntityType empType = DynamicHelper.getType(JpaHelper.getEntityManager(em).getServerSession(), "Employee");
         EntityType addrType = DynamicHelper.getType(JpaHelper.getEntityManager(em).getServerSession(), "Address");
@@ -69,7 +71,7 @@ public class Transactions {
         phone.set("areaCode", "613");
         phone.set("number", "555-1212");
         phone.set("owner", emp);
-        emp.add("phoneNumbers", phone);
+        emp.get("phoneNumbers", Collection.class).add( phone);
 
         em.getTransaction().begin();
         em.persist(emp);
@@ -81,6 +83,7 @@ public class Transactions {
     /**
 	 * 
 	 */
+    @SuppressWarnings("unchecked")
     public DynamicEntity createUsingMerge(EntityManager em) {
         ClassDescriptor empDescriptor = getDescriptor(em, "Employee");
         ClassDescriptor addrDescriptor = getDescriptor(em, "Address");
@@ -100,7 +103,7 @@ public class Transactions {
         phone.set("areaCode", "613");
         phone.set("number", "555-1212");
         phone.set("owner", emp);
-        emp.add("phoneNumbers", phone);
+        emp.get("phoneNumbers",  Collection.class).add(phone);
 
         em.getTransaction().begin();
         // When merging the managed instance is returned from the call.

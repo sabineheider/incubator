@@ -18,48 +18,36 @@
  ******************************************************************************/
 package org.eclipse.persistence.dynamic;
 
-import org.eclipse.persistence.mappings.DatabaseMapping;
-
 /**
  * DynamicEntity is the public interface for dealing with dynamic persistent
- * objects.
+ * objects. Application code can using dynamic entities can access the
+ * persistent state using either property names or property indexes. In order to
+ * understand what attributes are available the {@link EntityType} can be
+ * accessed.
+ * <p>
+ * For Collection and Map operations request the attribute providing its
+ * Collection/Map type and then manipulate the resulting container.
  * 
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public interface DynamicEntity {
 
-    public EntityType getType();
-
     public Object get(String propertyName);
-
-    public <T> T get(String propertyName, Class<T> type);
 
     public Object get(int propertyIndex);
 
+    public <T> T get(String propertyName, Class<T> type);
+
     public <T> T get(int propertyIndex, Class<T> type);
-
-    public Object get(DatabaseMapping mapping);
-
-    public <T> T get(DatabaseMapping mapping, Class<T> type);
 
     public DynamicEntity set(int propertyIndex, Object value);
 
     public DynamicEntity set(String propertyName, Object value);
 
-    public DynamicEntity set(DatabaseMapping property, Object value);
-
-    public Object add(String propertyName, Object value);
-
-    public Object remove(String propertyName, Object value);
-
-    public Object get(String mapPropertyName, Object key);
-
-    public Object put(String mapPropertyName, Object key, Object value);
-
     public boolean isSet(String propertyName);
 
     public boolean isSet(int propertyIndex);
 
-    public boolean isSet(DatabaseMapping mapping);
+    public EntityType getType();
 }

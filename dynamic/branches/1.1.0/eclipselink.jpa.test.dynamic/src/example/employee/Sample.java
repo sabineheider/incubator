@@ -18,16 +18,9 @@
  ******************************************************************************/
 package example.employee;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Query;
+import javax.persistence.*;
 
 import junit.framework.Assert;
 
@@ -104,7 +97,7 @@ public class Sample {
         phone.set("areaCode", areaCode);
         phone.set("number", number);
         phone.set("owner", employee);
-        employee.add("phoneNumbers", phone);
+        employee.get("phoneNumbers", Collection.class).add(phone);
         return phone;
     }
 
@@ -557,7 +550,7 @@ public class Sample {
 
         if (manager.get("managedEmployees", List.class).isEmpty()) {
             for (int index = 0; index < employeeIndeces.length; index++) {
-                manager.add("managedEmployees", this.employees[employeeIndeces[index]]);
+                manager.get("managedEmployees", Collection.class).add(this.employees[employeeIndeces[index]]);
             }
         }
     }
@@ -566,11 +559,11 @@ public class Sample {
         DynamicEntity employee = this.employees[empIndex];
 
         for (int index = 0; index < smallProjIndeces.length; index++) {
-            employee.add("projects", this.smallProjects[smallProjIndeces[index]]);
+            employee.get("projects", Collection.class).add(this.smallProjects[smallProjIndeces[index]]);
         }
 
         for (int index = 0; index < largeProjIndeces.length; index++) {
-            employee.add("projects", this.largeProjects[largeProjIndeces[index]]);
+            employee.get("projects", Collection.class).add(this.largeProjects[largeProjIndeces[index]]);
         }
     }
 
@@ -635,7 +628,7 @@ public class Sample {
     public void assertSame(List<DynamicEntity> dbEmps) {
         Assert.assertEquals("Incorrect quantity of employees", this.employees.length, dbEmps.size());
         Collections.sort(dbEmps, new DynamicEntityComparator());
-        
+
         List<DynamicEntity> sampleEmps = new ArrayList<DynamicEntity>();
         for (int index = 0; index < this.employees.length; index++) {
             sampleEmps.add(this.employees[index]);
@@ -656,7 +649,7 @@ public class Sample {
      * Simple comparator used to order the employees for use within assertSame
      */
     class DynamicEntityComparator implements Comparator<DynamicEntity> {
-        
+
         public int compare(DynamicEntity emp1, DynamicEntity emp2) {
             return emp1.get("id", Integer.class) - emp2.get("id", Integer.class);
         }

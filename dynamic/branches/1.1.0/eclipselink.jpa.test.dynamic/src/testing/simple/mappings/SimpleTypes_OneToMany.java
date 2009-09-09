@@ -142,7 +142,7 @@ public class SimpleTypes_OneToMany {
         DynamicEntity simpleInstanceA = simpleTypeA.newInstance();
         simpleInstanceA.set("id", 1);
         simpleInstanceA.set("value1", "A2");
-        simpleInstanceA.add("b", simpleInstanceA);
+        simpleInstanceA.get("b", Collection.class).add( simpleInstanceA);
 
         simpleInstanceB.set("a", simpleInstanceB);
 

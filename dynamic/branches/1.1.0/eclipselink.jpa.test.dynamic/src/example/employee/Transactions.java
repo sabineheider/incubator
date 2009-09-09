@@ -18,6 +18,7 @@
  ******************************************************************************/
 package example.employee;
 
+import java.util.Collection;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -68,7 +69,7 @@ public class Transactions {
         phone.set("areaCode", "613");
         phone.set("number", "555-1212");
         phone.set("owner", emp);
-        emp.add("phoneNumbers", phone);
+        emp.get("phoneNumbers", Collection.class).add( phone);
 
         em.getTransaction().begin();
         em.persist(emp);
@@ -99,7 +100,7 @@ public class Transactions {
         phone.set("areaCode", "613");
         phone.set("number", "555-1212");
         phone.set("owner", emp);
-        emp.add("phoneNumbers", phone);
+        emp.get("phoneNumbers", Collection.class).add( phone);
 
         em.getTransaction().begin();
         // When merging the managed instance is returned from the call.
