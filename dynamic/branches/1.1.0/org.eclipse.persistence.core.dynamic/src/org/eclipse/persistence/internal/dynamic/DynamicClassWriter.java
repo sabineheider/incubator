@@ -24,7 +24,7 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.reflect.*;
 
-import org.eclipse.persistence.dynamic.DynamicEntityException;
+import org.eclipse.persistence.exceptions.DynamicException;
 import org.eclipse.persistence.internal.libraries.asm.*;
 import org.eclipse.persistence.internal.libraries.asm.Type;
 
@@ -69,11 +69,11 @@ public class DynamicClassWriter {
      * using the provided loader lazily.
      * 
      * @see #getParentClass()
-     * @see DynamicEntityException#illegalDynamicClassWriter(DynamicClassLoader, String)
+     * @see DynamicException#illegalDynamicClassWriter(DynamicClassLoader, String)
      */
     public DynamicClassWriter(DynamicClassLoader loader, String parentClassName) {
         if (loader == null || parentClassName == null || parentClassName.isEmpty()) {
-            throw DynamicEntityException.illegalDynamicClassWriter(loader, parentClassName);
+            throw DynamicException.illegalDynamicClassWriter(loader, parentClassName);
         }
         this.loader = loader;
         this.parentClassName = parentClassName;

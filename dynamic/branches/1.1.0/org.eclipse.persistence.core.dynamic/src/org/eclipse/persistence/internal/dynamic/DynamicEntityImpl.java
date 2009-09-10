@@ -24,6 +24,7 @@ import java.util.*;
 
 import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
 import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.exceptions.DynamicException;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.internal.descriptors.PersistenceEntity;
 import org.eclipse.persistence.internal.identitymaps.CacheKey;
@@ -141,7 +142,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         try {
             return (T) value;
         } catch (ClassCastException cce) {
-            throw DynamicEntityException.invalidPropertyType(mapping, type);
+            throw DynamicException.invalidPropertyType(mapping, type);
         }
     }
 

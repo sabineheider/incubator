@@ -25,8 +25,8 @@ import java.util.Set;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.dynamic.DynamicEntityException;
 import org.eclipse.persistence.dynamic.EntityType;
+import org.eclipse.persistence.exceptions.DynamicException;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 
 /**
@@ -110,7 +110,7 @@ public class EntityTypeImpl implements EntityType {
         DatabaseMapping mapping = getDescriptor().getMappingForAttributeName(propertyName);
 
         if (mapping == null) {
-            throw DynamicEntityException.invalidPropertyName(this, propertyName);
+            throw DynamicException.invalidPropertyName(this, propertyName);
         }
 
         return mapping;
@@ -118,7 +118,7 @@ public class EntityTypeImpl implements EntityType {
 
     public DatabaseMapping getMapping(int propertyIndex) {
         if (propertyIndex < 0 || propertyIndex >= getMappings().size()) {
-            throw DynamicEntityException.invalidPropertyIndex(this, propertyIndex);
+            throw DynamicException.invalidPropertyIndex(this, propertyIndex);
         }
 
         DatabaseMapping mapping = getMappings().get(propertyIndex);
