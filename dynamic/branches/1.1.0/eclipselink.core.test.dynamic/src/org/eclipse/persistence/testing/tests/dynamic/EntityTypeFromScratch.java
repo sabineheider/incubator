@@ -40,36 +40,36 @@ import org.junit.Test;
 public class EntityTypeFromScratch {
 
     @Test
-    public void entityTypeFromDescriptor() throws Exception {
-        EntityTypeImpl entityType = buildMyEntityType();
+public void entityTypeFromDescriptor() throws Exception {
+    EntityTypeImpl entityType = buildMyEntityType();
 
-        assertEquals(MyEntity.class, entityType.getJavaClass());
+    assertEquals(MyEntity.class, entityType.getJavaClass());
 
-        DatabaseSession session = new Project(buildDatabaseLogin()).createDatabaseSession();
-        session.getSessionLog().setLevel(SessionLog.FINE);
-        session.login();
+    DatabaseSession session = new Project(buildDatabaseLogin()).createDatabaseSession();
+    session.getSessionLog().setLevel(SessionLog.FINE);
+    session.login();
 
-        session.addDescriptor(entityType.getDescriptor());
-        new SchemaManager(session).replaceDefaultTables();
+    session.addDescriptor(entityType.getDescriptor());
+    new SchemaManager(session).replaceDefaultTables();
 
-        DynamicEntity entity = entityType.newInstance();
-        entity.set("id", 1);
-        entity.set("name", "Name");
+    DynamicEntity entity = entityType.newInstance();
+    entity.set("id", 1);
+    entity.set("name", "Name");
 
-        session.insertObject(entity);
+    session.insertObject(entity);
 
-        session.logout();
+    session.logout();
 
-    }
+}
 
-    private EntityTypeImpl buildMyEntityType() {
-        EntityTypeBuilder factory = new EntityTypeBuilder(MyEntity.class, null, "MY_ENTITY");
-        factory.setPrimaryKeyFields("ID");
-        factory.addDirectMapping("id", int.class, "ID");
-        factory.addDirectMapping("name", String.class, "NAME");
+private EntityTypeImpl buildMyEntityType() {
+    EntityTypeBuilder factory = new EntityTypeBuilder(MyEntity.class, null, "MY_ENTITY");
+    factory.setPrimaryKeyFields("ID");
+    factory.addDirectMapping("id", int.class, "ID");
+    factory.addDirectMapping("name", String.class, "NAME");
 
-        return (EntityTypeImpl) factory.getType();
-    }
+    return (EntityTypeImpl) factory.getType();
+}
 
     /**
      * Return
