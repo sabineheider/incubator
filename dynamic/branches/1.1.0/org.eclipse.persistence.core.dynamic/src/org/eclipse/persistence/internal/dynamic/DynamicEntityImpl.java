@@ -24,7 +24,6 @@ import java.util.Vector;
 
 import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
 import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.exceptions.DynamicException;
 import org.eclipse.persistence.indirection.IndirectContainer;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
@@ -111,21 +110,23 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         this.values = new Object[type.getNumberOfProperties()];
     }
 
-    protected EntityTypeImpl getTypeImpl() throws DynamicException {
+    /**
+     * TODO
+     * 
+     * @return
+     * @throws DynamicException
+     */
+    public EntityTypeImpl getType() throws DynamicException {
         if (this.type == null) {
             throw DynamicException.entityHasNullType(this);
         }
-        
-        return this.type;
-    }
 
-    public EntityType getType() throws DynamicException{
-        return getTypeImpl();
+        return this.type;
     }
 
     @SuppressWarnings("unchecked")
     public <T> T get(String propertyName) {
-        DatabaseMapping mapping = getTypeImpl().getMapping(propertyName);
+        DatabaseMapping mapping = getType().getMapping(propertyName);
         Object value = mapping.getAttributeValueFromObject(this);
 
         if (mapping.isForeignReferenceMapping() && mapping.isLazy()) {
@@ -148,7 +149,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
     }
 
     public DynamicEntity set(String propertyName, Object value) {
-        DatabaseMapping mapping = getTypeImpl().getMapping(propertyName);
+        DatabaseMapping mapping = getType().getMapping(propertyName);
         Object currentValue = mapping.getAttributeValueFromObject(this);
 
         if (currentValue instanceof ValueHolderInterface) {
@@ -165,7 +166,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
     }
 
     public boolean isSet(String propertyName) {
-        return isSet(getTypeImpl().getMapping(propertyName));
+        return isSet(getType().getMapping(propertyName));
     }
 
     /**
@@ -179,7 +180,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         writer.write("(");
 
         for (DatabaseMapping mapping : getType().getDescriptor().getMappings()) {
-            if (getTypeImpl().getDescriptor().getObjectBuilder().getPrimaryKeyMappings().contains(mapping)) {
+            if (getType().getDescriptor().getObjectBuilder().getPrimaryKeyMappings().contains(mapping)) {
                 writer.write(mapping.getAttributeName());
                 writer.write("=" + mapping.getAttributeValueFromObject(this));
             }

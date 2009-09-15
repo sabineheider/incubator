@@ -72,11 +72,4 @@ public interface DynamicEntity {
      */
     public boolean isSet(String property) throws DynamicException;
 
-    /**
-     * TODO
-     * 
-     * @return
-     * @throws DynamicException
-     */
-    public EntityType getType() throws DynamicException;
 }

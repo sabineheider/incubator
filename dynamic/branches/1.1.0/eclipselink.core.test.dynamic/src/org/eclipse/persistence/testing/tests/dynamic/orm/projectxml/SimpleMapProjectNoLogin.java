@@ -45,6 +45,7 @@ public class SimpleMapProjectNoLogin {
         p = EntityTypeBuilder.loadDynamicProject("org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/simple-map-project-no-login.xml", login);
 
         ds = p.createDatabaseSession();
+        ds.setName(SimpleMapProjectNoLogin.class.getName());
         ds.setLogLevel(SessionLog.FINE);
         ds.login();
 

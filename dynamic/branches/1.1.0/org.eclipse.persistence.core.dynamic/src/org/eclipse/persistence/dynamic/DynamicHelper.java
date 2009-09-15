@@ -22,6 +22,7 @@ import java.util.Iterator;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.sessions.Session;
 
@@ -43,21 +44,24 @@ public class DynamicHelper {
      * access to the meta model (type and properties) allowing for dynamic use
      * as well as optimized data value retrieval from an entity.
      */
-    public static EntityType getType(DatabaseSession session, String typeName) {
-        if (session == null) {
-            throw new IllegalArgumentException("No session provided");
-        }
-
+    public static EntityType getType(DatabaseSession session, String typeName)  {
         ClassDescriptor cd = session.getClassDescriptorForAlias(typeName);
         return getType(cd);
     }
 
     public static EntityType getType(ClassDescriptor descriptor) {
-        if (descriptor == null) {
-            return null;
-        }
-
         return (EntityType) descriptor.getProperty(EntityType.DESCRIPTOR_PROPERTY);
+    }
+
+    /**
+     * Provide access to the entity's type.
+     * 
+     * @param entity
+     * @return
+     * @throws ClassCastException if entity is not an instance of {@link DynamicEntityImpl}
+     */
+    public static EntityType getType(DynamicEntity entity) throws ClassCastException {
+        return ((DynamicEntityImpl) entity).getType();
     }
 
     public static boolean isDynamicType(ClassDescriptor descriptor) {
