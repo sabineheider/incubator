@@ -18,6 +18,7 @@
  ******************************************************************************/
 package example.employee;
 
+import java.util.Collection;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -59,7 +60,7 @@ public class Queries {
         List<DynamicEntity> emps = query.getResultList();
 
         for (DynamicEntity emp : emps) {
-            emp.get("manager", DynamicEntity.class).get("phoneNumbers", List.class).size();
+            emp.<DynamicEntity>get("manager").<Collection>get("phoneNumbers").size();
         }
 
         return emps;

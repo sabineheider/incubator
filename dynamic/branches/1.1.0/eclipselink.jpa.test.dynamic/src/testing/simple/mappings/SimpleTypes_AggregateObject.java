@@ -108,7 +108,7 @@ public class SimpleTypes_AggregateObject {
         assertFalse(a.isSet("b"));
         assertTrue(a.isSet("c"));
 
-        DynamicEntity c = a.get("c", DynamicEntity.class);
+        DynamicEntity c = a.<DynamicEntity>get("c");
         assertNotNull(c);
         assertTrue(c.isSet("value4"));
         assertFalse(c.isSet("value5"));
@@ -151,7 +151,7 @@ public class SimpleTypes_AggregateObject {
         assertNotNull(a);
         assertNotNull(a._persistence_getPropertyChangeListener());
 
-        DynamicEntityImpl c = a.get("c", DynamicEntityImpl.class);
+        DynamicEntityImpl c = a.<DynamicEntityImpl>get("c");
         assertNotNull(c);
         assertNotNull(c._persistence_getPropertyChangeListener());
         assertTrue(c._persistence_getPropertyChangeListener() instanceof AggregateAttributeChangeListener);

@@ -44,6 +44,7 @@ import org.eclipse.persistence.sessions.remote.*;
  * When this customized inheritance model is used an only-instances and with-all-subclasses
  * filter expression may be required for concrete and branch querying.
  */
+@SuppressWarnings("unchecked")
 public class InheritancePolicy implements Serializable, Cloneable {
     protected Class parentClass;
     protected String parentClassName;

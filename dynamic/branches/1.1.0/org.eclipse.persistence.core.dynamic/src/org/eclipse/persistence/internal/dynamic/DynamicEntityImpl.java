@@ -20,11 +20,13 @@ package org.eclipse.persistence.internal.dynamic;
 
 import java.beans.PropertyChangeListener;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.Vector;
 
 import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.exceptions.DynamicException;
+import org.eclipse.persistence.indirection.IndirectContainer;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.internal.descriptors.PersistenceEntity;
 import org.eclipse.persistence.internal.identitymaps.CacheKey;
@@ -64,24 +66,27 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
     /**
      * Type of this entity
      */
-    private EntityTypeImpl type;
+    private transient EntityTypeImpl type;
 
     /**
      * ChangeListener used for attribute change tracking processed in the
-     * property. Set through {@link ChangeTracker#_persistence_setPropertyChangeListener(PropertyChangeListener)}
+     * property. Set through
+     * {@link ChangeTracker#_persistence_setPropertyChangeListener(PropertyChangeListener)}
      */
     private PropertyChangeListener changeListener = null;
 
     /**
-     * FetchGroup cached by {@link FetchGroupTracker#_persistence_setFetchGroup(FetchGroup)}
+     * FetchGroup cached by
+     * {@link FetchGroupTracker#_persistence_setFetchGroup(FetchGroup)}
      */
     private FetchGroup fetchGroup;
 
     /**
-     * Session cached by {@link FetchGroupTracker#_persistence_setSession(Session)}
+     * Session cached by
+     * {@link FetchGroupTracker#_persistence_setSession(Session)}
      */
     private Session session;
-    
+
     /**
      * {@link FetchGroupTracker#_persistence_setShouldRefreshFetchGroup(boolean)}
      */
@@ -101,60 +106,49 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
      */
     private Vector<Object> primaryKey;
 
-    
     protected DynamicEntityImpl(EntityTypeImpl type) {
         this.type = type;
         this.values = new Object[type.getNumberOfProperties()];
     }
 
-    protected EntityTypeImpl getTypeImpl() {
+    protected EntityTypeImpl getTypeImpl() throws DynamicException {
+        if (this.type == null) {
+            throw DynamicException.entityHasNullType(this);
+        }
+        
         return this.type;
     }
 
-    public EntityType getType() {
+    public EntityType getType() throws DynamicException{
         return getTypeImpl();
     }
 
-    public Object get(String propertyName) {
-        return get(getTypeImpl().getMapping(propertyName), Object.class);
-    }
-
-    public <T> T get(String propertyName, Class<T> type) {
-        return (T) get(getTypeImpl().getMapping(propertyName), type);
-    }
-
-    public Object get(int propertyIndex) {
-        return get(getTypeImpl().getMapping(propertyIndex), Object.class);
-    }
-
-    public <T> T get(int propertyIndex, Class<T> type) {
-        return get(getTypeImpl().getMapping(propertyIndex), type);
-    }
-
     @SuppressWarnings("unchecked")
-    public <T> T get(DatabaseMapping mapping, Class<T> type) {
+    public <T> T get(String propertyName) {
+        DatabaseMapping mapping = getTypeImpl().getMapping(propertyName);
         Object value = mapping.getAttributeValueFromObject(this);
 
-        if (value instanceof ValueHolderInterface) {
-            value = ((ValueHolderInterface) value).getValue();
+        if (mapping.isForeignReferenceMapping() && mapping.isLazy()) {
+            // Force basic indirection to be instantiated
+            if (value instanceof ValueHolderInterface) {
+                value = ((ValueHolderInterface) value).getValue();
+            }
+
+            // Force transparent indirection to be instantiated
+            if (value instanceof IndirectContainer) {
+                ((IndirectContainer) value).getValueHolder().getValue();
+            }
         }
 
         try {
             return (T) value;
         } catch (ClassCastException cce) {
-            throw DynamicException.invalidPropertyType(mapping, type);
+            throw DynamicException.invalidPropertyType(mapping, cce);
         }
     }
 
-    public DynamicEntity set(int propertyIndex, Object value) {
-        return set(getTypeImpl().getMapping(propertyIndex), value);
-    }
-
     public DynamicEntity set(String propertyName, Object value) {
-        return set(getTypeImpl().getMapping(propertyName), value);
-    }
-
-    public DynamicEntity set(DatabaseMapping mapping, Object value) {
+        DatabaseMapping mapping = getTypeImpl().getMapping(propertyName);
         Object currentValue = mapping.getAttributeValueFromObject(this);
 
         if (currentValue instanceof ValueHolderInterface) {
@@ -168,10 +162,6 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
     public boolean isSet(DatabaseMapping mapping) {
         ValuesAccessor accessor = (ValuesAccessor) mapping.getAttributeAccessor();
         return accessor.isSet(this);
-    }
-
-    public boolean isSet(int propertyIndex) {
-        return isSet(getTypeImpl().getMapping(propertyIndex));
     }
 
     public boolean isSet(String propertyName) {

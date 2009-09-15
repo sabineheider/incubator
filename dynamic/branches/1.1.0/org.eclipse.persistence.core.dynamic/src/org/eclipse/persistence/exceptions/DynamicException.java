@@ -39,6 +39,10 @@ public class DynamicException extends EclipseLinkException {
         super(message);
     }
 
+    public DynamicException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
+
     /**
      * Exception throw when attempting to access a dynamic property by name
      * which does not have an associated mapping. Make sure the property name
@@ -66,8 +70,9 @@ public class DynamicException extends EclipseLinkException {
      * @see DynamicEntityImpl#getCollection(DatabaseMapping)
      * @see DynamicEntityImpl#getMap
      */
-    public static DynamicException invalidPropertyType(DatabaseMapping mapping, Class<?> type) {
-        return new DynamicException("DynamicEntity:: Cannot return: " + mapping + " as: " + type);
+    public static DynamicException invalidPropertyType(DatabaseMapping mapping, ClassCastException cce) {
+        // TODO: Review readability of exception message
+        return new DynamicException("DynamicEntity:: Cannot return: " + mapping + ": " + cce.getMessage(), cce);
     }
 
     /**
@@ -77,5 +82,15 @@ public class DynamicException extends EclipseLinkException {
      */
     public static DynamicException illegalDynamicClassWriter(DynamicClassLoader loader, String parentClassName) {
         return new DynamicException("Illegal DynamicClassWriter(" + loader + ", " + parentClassName + ")");
+    }
+
+    /**
+     * TODO
+     * 
+     * @param entity
+     * @return
+     */
+    public static DynamicException entityHasNullType(DynamicEntityImpl entity) {
+        return new DynamicException("DynamicEntity has null type: " + entity);
     }
 }

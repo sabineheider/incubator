@@ -69,7 +69,7 @@ public class Transactions {
         phone.set("areaCode", "613");
         phone.set("number", "555-1212");
         phone.set("owner", emp);
-        emp.get("phoneNumbers", Collection.class).add( phone);
+        emp.<Collection<DynamicEntity>>get("phoneNumbers").add( phone);
 
         em.getTransaction().begin();
         em.persist(emp);
@@ -100,7 +100,7 @@ public class Transactions {
         phone.set("areaCode", "613");
         phone.set("number", "555-1212");
         phone.set("owner", emp);
-        emp.get("phoneNumbers", Collection.class).add( phone);
+        emp.<Collection<DynamicEntity>>get("phoneNumbers").add( phone);
 
         em.getTransaction().begin();
         // When merging the managed instance is returned from the call.
@@ -153,7 +153,7 @@ public class Transactions {
         // Lock Employee using query with hint
         DynamicEntity emp = (DynamicEntity) em.createQuery("SELECT e FROM Employee e WHERE e.id = :ID").setParameter("ID", minId).setHint(QueryHints.PESSIMISTIC_LOCK, PessimisticLock.Lock).getSingleResult();
 
-        emp.set("salary", emp.get("salary", Integer.class) - 1);
+        emp.set("salary", emp.<Integer>get("salary") - 1);
 
         em.flush();
     }
@@ -171,7 +171,7 @@ public class Transactions {
 
         List<Object[]> emps = em.createQuery("SELECT e, e.address.city FROM Employee e").getResultList();
         DynamicEntity emp = (DynamicEntity) emps.get(0)[0];
-        emp.set("salary", emp.get("salary", Integer.class) + 1);
+        emp.set("salary", emp.<Integer>get("salary") + 1);
 
         em.flush();
 

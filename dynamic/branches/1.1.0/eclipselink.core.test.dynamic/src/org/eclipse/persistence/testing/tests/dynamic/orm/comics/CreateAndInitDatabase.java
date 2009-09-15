@@ -113,7 +113,7 @@ public class CreateAndInitDatabase {
 			String nextLine = null;
 			while ((nextLine = reader.readLine()) != null) {
 				DynamicEntity issue = buildIssue(type, nextLine, titles);
-				issues.put(issue.get("id", Integer.class), issue);
+				issues.put(issue.<Integer>get("id"), issue);
 			}
 		} finally {
 			if (reader != null) {
@@ -149,7 +149,7 @@ public class CreateAndInitDatabase {
 			String nextLine = null;
 			while ((nextLine = reader.readLine()) != null) {
 				DynamicEntity publisher = buildPublisher(type, nextLine);
-				publishers.put(publisher.get("id", Integer.class), publisher);
+				publishers.put(publisher.<Integer>get("id"), publisher);
 			}
 		} finally {
 			if (reader != null) {
@@ -179,7 +179,7 @@ public class CreateAndInitDatabase {
 			String nextLine = null;
 			while ((nextLine = reader.readLine()) != null) {
 				DynamicEntity title = buildTitle(type, nextLine, publishers);
-				titles.put(title.get("id", Integer.class), title);
+				titles.put(title.<Integer>get("id"), title);
 			}
 		} finally {
 			if (reader != null) {

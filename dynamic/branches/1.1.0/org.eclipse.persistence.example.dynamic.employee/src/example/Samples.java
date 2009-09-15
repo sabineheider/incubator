@@ -115,7 +115,7 @@ public class Samples {
         phone.set("areaCode", areaCode);
         phone.set("number", number);
         phone.set("owner", employee);
-        employee.get("phoneNumbers", Collection.class).add(phone);
+        employee.<Collection> get("phoneNumbers").add(phone);
         return phone;
     }
 
@@ -126,7 +126,6 @@ public class Samples {
         employee.set("period", period);
     }
 
-    @SuppressWarnings("unchecked")
     public DynamicEntity basicEmployeeExample1() {
         DynamicEntity employee = newInstance("Employee");
 
@@ -145,8 +144,8 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        employee.get("responsibilities", Collection.class).add("Water the office plants.");
-        employee.get("responsibilities", Collection.class).add("Maintain the kitchen facilities.");
+        employee.<Collection<String>> get("responsibilities").add("Water the office plants.");
+        employee.<Collection<String>> get("responsibilities").add("Maintain the kitchen facilities.");
         addPhoneNumber(employee, "Work", "613", "5558812");
 
         return employee;
@@ -225,7 +224,6 @@ public class Samples {
         return employee;
     }
 
-    @SuppressWarnings("unchecked")
     public DynamicEntity basicEmployeeExample2() {
         DynamicEntity employee = newInstance("Employee");
 
@@ -244,15 +242,14 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        employee.get("responsibilities", Collection.class).add("Hire people when more people are required.");
-        employee.get("responsibilities", Collection.class).add("Lay off employees when less people are required.");
+        employee.<Collection<String>> get("responsibilities").add("Hire people when more people are required.");
+        employee.<Collection<String>> get("responsibilities").add("Lay off employees when less people are required.");
         addPhoneNumber(employee, "Work", "613", "5558812");
         addPhoneNumber(employee, "ISDN", "905", "5553691");
 
         return employee;
     }
 
-    @SuppressWarnings("unchecked")
     public DynamicEntity basicEmployeeExample3() {
         DynamicEntity employee = newInstance("Employee");
 
@@ -271,14 +268,14 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        employee.get("responsibilities", Collection.class).add("Perform code reviews as required.");
+        employee.<Collection<String>> get("responsibilities").add("Perform code reviews as required.");
+
         addPhoneNumber(employee, "Pager", "976", "5556666");
         addPhoneNumber(employee, "ISDN", "905", "5553691");
 
         return employee;
     }
 
-    @SuppressWarnings("unchecked")
     public DynamicEntity basicEmployeeExample4() {
         DynamicEntity employee = newInstance("Employee");
 
@@ -297,7 +294,7 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        employee.get("responsibilities", Collection.class).add("Have to fix the Database problem.");
+        employee.<Collection<String>> get("responsibilities").add("Have to fix the Database problem.");
         addPhoneNumber(employee, "Work Fax", "613", "5555943");
         addPhoneNumber(employee, "Cellular", "416", "5551111");
         addPhoneNumber(employee, "Pager", "976", "5556666");
@@ -306,7 +303,6 @@ public class Samples {
         return employee;
     }
 
-    @SuppressWarnings("unchecked")
     public DynamicEntity basicEmployeeExample5() {
         DynamicEntity employee = newInstance("Employee");
 
@@ -325,7 +321,7 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        employee.get("responsibilities", Collection.class).add("Write code documentation.");
+        employee.<Collection<String>> get("responsibilities").add("Write code documentation.");
         addPhoneNumber(employee, "Work", "613", "5558812");
         addPhoneNumber(employee, "ISDN", "905", "5553691");
         addPhoneNumber(employee, "Home", "613", "5551234");
@@ -333,7 +329,6 @@ public class Samples {
         return employee;
     }
 
-    @SuppressWarnings("unchecked")
     public DynamicEntity basicEmployeeExample6() {
         DynamicEntity employee = newInstance("Employee");
 
@@ -352,7 +347,7 @@ public class Samples {
         address.set("country", "Canada");
         employee.set("address", address);
 
-        employee.get("responsibilities", Collection.class).add("Write user specifications.");
+        employee.<Collection<String>> get("responsibilities").add("Write user specifications.");
         addPhoneNumber(employee, "ISDN", "905", "5553691");
         addPhoneNumber(employee, "Work", "613", "5558812");
 
@@ -431,7 +426,7 @@ public class Samples {
     }
 
     private void setCalendar(DynamicEntity entity, String name, int year, int month, int day, int hour, int minute, int seconds) {
-        Calendar cal = entity.get(name, Calendar.class);
+        Calendar cal = entity.<Calendar> get(name);
 
         if (cal == null) {
             cal = Calendar.getInstance();
@@ -569,9 +564,9 @@ public class Samples {
     private void addManagedEmployees(int managerIndex, int[] employeeIndeces) {
         DynamicEntity manager = this.employees[managerIndex];
 
-        if (manager.get("managedEmployees", List.class).isEmpty()) {
+        if (manager.<Collection> get("managedEmployees").isEmpty()) {
             for (int index = 0; index < employeeIndeces.length; index++) {
-                manager.get("managedEmployees", Collection.class).add(this.employees[employeeIndeces[index]]);
+                manager.<Collection> get("managedEmployees").add(this.employees[employeeIndeces[index]]);
             }
         }
     }
@@ -579,7 +574,7 @@ public class Samples {
     @SuppressWarnings("unchecked")
     private void addProjects(int empIndex, int[] smallProjIndeces, int[] largeProjIndeces) {
         DynamicEntity employee = this.employees[empIndex];
-        Collection<DynamicEntity> projects = employee.get("projects", Collection.class);
+        Collection<DynamicEntity> projects = employee.<Collection> get("projects");
 
         for (int index = 0; index < smallProjIndeces.length; index++) {
             projects.add(this.smallProjects[smallProjIndeces[index]]);
@@ -662,9 +657,9 @@ public class Samples {
             DynamicEntity emp = sampleEmps.get(index);
             DynamicEntity dbEmp = dbEmps.get(index);
 
-            Assert.assertEquals("First name does not match on employees[" + index + "]", emp.get("firstName", String.class), dbEmp.get("firstName", String.class));
-            Assert.assertEquals("Last name does not match on employees[" + index + "]", emp.get("lastName", String.class), dbEmp.get("lastName", String.class));
-            Assert.assertEquals("Salary does not match on employees[" + index + "]", emp.get("salary", Integer.class), dbEmp.get("salary", Integer.class));
+            Assert.assertEquals("First name does not match on employees[" + index + "]", emp.<String> get("firstName"), dbEmp.<String> get("firstName"));
+            Assert.assertEquals("Last name does not match on employees[" + index + "]", emp.<String> get("lastName"), dbEmp.<String> get("lastName"));
+            Assert.assertEquals("Salary does not match on employees[" + index + "]", emp.<Integer> get("salary"), dbEmp.<Integer> get("salary"));
         }
     }
 
@@ -674,7 +669,7 @@ public class Samples {
     class DynamicEntityComparator implements Comparator<DynamicEntity> {
 
         public int compare(DynamicEntity emp1, DynamicEntity emp2) {
-            return emp1.get("id", Integer.class) - emp2.get("id", Integer.class);
+            return emp1.<Integer> get("id") - emp2.<Integer> get("id");
         }
 
     }
@@ -689,7 +684,7 @@ public class Samples {
         int[] ids = new int[this.employees.length];
 
         for (int index = 0; index < this.employees.length; index++) {
-            ids[index] = this.employees[index].get("id", Integer.class);
+            ids[index] = this.employees[index].<Integer> get("id");
         }
 
         return ids;
@@ -723,11 +718,11 @@ public class Samples {
         for (int index = 0; index < this.employees.length; index++) {
             DynamicEntity emp = this.employees[index];
             Query query = em.createQuery("SELECT e FROM Employee e WHERE e.firstName = :FNAME AND e.lastName = :LNAME");
-            query.setParameter("FNAME", emp.get("firstName", String.class));
-            query.setParameter("LNAME", emp.get("lastName", String.class));
+            query.setParameter("FNAME", emp.<String> get("firstName"));
+            query.setParameter("LNAME", emp.<String> get("lastName"));
 
             DynamicEntity dbEmp = (DynamicEntity) query.getSingleResult();
-            dbEmp.set("salary", this.employees[index].get("salary", Integer.class));
+            dbEmp.set("salary", this.employees[index].<Integer> get("salary"));
         }
 
         if (startedTX) {

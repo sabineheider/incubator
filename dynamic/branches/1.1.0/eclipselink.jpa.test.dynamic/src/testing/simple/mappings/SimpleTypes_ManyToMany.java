@@ -135,7 +135,7 @@ public class SimpleTypes_ManyToMany {
         DynamicEntity simpleInstanceA = simpleTypeA.newInstance();
         simpleInstanceA.set("id", 1);
         simpleInstanceA.set("value1", "A2");
-        simpleInstanceA.get("b", Collection.class).add(simpleInstanceA);
+        simpleInstanceA.<Collection<DynamicEntity>>get("b").add(simpleInstanceA);
 
         simpleInstanceB.set("a", simpleInstanceB);
 
@@ -168,7 +168,7 @@ public class SimpleTypes_ManyToMany {
 
         DynamicEntity a = (DynamicEntity) em.find(simpleTypeA.getJavaClass(), 1);
         assertNotNull(a);
-        List<DynamicEntity> bs = a.get("b", List.class);
+        List<DynamicEntity> bs = a.<List<DynamicEntity>>get("b");
         assertNotNull(bs);
         assertEquals(1, bs.size());
         bs.remove(0);

@@ -18,12 +18,16 @@
  ******************************************************************************/
 package org.eclipse.persistence.dynamic;
 
+import org.eclipse.persistence.exceptions.DynamicException;
+
 /**
  * DynamicEntity is the public interface for dealing with dynamic persistent
  * objects. Application code can using dynamic entities can access the
- * persistent state using either property names or property indexes. In order to
- * understand what attributes are available the {@link EntityType} can be
- * accessed.
+ * persistent state using property names with correspond to the attribute names
+ * defined in the underlying descritpor's mappings.
+ * <p>
+ * In order to understand what attributes are available the {@link EntityType}
+ * can be accessed.
  * <p>
  * For Collection and Map operations request the attribute providing its
  * Collection/Map type and then manipulate the resulting container.
@@ -33,21 +37,46 @@ package org.eclipse.persistence.dynamic;
  */
 public interface DynamicEntity {
 
-    public Object get(String propertyName);
+    /**
+     * Return the persistence value for the given property as the specified type
+     * (if provided). In the case of relationships this call will cause lazy
+     * load relationships to be instantiated.
+     * 
+     * @param <T>
+     *            generic type of the attribute. If the value cannot be found or
+     *            it cannot be cast to the specific type a
+     *            {@link DynamicException} will be thrown.
+     * @param property
+     *            the name of the mapped attribute.
+     * @throws DynamicException
+     * @return persistent value or relationship container of the specified type
+     */
+    public <T> T get(String property) throws DynamicException;
 
-    public Object get(int propertyIndex);
+    /**
+     * TODO
+     * 
+     * @param property
+     * @param value
+     * @return
+     * @throws DynamicException
+     */
+    public DynamicEntity set(String property, Object value) throws DynamicException;
 
-    public <T> T get(String propertyName, Class<T> type);
+    /**
+     * TODO
+     * 
+     * @param property
+     * @return
+     * @throws DynamicException
+     */
+    public boolean isSet(String property) throws DynamicException;
 
-    public <T> T get(int propertyIndex, Class<T> type);
-
-    public DynamicEntity set(int propertyIndex, Object value);
-
-    public DynamicEntity set(String propertyName, Object value);
-
-    public boolean isSet(String propertyName);
-
-    public boolean isSet(int propertyIndex);
-
-    public EntityType getType();
+    /**
+     * TODO
+     * 
+     * @return
+     * @throws DynamicException
+     */
+    public EntityType getType() throws DynamicException;
 }

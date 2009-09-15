@@ -142,7 +142,7 @@ public class SimpleTypes_OneToMany {
         DynamicEntity simpleInstanceA = simpleTypeA.newInstance();
         simpleInstanceA.set("id", 1);
         simpleInstanceA.set("value1", "A2");
-        simpleInstanceA.get("b", Collection.class).add( simpleInstanceA);
+        simpleInstanceA.<Collection<DynamicEntity>>get("b").add( simpleInstanceA);
 
         simpleInstanceB.set("a", simpleInstanceB);
 
@@ -171,7 +171,7 @@ public class SimpleTypes_OneToMany {
 
         DynamicEntity a = (DynamicEntity) em.find(getAType().getJavaClass(), 1);
         assertNotNull(a);
-        assertEquals(1, a.get("b", Collection.class).size());
+        assertEquals(1, a.<Collection>get("b").size());
 
         em.remove(a);
         //em.remove(a.get("b", List.class).get(0));

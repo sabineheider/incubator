@@ -54,12 +54,12 @@ public class TransactionTests extends EclipseLinkJPATest {
         DynamicEntity emp = transactions.createUsingPersist(em);
 
         assertNotNull(emp);
-        assertTrue(emp.get("id", Integer.class) > 0);
+        assertTrue(emp.<Integer>get("id") > 0);
 
         em.getTransaction().begin();
         em.createQuery("DELETE from PhoneNumber p WHERE p.owner.id = " + emp.get("id")).executeUpdate();
         em.createQuery("DELETE from Employee e WHERE e.id = " + emp.get("id")).executeUpdate();
-        em.createQuery("DELETE from Address a WHERE a.id = " + emp.get("address", DynamicEntity.class).get("id", Integer.class)).executeUpdate();
+        em.createQuery("DELETE from Address a WHERE a.id = " + emp.<DynamicEntity>get("address").<Integer>get("id")).executeUpdate();
         em.getTransaction().commit();
 
         getSample().verifyCounts(em);
@@ -72,12 +72,12 @@ public class TransactionTests extends EclipseLinkJPATest {
         DynamicEntity emp = transactions.createUsingMerge(em);
 
         assertNotNull(emp);
-        assertTrue(emp.get("id", Integer.class) > 0);
+        assertTrue(emp.<Integer>get("id") > 0);
 
         em.getTransaction().begin();
         em.createQuery("DELETE from PhoneNumber p WHERE p.owner.id = " + emp.get("id")).executeUpdate();
         em.createQuery("DELETE from Employee e WHERE e.id = " + emp.get("id")).executeUpdate();
-        em.createQuery("DELETE from Address a WHERE a.id = " + emp.get("address", DynamicEntity.class).get("id", Integer.class)).executeUpdate();
+        em.createQuery("DELETE from Address a WHERE a.id = " + emp.<DynamicEntity>get("address").<Integer>get("id")).executeUpdate();
         em.getTransaction().commit();
 
         getSample().verifyCounts(em);
@@ -95,7 +95,7 @@ public class TransactionTests extends EclipseLinkJPATest {
 
         em.clear();
 
-        emp.set("salary", emp.get("salary", Integer.class) + 1);
+        emp.set("salary", emp.<Integer>get("salary") + 1);
 
         em.getTransaction().begin();
 
