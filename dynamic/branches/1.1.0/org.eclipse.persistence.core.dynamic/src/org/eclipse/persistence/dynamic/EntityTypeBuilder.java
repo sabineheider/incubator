@@ -25,6 +25,7 @@ import java.util.*;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.descriptors.changetracking.AttributeChangeTrackingPolicy;
+import org.eclipse.persistence.exceptions.ValidationException;
 import org.eclipse.persistence.internal.dynamic.*;
 import org.eclipse.persistence.internal.helper.ConversionManager;
 import org.eclipse.persistence.internal.helper.DatabaseField;
@@ -446,41 +447,48 @@ public class EntityTypeBuilder {
         return project;
     }
 
+    /**
+     * Create EntityType for a descriptor including the creation of a new
+     * dynamic type. This method needs to handle inheritance where the parent
+     * type needs to be defined before this type.
+     */
     private static EntityType createType(DynamicClassLoader dcl, ClassDescriptor descriptor, Project project) {
+        Class<?> javaClass = null;
         try {
-            dcl.loadClass(descriptor.getJavaClassName());
+            javaClass = dcl.loadClass(descriptor.getJavaClassName());
         } catch (ClassNotFoundException e) {
-            EntityType parent = null;
-
-            if (descriptor.hasInheritance() && descriptor.getInheritancePolicy().getParentClassName() != null) {
-                ClassDescriptor parentDesc = null;
-                for (Iterator<?> i = project.getOrderedDescriptors().iterator(); parentDesc == null && i.hasNext();) {
-                    ClassDescriptor d = (ClassDescriptor) i.next();
-                    if (d.getJavaClassName().equals(descriptor.getInheritancePolicy().getParentClassName())) {
-                        parentDesc = d;
-                    }
-                }
-
-                if (parentDesc == null) {
-                    // TODO
-                    throw new IllegalStateException();
-                }
-
-                parent = DynamicHelper.getType(parentDesc);
-
-                if (parent == null) {
-                    parent = createType(dcl, parentDesc, project);
-                }
-            }
-
-            EntityType type = DynamicHelper.getType(descriptor);
-            if (type == null) {
-                type = new EntityTypeBuilder(dcl, descriptor, parent).getType();
-            }
-
-            return type;
         }
 
-        return null;
+        if (javaClass != null) {
+            descriptor.setJavaClass(javaClass);
+        }
+        
+        EntityType parent = null;
+
+        if (descriptor.hasInheritance() && descriptor.getInheritancePolicy().getParentClassName() != null) {
+            ClassDescriptor parentDesc = null;
+            for (Iterator<?> i = project.getOrderedDescriptors().iterator(); parentDesc == null && i.hasNext();) {
+                ClassDescriptor d = (ClassDescriptor) i.next();
+                if (d.getJavaClassName().equals(descriptor.getInheritancePolicy().getParentClassName())) {
+                    parentDesc = d;
+                }
+            }
+
+            if (parentDesc == null) {
+                throw ValidationException.missingDescriptor(descriptor.getInheritancePolicy().getParentClassName());
+            }
+
+            parent = DynamicHelper.getType(parentDesc);
+            if (parent == null) {
+                parent = createType(dcl, parentDesc, project);
+            }
+        }
+
+        EntityType type = DynamicHelper.getType(descriptor);
+        if (type == null) {
+            type = new EntityTypeBuilder(dcl, descriptor, parent).getType();
+        }
+
+        return type;
     }
 }

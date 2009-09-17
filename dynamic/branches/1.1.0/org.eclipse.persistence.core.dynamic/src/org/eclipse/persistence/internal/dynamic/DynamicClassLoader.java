@@ -44,7 +44,7 @@ public class DynamicClassLoader extends ClassLoader {
      * using addClass or createDynameClass prior to the
      * {@link #findClass(String)} being invoked.
      */
-    private Map<String, DynamicClassWriter> classWriters = new HashMap<String, DynamicClassWriter>();
+    private volatile Map<String, DynamicClassWriter> classWriters = new HashMap<String, DynamicClassWriter>();
 
     /**
      * Default writer to use if one is not specified.
@@ -109,8 +109,13 @@ public class DynamicClassLoader extends ClassLoader {
         if (!hasClassWriter(className)) {
             addClass(className, writer);
         }
+
         try {
             Class<?> dynamicClass = loadClass(className);
+
+            // The findClass call-back will remove the writer. This block is
+            // only used if the class already existed and that operation did not
+            // occur.
             if (hasClassWriter(className)) {
                 synchronized (getClassWriters()) {
                     getClassWriters().remove(className);
@@ -122,16 +127,34 @@ public class DynamicClassLoader extends ClassLoader {
         }
     }
 
+    /**
+     * Create a new dynamic entity type for the specified name assuming the use
+     * of the default writer and its default parent class.
+     * 
+     * @param className
+     * @return
+     */
     public Class<?> creatDynamicClass(String className) {
         return creatDynamicClass(className, getDefaultWriter());
     }
 
+    /**
+     * Create a new dynamic entity type for the specified name with the
+     * specified parent class.
+     * 
+     * @param className
+     * @param parentClass
+     * @return
+     */
     public Class<?> creatDynamicClass(String className, Class<?> parentClass) {
         return creatDynamicClass(className, new DynamicClassWriter(parentClass));
     }
 
     /**
-     * create a class, but only if we are in class-creation mode
+     * Create a new dynamic class if a ClassWriter is registered for the
+     * provided className. This code is single threaded to ensure only one class
+     * is created for a given name and that the ClassWriter is removed
+     * afterwards.
      */
     @Override
     protected Class<?> findClass(String className) throws ClassNotFoundException {
