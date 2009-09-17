@@ -18,12 +18,16 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.tests.dynamic.orm.projectxml;
 
+import static junit.framework.Assert.*;
+
 import java.math.BigInteger;
 import java.sql.Date;
 import java.util.Vector;
 
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.logging.SessionLog;
+import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.sessions.*;
 import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.junit.BeforeClass;
@@ -59,6 +63,31 @@ public class SimpleMapProject {
         entity.set("since", new Date(100, 06, 06));
 
         ds.writeObject(entity);
+    }
+
+    @Test
+    public void verifyDescriptor() throws Exception {
+        ClassDescriptor descriptor = ds.getClassDescriptorForAlias("simpletableType");
+
+        assertNotNull(descriptor);
+        assertEquals("simpletable.Simpletable", descriptor.getJavaClassName());
+
+        assertEquals(3, descriptor.getMappings().size());
+
+        DatabaseMapping idMapping = descriptor.getMappingForAttributeName("id");
+        assertNotNull(idMapping);
+        assertTrue(idMapping.isDirectToFieldMapping());
+        assertEquals(BigInteger.class, idMapping.getAttributeClassification());
+
+        DatabaseMapping nameMapping = descriptor.getMappingForAttributeName("name");
+        assertNotNull(nameMapping);
+        assertTrue(nameMapping.isDirectToFieldMapping());
+        assertEquals(String.class, nameMapping.getAttributeClassification());
+
+        DatabaseMapping sinceMapping = descriptor.getMappingForAttributeName("since");
+        assertNotNull(sinceMapping);
+        assertTrue(sinceMapping.isDirectToFieldMapping());
+        assertEquals(Date.class, sinceMapping.getAttributeClassification());
     }
 
     @Test

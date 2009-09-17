@@ -23,7 +23,9 @@ import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.exceptions.DescriptorException;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.internal.helper.ClassConstants;
+import org.eclipse.persistence.internal.helper.ConversionManager;
 import org.eclipse.persistence.mappings.*;
+import org.eclipse.persistence.mappings.foundation.AbstractDirectMapping;
 
 /**
  * ValueAccessor is a specialized AttributeAccessor enabling usage of the
@@ -144,6 +146,19 @@ public class ValuesAccessor extends AttributeAccessor {
             return refMapping.getReferenceClass();
         } else {
             if (getMapping().getAttributeClassification() == null) {
+                // If the mapping was read from project XML using the MW
+                // mappings the name will be not null
+                if (getMapping().isAbstractDirectMapping() && ((AbstractDirectMapping) getMapping()).getAttributeClassificationName() != null) {
+                    String typeName = ((AbstractDirectMapping) getMapping()).getAttributeClassificationName().trim();
+
+                    // Using the default conversion manager for now assuming all
+                    // direct types will be standard java types and not other
+                    // dynamic types. This could possibly be configured with the 
+                    // AbstractDirectMapping.convertClassNamesToClasses call
+                    Class<?> attrType = ConversionManager.getDefaultManager().convertClassNameToClass(typeName);
+                    ((AbstractDirectMapping) getMapping()).setAttributeClassification(attrType);
+                    return attrType;
+                }
                 return ClassConstants.OBJECT;
             }
             return getMapping().getAttributeClassification();
