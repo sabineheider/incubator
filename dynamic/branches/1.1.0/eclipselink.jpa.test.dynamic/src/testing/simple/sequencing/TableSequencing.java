@@ -13,6 +13,7 @@ import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
 import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.jpa.JpaHelper;
@@ -127,6 +128,7 @@ public class TableSequencing {
     public static void setUp() {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
 
         TableSequence sequence = new TableSequence();
         sequence.setTableName("TEST_SEQ");
@@ -136,7 +138,8 @@ public class TableSequencing {
         ((AbstractSession) session).getProject().getLogin().setDefaultSequence(sequence);
         sequence.onConnect(session.getPlatform());
 
-        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(session, "model.sequencing." + ENTITY_TYPE, null, TABLE_NAME);
+        Class<?> dynamicType = dcl.creatDynamicClass("model.sequencing." + ENTITY_TYPE);
+        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(dynamicType, null, TABLE_NAME);
         typeBuilder.setPrimaryKeyFields("SID");
         typeBuilder.addDirectMapping("id", int.class, "SID");
         typeBuilder.addDirectMapping("value1", String.class, "VAL_1");

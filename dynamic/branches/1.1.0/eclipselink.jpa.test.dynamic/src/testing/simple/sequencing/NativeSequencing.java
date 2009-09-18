@@ -1,18 +1,12 @@
 package testing.simple.sequencing;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.*;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
+import javax.persistence.*;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.dynamic.DynamicHelper;
-import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.jpa.JpaHelper;
@@ -21,11 +15,7 @@ import org.eclipse.persistence.sequencing.NativeSequence;
 import org.eclipse.persistence.sessions.IdentityMapAccessor;
 import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 public class NativeSequencing {
 
@@ -128,16 +118,18 @@ public class NativeSequencing {
     public static void setUp() {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+        Class<?> javaType = dcl.creatDynamicClass("model.sequencing." + ENTITY_TYPE);
+
+        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(javaType, null, TABLE_NAME);
+        typeBuilder.setPrimaryKeyFields("SID");
+        typeBuilder.addDirectMapping("id", int.class, "SID");
+        typeBuilder.addDirectMapping("value1", String.class, "VAL_1");
 
         NativeSequence sequence = new NativeSequence();
         sequence.setPreallocationSize(5);
         ((AbstractSession) session).getProject().getLogin().setDefaultSequence(sequence);
         sequence.onConnect(session.getPlatform());
-
-        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(session, "model.sequencing." + ENTITY_TYPE, null, TABLE_NAME);
-        typeBuilder.setPrimaryKeyFields("SID");
-        typeBuilder.addDirectMapping("id", int.class, "SID");
-        typeBuilder.addDirectMapping("value1", String.class, "VAL_1");
         typeBuilder.configureSequencing(sequence, ENTITY_TYPE + "_SEQ", "SID");
 
         EntityTypeBuilder.addToSession(session, true, true, typeBuilder.getType());

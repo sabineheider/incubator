@@ -32,6 +32,7 @@ import org.eclipse.persistence.internal.helper.DatabaseField;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.internal.sessions.factories.ObjectPersistenceWorkbenchXMLProject;
 import org.eclipse.persistence.mappings.*;
+import org.eclipse.persistence.mappings.foundation.AbstractDirectMapping;
 import org.eclipse.persistence.oxm.XMLContext;
 import org.eclipse.persistence.oxm.XMLUnmarshaller;
 import org.eclipse.persistence.platform.database.DatabasePlatform;
@@ -41,10 +42,9 @@ import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 
 /**
- * The EntityTypeBuilder is a utility class for creating dynamic types and their
- * mappings. It targets the creation of native-ORM mappings. This builder works
- * as a factory for the type that it wraps. A new builder is required for each
- * typed being constructed.
+ * The EntityTypeBuilder is a factory class for creating and extending dynamic
+ * entity types. After being constructed in either usage the application can
+ * then use the provided API to customize mapping information of the type.
  * 
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
@@ -52,36 +52,51 @@ import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 public class EntityTypeBuilder {
 
     /**
-     * The type being built.
+     * The type being configured for dynamic use or being created/extended
      */
     protected EntityTypeImpl entityType;
 
-    public EntityTypeBuilder(DatabaseSession session, String className, EntityType parentType, String... tableNames) {
-        this(DynamicClassLoader.lookup(session), className, parentType, tableNames);
-    }
-
-    public EntityTypeBuilder(DynamicClassLoader dcl, String className, EntityType parentType, String... tableNames) {
-        addDynamicClasses(dcl, className, parentType);
-
-        RelationalDescriptor descriptor = new RelationalDescriptor();
-        descriptor.setJavaClass(dcl.creatDynamicClass(className));
-        this.entityType = new EntityTypeImpl(descriptor, parentType);
-
-        configure(tableNames);
-    }
-
+    /**
+     * Create an EntityType for a new dynamic type. The contained EntityType and
+     * its wrapped descriptor are not automatically added to any session. This
+     * must be done by the application after the type's is fully configured.
+     * <p>
+     * <b>Creating new type Example</b>: <code>
+     *  DynamicClassLoader dcl = DynamicClassLoader.lookup(session);<br>
+     *  Class<?> javaType = dcl.creatDynamicClass("model.Simple");<br>
+     *  <br>
+     *  EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(javaType, null, "SIMPLE_TYPE");<br>
+     *  typeBuilder.setPrimaryKeyFields("SID");<br>
+     *  typeBuilder.addDirectMapping("id", int.class, "SID");<br>
+     *  typeBuilder.addDirectMapping("value1", String.class, "VAL_1");<br>
+     *  typeBuilder.addDirectMapping("value2", boolean.class, "VAL_2");<br>
+     *  typeBuilder.addDirectMapping("value3", Calendar.class, "VAL_3");<br>
+     *  typeBuilder.addDirectMapping("value4", Character.class, "VAL_4");<br>
+     *  <br>
+     *  typeBuilder.addToSession(session, true, true);<br>
+     * </code>
+     * 
+     * @param dynamicClass
+     * @param parentType
+     * @param tableNames
+     */
     public EntityTypeBuilder(Class<?> dynamicClass, EntityType parentType, String... tableNames) {
         RelationalDescriptor descriptor = new RelationalDescriptor();
         descriptor.setJavaClass(dynamicClass);
         this.entityType = new EntityTypeImpl(descriptor, parentType);
 
-        configure(tableNames);
+        configure(descriptor, tableNames);
     }
 
-    public EntityTypeBuilder(DatabaseSession session, ClassDescriptor descriptor, EntityType parentType) {
-        this(DynamicClassLoader.lookup(session), descriptor, parentType);
-    }
-
+    /**
+     * Create an EntityTypeBuilder for an existing descriptor. This is used
+     * 
+     * @param dcl
+     * @param descriptor
+     * @param parentType
+     *            provided since the InheritancePolicy on the descriptor may not
+     *            have its parent descriptor initialized.
+     */
     public EntityTypeBuilder(DynamicClassLoader dcl, ClassDescriptor descriptor, EntityType parentType) {
         this.entityType = new EntityTypeImpl(descriptor, parentType);
 
@@ -113,28 +128,24 @@ public class EntityTypeBuilder {
     }
 
     /**
-     * 
-     * @param tableNames
+     * Initialize a new or existing descriptor configuring the necessary
+     * policies as well as
      */
-    protected void configure(String... tableNames) {
-        ClassDescriptor descriptor = getType().getDescriptor();
-
-        // Configure Table names
-        if (tableNames == null || tableNames.length < 1) {
-            descriptor.descriptorIsAggregate();
-        } else {
-            for (int index = 0; index < tableNames.length; index++) {
-                descriptor.addTableName(tableNames[index]);
+    protected void configure(ClassDescriptor descriptor, String... tableNames) {
+        // Configure Table names if provided
+        if (tableNames != null) {
+            if (tableNames.length == 0) {
+                if (descriptor.getTables().size() == 0) {
+                    descriptor.descriptorIsAggregate();
+                }
+            } else {
+                for (int index = 0; index < tableNames.length; index++) {
+                    descriptor.addTableName(tableNames[index]);
+                }
             }
+
         }
 
-        configure(descriptor);
-    }
-
-    /**
-     * Initialize an existing descriptor for dynamic usage.
-     */
-    protected void configure(ClassDescriptor descriptor) {
         descriptor.setObjectChangePolicy(new AttributeChangeTrackingPolicy());
         descriptor.setInstantiationPolicy(new EntityTypeInstantiationPolicy((EntityTypeImpl) getType()));
 
@@ -340,6 +351,17 @@ public class EntityTypeBuilder {
             }
         }
 
+        // Try to configure the attribute classification if name is available
+        if (mapping.getAttributeClassification() == null && mapping.isAbstractDirectMapping()) {
+            String typeName = ((AbstractDirectMapping) mapping).getAttributeClassificationName();
+            if (typeName != null) {
+                // Remove any additional padding
+                typeName = typeName.trim();
+                Class<?> attrType = ConversionManager.getDefaultManager().convertClassNameToClass(typeName);
+                ((AbstractDirectMapping) mapping).setAttributeClassification(attrType);
+            }
+        }
+
         mapping.setAttributeAccessor(new ValuesAccessor(getType(), mapping, index));
 
         if (requiresInitialization(mapping)) {
@@ -360,8 +382,13 @@ public class EntityTypeBuilder {
         getType().getDescriptor().setSequence(sequence);
     }
 
+    public void addToSession(DatabaseSession session, boolean createMissingTables, boolean generateFKConstraints) {
+        addToSession(session, createMissingTables, generateFKConstraints, getType());
+    }
+
     /**
-     * TODO
+     * Add one or more EntityType instances to a session and optionally generate
+     * needed tables with or without FK constraints.
      * 
      * @param session
      * @param createMissingTables
@@ -462,7 +489,7 @@ public class EntityTypeBuilder {
         if (javaClass != null) {
             descriptor.setJavaClass(javaClass);
         }
-        
+
         EntityType parent = null;
 
         if (descriptor.hasInheritance() && descriptor.getInheritancePolicy().getParentClassName() != null) {

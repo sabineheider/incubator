@@ -13,6 +13,7 @@ import junit.framework.Assert;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.exceptions.DatabaseException;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
@@ -185,10 +186,14 @@ public class SimpleTypes_ManyToMany {
     public static void setUp() {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
 
-        EntityTypeBuilder aFactory = new JPAEntityTypeBuilder(session, "model.SimpleA", null, "SIMPLE_TYPE_A");
+        Class<?> simpleTypeA = dcl.creatDynamicClass("model.SimpleA");
+        EntityTypeBuilder aFactory = new JPAEntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A");
         aFactory.setPrimaryKeyFields("SID");
-        EntityTypeBuilder bFactory = new JPAEntityTypeBuilder(session, "model.SimpleB", null, "SIMPLE_TYPE_B");
+        
+        Class<?> simpleTypeB = dcl.creatDynamicClass("model.SimpleB");
+        EntityTypeBuilder bFactory = new JPAEntityTypeBuilder(simpleTypeB, null, "SIMPLE_TYPE_B");
         bFactory.setPrimaryKeyFields("SID");
 
         bFactory.addDirectMapping("id", int.class, "SID");

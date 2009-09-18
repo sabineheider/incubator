@@ -17,6 +17,7 @@ import org.eclipse.persistence.dynamic.DynamicHelper;
 import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.exceptions.DatabaseException;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
@@ -142,7 +143,7 @@ public class SimpleTypes_OneToMany {
         DynamicEntity simpleInstanceA = simpleTypeA.newInstance();
         simpleInstanceA.set("id", 1);
         simpleInstanceA.set("value1", "A2");
-        simpleInstanceA.<Collection<DynamicEntity>>get("b").add( simpleInstanceA);
+        simpleInstanceA.<Collection<DynamicEntity>> get("b").add(simpleInstanceA);
 
         simpleInstanceB.set("a", simpleInstanceB);
 
@@ -171,10 +172,10 @@ public class SimpleTypes_OneToMany {
 
         DynamicEntity a = (DynamicEntity) em.find(getAType().getJavaClass(), 1);
         assertNotNull(a);
-        assertEquals(1, a.<Collection>get("b").size());
+        assertEquals(1, a.<Collection> get("b").size());
 
         em.remove(a);
-        //em.remove(a.get("b", List.class).get(0));
+        // em.remove(a.get("b", List.class).get(0));
 
         em.getTransaction().commit();
     }
@@ -198,10 +199,14 @@ public class SimpleTypes_OneToMany {
     public static void setUp() {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
 
-        EntityTypeBuilder aFactory = new JPAEntityTypeBuilder(session, "model.SimpleA", null, "SIMPLE_TYPE_A");
+        Class<?> simpleTypeA = dcl.creatDynamicClass("model.SimpleA");
+        EntityTypeBuilder aFactory = new JPAEntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A");
         aFactory.setPrimaryKeyFields("SID");
-        EntityTypeBuilder bFactory = new JPAEntityTypeBuilder(session, "model.SimpleB", null, "SIMPLE_TYPE_B");
+
+        Class<?> simpleTypeB = dcl.creatDynamicClass("model.SimpleB");
+        EntityTypeBuilder bFactory = new JPAEntityTypeBuilder(simpleTypeB, null, "SIMPLE_TYPE_B");
         bFactory.setPrimaryKeyFields("SID");
 
         bFactory.addDirectMapping("id", int.class, "SID");

@@ -15,8 +15,7 @@ import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
 import org.eclipse.persistence.dynamic.EntityTypeBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.internal.dynamic.*;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
@@ -146,8 +145,10 @@ public class SimpleTypes_MultiTable {
     public static void setUp() {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+        Class<?> simpleTypeA = dcl.creatDynamicClass("model.SimpleA");
 
-        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(session, "model.SimpleA", null, "SIMPLE_TYPE_A", "SIMPLE_TYPE_B", "SIMPLE_TYPE_C");
+        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A", "SIMPLE_TYPE_B", "SIMPLE_TYPE_C");
         typeBuilder.setPrimaryKeyFields("SIMPLE_TYPE_A.SID");
         typeBuilder.addDirectMapping("id", int.class, "SIMPLE_TYPE_A.SID");
         typeBuilder.addDirectMapping("value1", String.class, "SIMPLE_TYPE_A.VAL_1");

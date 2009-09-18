@@ -24,6 +24,7 @@ import javax.persistence.EntityManagerFactory;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
 import org.eclipse.persistence.mappings.OneToManyMapping;
@@ -41,14 +42,23 @@ public class EmployeeDynamicMappings {
     public static void createTypes(EntityManagerFactory emf, String packageName, boolean createMissingTables) {
         String packagePrefix = packageName.endsWith(".") ? packageName : packageName + ".";
         Server session = JpaHelper.getServerSession(emf);
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
 
-        JPAEntityTypeBuilder employee = new JPAEntityTypeBuilder(session, packagePrefix + "Employee", null, "D_EMPLOYEE", "D_SALARY");
-        JPAEntityTypeBuilder address = new JPAEntityTypeBuilder(session, packagePrefix + "Address", null, "D_ADDRESS");
-        JPAEntityTypeBuilder phone = new JPAEntityTypeBuilder(session, packagePrefix + "PhoneNumber", null, "D_PHONE");
-        JPAEntityTypeBuilder period = new JPAEntityTypeBuilder(session, packagePrefix + "EmploymentPeriod", null);
-        JPAEntityTypeBuilder project = new JPAEntityTypeBuilder(session, packagePrefix + "Project", null, "D_PROJECT");
-        JPAEntityTypeBuilder smallProject = new JPAEntityTypeBuilder(session, packagePrefix + "SmallProject", project.getType(), "D_PROJECT");
-        JPAEntityTypeBuilder largeProject = new JPAEntityTypeBuilder(session, packagePrefix + "LargeProject", project.getType(), "D_LPROJECT");
+        Class<?> employeeClass = dcl.creatDynamicClass(packagePrefix + "Employee");
+        Class<?> addressClass = dcl.creatDynamicClass(packagePrefix + "Address");
+        Class<?> phoneClass = dcl.creatDynamicClass(packagePrefix + "PhoneNumber");
+        Class<?> periodClass = dcl.creatDynamicClass(packagePrefix + "EmploymentPeriod");
+        Class<?> projectClass = dcl.creatDynamicClass(packagePrefix + "Project");
+        Class<?> smallProjectClass = dcl.creatDynamicClass(packagePrefix + "SmallProject", projectClass);
+        Class<?> largeProjectClass = dcl.creatDynamicClass(packagePrefix + "LargeProject", projectClass);
+
+        JPAEntityTypeBuilder employee = new JPAEntityTypeBuilder(employeeClass, null, "D_EMPLOYEE", "D_SALARY");
+        JPAEntityTypeBuilder address = new JPAEntityTypeBuilder(addressClass, null, "D_ADDRESS");
+        JPAEntityTypeBuilder phone = new JPAEntityTypeBuilder(phoneClass, null, "D_PHONE");
+        JPAEntityTypeBuilder period = new JPAEntityTypeBuilder(periodClass, null);
+        JPAEntityTypeBuilder project = new JPAEntityTypeBuilder(projectClass, null, "D_PROJECT");
+        JPAEntityTypeBuilder smallProject = new JPAEntityTypeBuilder(smallProjectClass, project.getType(), "D_PROJECT");
+        JPAEntityTypeBuilder largeProject = new JPAEntityTypeBuilder(largeProjectClass, project.getType(), "D_LPROJECT");
 
         configureAddress(address);
         configureEmployee(employee, address, phone, period, project);

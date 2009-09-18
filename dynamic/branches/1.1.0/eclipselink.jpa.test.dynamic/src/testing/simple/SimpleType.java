@@ -17,6 +17,7 @@ import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
 import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
@@ -48,8 +49,10 @@ public class SimpleType {
 
     protected EntityType createSimpleType() {
         Server session = JpaHelper.getServerSession(emf);
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+        Class<?> javaType = dcl.creatDynamicClass("model.Simple");
 
-        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(session, "model.Simple", null, "SIMPLE_TYPE");
+        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(javaType, null, "SIMPLE_TYPE");
         typeBuilder.setPrimaryKeyFields("SID");
         typeBuilder.addDirectMapping("id", int.class, "SID");
         typeBuilder.addDirectMapping("value1", String.class, "VAL_1");
@@ -57,7 +60,7 @@ public class SimpleType {
         typeBuilder.addDirectMapping("value3", Calendar.class, "VAL_3");
         typeBuilder.addDirectMapping("value4", Character.class, "VAL_4");
 
-        EntityTypeBuilder.addToSession(session, true, true, typeBuilder.getType());
+        typeBuilder.addToSession(session, true, true);
 
         return typeBuilder.getType();
     }

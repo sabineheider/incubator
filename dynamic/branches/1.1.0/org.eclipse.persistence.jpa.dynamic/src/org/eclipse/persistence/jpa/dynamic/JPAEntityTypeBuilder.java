@@ -21,33 +21,20 @@ package org.eclipse.persistence.jpa.dynamic;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.dynamic.EntityTypeBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.internal.jpa.CMP3Policy;
-import org.eclipse.persistence.sessions.DatabaseSession;
 
+/**
+ * 
+ * @author dclarke
+ * 
+ */
 public class JPAEntityTypeBuilder extends EntityTypeBuilder {
 
-    public JPAEntityTypeBuilder(DatabaseSession session, String className, EntityType parentType, String... tableNames) {
-        super(session, className, parentType, tableNames);
-    }
-
-    public JPAEntityTypeBuilder(Class dynamicClass, EntityType parentType,String[] tableNames) {
+    public JPAEntityTypeBuilder(Class<?> dynamicClass, EntityType parentType, String... tableNames) {
         super(dynamicClass, parentType, tableNames);
-
-        this.entityType.getDescriptor().setCMPPolicy(new CMP3Policy());
-    }
-    
-    public JPAEntityTypeBuilder(DynamicClassLoader dcl,ClassDescriptor descriptor, EntityType parentType) {
-        super(dcl, descriptor, parentType);
     }
 
-    /**
-     * Initialize an existing descriptor for dynamic usage.
-     * 
-     * @param descriptor
-     */
-    protected void configure(ClassDescriptor descriptor) {
-        super.configure(descriptor);
+    protected void configure(ClassDescriptor descriptor, String... tableNames) {
+        super.configure(descriptor, tableNames);
 
         if (descriptor.getCMPPolicy() == null) {
             descriptor.setCMPPolicy(new DynamicIdentityPolicy());

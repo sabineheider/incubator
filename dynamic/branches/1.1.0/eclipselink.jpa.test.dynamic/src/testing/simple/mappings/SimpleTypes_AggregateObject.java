@@ -17,8 +17,7 @@ import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
 import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.internal.descriptors.changetracking.AggregateAttributeChangeListener;
-import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.internal.dynamic.*;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
 import org.eclipse.persistence.mappings.AggregateObjectMapping;
@@ -195,16 +194,20 @@ public class SimpleTypes_AggregateObject {
     public static void setUp() {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
 
-        EntityTypeBuilder bFactory = new JPAEntityTypeBuilder(session, "model.SimpleB", null);
+        Class<?> simpleTypeB = dcl.creatDynamicClass("model.SimpleB");
+        EntityTypeBuilder bFactory = new JPAEntityTypeBuilder(simpleTypeB, null);
         bFactory.addDirectMapping("value2", boolean.class, "VAL_2");
         bFactory.addDirectMapping("value3", String.class, "VAL_3");
 
-        EntityTypeBuilder cFactory = new JPAEntityTypeBuilder(session, "model.SimpleC", null);
+        Class<?> simpleTypeC = dcl.creatDynamicClass("model.SimpleC");
+        EntityTypeBuilder cFactory = new JPAEntityTypeBuilder(simpleTypeC, null);
         cFactory.addDirectMapping("value4", double.class, "VAL_4");
         cFactory.addDirectMapping("value5", String.class, "VAL_5");
 
-        EntityTypeBuilder aFactory = new JPAEntityTypeBuilder(session, "model.SimpleA", null, "SIMPLE_TYPE_A");
+        Class<?> simpleTypeA = dcl.creatDynamicClass("model.SimpleA");
+        EntityTypeBuilder aFactory = new JPAEntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A");
         aFactory.setPrimaryKeyFields("SID");
         aFactory.addDirectMapping("id", int.class, "SID");
         aFactory.addDirectMapping("value1", String.class, "VAL_1");

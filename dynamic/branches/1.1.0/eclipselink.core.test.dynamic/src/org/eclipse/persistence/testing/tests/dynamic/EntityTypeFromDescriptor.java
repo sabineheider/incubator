@@ -18,22 +18,18 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.tests.dynamic;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.fail;
+import static junit.framework.Assert.*;
 
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.exceptions.DescriptorException;
 import org.eclipse.persistence.exceptions.IntegrityException;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.internal.dynamic.*;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.mappings.foundation.AbstractDirectMapping;
-import org.eclipse.persistence.sessions.DatabaseLogin;
-import org.eclipse.persistence.sessions.DatabaseSession;
-import org.eclipse.persistence.sessions.Project;
+import org.eclipse.persistence.sessions.*;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 import org.junit.Test;
 
@@ -52,8 +48,12 @@ public class EntityTypeFromDescriptor {
 
         DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
 
-        EntityTypeImpl entityType = (EntityTypeImpl) new EntityTypeBuilder(dcl, buildMyEntityDescriptor(), null).getType();
+        ClassDescriptor descriptor = buildMyEntityDescriptor();
+        assertFalse(descriptor.isAggregateDescriptor());
 
+        EntityTypeImpl entityType = (EntityTypeImpl) new EntityTypeBuilder(dcl, descriptor, null).getType();
+
+        assertFalse(descriptor.isAggregateDescriptor());
         assertEquals(MyEntity.class, entityType.getJavaClass());
 
         session.addDescriptor(entityType.getDescriptor());

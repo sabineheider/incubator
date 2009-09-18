@@ -13,6 +13,7 @@ import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
 import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
@@ -126,14 +127,16 @@ public class DefaultSequencing {
     public static void setUp() {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
-
-        TableSequence defaultSequence = (TableSequence) session.getLogin().getDefaultSequence();
-        defaultSequence.setTableName("TEST_SEQ");
-
-        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(session, "model.sequencing." + ENTITY_TYPE, null, TABLE_NAME);
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+        Class<?> javaType = dcl.creatDynamicClass("model.sequencing." + ENTITY_TYPE);
+        
+        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(javaType, null, TABLE_NAME);
         typeBuilder.setPrimaryKeyFields("SID");
         typeBuilder.addDirectMapping("id", int.class, "SID");
         typeBuilder.addDirectMapping("value1", String.class, "VAL_1");
+
+        TableSequence defaultSequence = (TableSequence) session.getLogin().getDefaultSequence();
+        defaultSequence.setTableName("TEST_SEQ");
         typeBuilder.configureSequencing(ENTITY_TYPE + "_SEQ", "SID");
 
         EntityTypeBuilder.addToSession(session, true, true, typeBuilder.getType());

@@ -46,6 +46,10 @@ public class DynamicHelper {
      */
     public static EntityType getType(DatabaseSession session, String typeName)  {
         ClassDescriptor cd = session.getClassDescriptorForAlias(typeName);
+        
+        if (cd == null) {
+            return null;
+        }
         return getType(cd);
     }
 

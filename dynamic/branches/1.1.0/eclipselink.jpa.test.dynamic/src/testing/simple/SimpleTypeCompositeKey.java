@@ -14,6 +14,7 @@ import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
 import org.eclipse.persistence.dynamic.EntityType;
 import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.dynamic.DynamicIdentityPolicy;
 import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
@@ -33,8 +34,10 @@ public class SimpleTypeCompositeKey extends SimpleType {
     @Override
     protected EntityType createSimpleType() {
         Server session = JpaHelper.getServerSession(emf);
+        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+        Class<?> javaType = dcl.creatDynamicClass("model.Simple");
 
-        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(session, "model.Simple", null, "SIMPLE_TYPE");
+        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(javaType, null, "SIMPLE_TYPE");
         typeBuilder.setPrimaryKeyFields("SID1", "SID2");
         typeBuilder.addDirectMapping("id1", int.class, "SID1");
         typeBuilder.addDirectMapping("id2", int.class, "SID2");
