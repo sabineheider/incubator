@@ -41,7 +41,7 @@ public class SimpleType {
             this.simpleType = DynamicHelper.getType(JpaHelper.getServerSession(emf), "Simple");
 
             if (this.simpleType == null) {
-                createSimpleType();
+                this.simpleType = createSimpleType();
             }
         }
         return this.simpleType;
@@ -50,7 +50,7 @@ public class SimpleType {
     protected EntityType createSimpleType() {
         Server session = JpaHelper.getServerSession(emf);
         DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
-        Class<?> javaType = dcl.creatDynamicClass("model.Simple");
+        Class<?> javaType = dcl.createDynamicClass("model.Simple");
 
         EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(javaType, null, "SIMPLE_TYPE");
         typeBuilder.setPrimaryKeyFields("SID");
@@ -115,7 +115,7 @@ public class SimpleType {
         EntityManager em = emf.createEntityManager();
 
         assertFalse(em.contains(simpleInstance));
-        simpleInstance = em.merge(simpleInstance);
+        simpleInstance = (DynamicEntity) em.merge(simpleInstance);
         assertTrue(em.contains(simpleInstance));
 
         em.close();

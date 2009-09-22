@@ -164,7 +164,7 @@ public abstract class BaseSequencingTest {
 
             DynamicClassLoader dcl = DynamicClassLoader.lookup(getSharedSession());
 
-            Class<?> dynamicType = dcl.creatDynamicClass("model.sequencing." + ENTITY_TYPE);
+            Class<?> dynamicType = dcl.createDynamicClass("model.sequencing." + ENTITY_TYPE);
             EntityTypeBuilder typeBuilder = new EntityTypeBuilder(dynamicType, null, TABLE_NAME);
             typeBuilder.setPrimaryKeyFields("SID");
             typeBuilder.addDirectMapping("id", int.class, "SID");

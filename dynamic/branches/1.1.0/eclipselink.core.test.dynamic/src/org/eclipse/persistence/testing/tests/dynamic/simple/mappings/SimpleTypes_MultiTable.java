@@ -140,7 +140,7 @@ public class SimpleTypes_MultiTable extends EclipseLinkORMTest {
         DatabaseSession shared = super.createSharedSession();
 
         DynamicClassLoader dcl = DynamicClassLoader.lookup(shared);
-        Class<?> simpleTypeA = dcl.creatDynamicClass("model.SimpleA");
+        Class<?> simpleTypeA = dcl.createDynamicClass("model.SimpleA");
 
         EntityTypeBuilder typeBuilder = new EntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A", "SIMPLE_TYPE_B", "SIMPLE_TYPE_C");
         typeBuilder.setPrimaryKeyFields("SIMPLE_TYPE_A.SID");

@@ -26,6 +26,7 @@ import java.util.Vector;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.sessions.*;
@@ -47,7 +48,9 @@ public class SimpleMapProjectNoLogin {
     @BeforeClass
     public static void setUp() throws Exception {
         DatabaseLogin login = DynamicTestHelper.getTestLogin();
-        p = EntityTypeBuilder.loadDynamicProject("org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/simple-map-project-no-login.xml", login);
+        p = EntityTypeBuilder.loadDynamicProject(
+            "org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/simple-map-project-no-login.xml",
+            login, new DynamicClassLoader(SimpleMapProjectNoLogin.class.getClassLoader()));
 
         ds = p.createDatabaseSession();
         ds.setName(SimpleMapProjectNoLogin.class.getName());

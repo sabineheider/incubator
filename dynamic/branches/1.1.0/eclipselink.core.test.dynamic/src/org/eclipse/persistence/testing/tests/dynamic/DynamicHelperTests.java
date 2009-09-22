@@ -91,7 +91,7 @@ public class DynamicHelperTests {
         DatabaseSession session = DynamicTestHelper.createEmptySession();
 
         DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
-        Class<?> empClass = dcl.creatDynamicClass(getClass().getName() + ".Employee");
+        Class<?> empClass = dcl.createDynamicClass(getClass().getName() + ".Employee");
 
         EntityTypeBuilder typeBuilder = new EntityTypeBuilder(empClass, null, "D_EMPLOYEE");
         typeBuilder.setPrimaryKeyFields("EMP_ID");

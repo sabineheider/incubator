@@ -15,9 +15,9 @@ public class SessionHelper {
 
             DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
 
-            new EntityTypeBuilder(dcl.creatDynamicClass("model.Issue"), null);
-            new EntityTypeBuilder(dcl.creatDynamicClass("model.Publisher"), null);
-            new EntityTypeBuilder(dcl.creatDynamicClass("model.Title"), null);
+            new EntityTypeBuilder(dcl.createDynamicClass("model.Issue"), null);
+            new EntityTypeBuilder(dcl.createDynamicClass("model.Publisher"), null);
+            new EntityTypeBuilder(dcl.createDynamicClass("model.Title"), null);
 
             XMLSessionConfigLoader loader = new XMLSessionConfigLoader();
             loader.setClassLoader(dcl);

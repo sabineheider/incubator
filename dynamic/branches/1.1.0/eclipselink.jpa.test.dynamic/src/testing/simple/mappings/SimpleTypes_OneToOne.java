@@ -136,13 +136,13 @@ public class SimpleTypes_OneToOne {
         Server session = JpaHelper.getServerSession(emf);
         DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
 
-        Class<?> simpleTypeB = dcl.creatDynamicClass("model.SimpleB");
+        Class<?> simpleTypeB = dcl.createDynamicClass("model.SimpleB");
         EntityTypeBuilder bFactory = new JPAEntityTypeBuilder(simpleTypeB, null, "SIMPLE_TYPE_B");
         bFactory.setPrimaryKeyFields("SID");
         bFactory.addDirectMapping("id", int.class, "SID");
         bFactory.addDirectMapping("value1", String.class, "VAL_1");
 
-        Class<?> simpleTypeA = dcl.creatDynamicClass("model.SimpleA");
+        Class<?> simpleTypeA = dcl.createDynamicClass("model.SimpleA");
         EntityTypeBuilder aFactory = new JPAEntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A");
         aFactory.setPrimaryKeyFields("SID");
         aFactory.addDirectMapping("id", int.class, "SID");

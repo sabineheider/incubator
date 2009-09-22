@@ -34,7 +34,7 @@ public class SimpleType extends EclipseLinkORMTest {
         DatabaseSession session = getSharedSession();
 
         DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
-        Class<?> javaType = dcl.creatDynamicClass("model.Simple");
+        Class<?> javaType = dcl.createDynamicClass("model.Simple");
 
         EntityTypeBuilder typeBuilder = new EntityTypeBuilder(javaType, null, "SIMPLE_TYPE");
         typeBuilder.setPrimaryKeyFields("SID");

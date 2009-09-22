@@ -119,7 +119,7 @@ public class NativeSequencing {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
         DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
-        Class<?> javaType = dcl.creatDynamicClass("model.sequencing." + ENTITY_TYPE);
+        Class<?> javaType = dcl.createDynamicClass("model.sequencing." + ENTITY_TYPE);
 
         EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(javaType, null, TABLE_NAME);
         typeBuilder.setPrimaryKeyFields("SID");

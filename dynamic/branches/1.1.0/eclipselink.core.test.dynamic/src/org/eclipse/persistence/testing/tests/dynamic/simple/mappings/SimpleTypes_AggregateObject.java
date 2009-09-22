@@ -191,17 +191,17 @@ public class SimpleTypes_AggregateObject extends EclipseLinkORMTest {
         DatabaseSession shared = super.getSharedSession();
         DynamicClassLoader dcl = DynamicClassLoader.lookup(shared);
 
-        Class<?> simpleTypeB = dcl.creatDynamicClass("model.SimpleB");
+        Class<?> simpleTypeB = dcl.createDynamicClass("model.SimpleB");
         EntityTypeBuilder bTypeBuilder = new EntityTypeBuilder(simpleTypeB, null);
         bTypeBuilder.addDirectMapping("value2", boolean.class, "VAL_2");
         bTypeBuilder.addDirectMapping("value3", String.class, "VAL_3");
 
-        Class<?> simpleTypeC = dcl.creatDynamicClass("model.SimpleC");
+        Class<?> simpleTypeC = dcl.createDynamicClass("model.SimpleC");
         EntityTypeBuilder cTypeBuilder = new EntityTypeBuilder(simpleTypeC, null);
         cTypeBuilder.addDirectMapping("value4", double.class, "VAL_4");
         cTypeBuilder.addDirectMapping("value5", String.class, "VAL_5");
 
-        Class<?> simpleTypeA = dcl.creatDynamicClass("model.SimpleA");
+        Class<?> simpleTypeA = dcl.createDynamicClass("model.SimpleA");
         EntityTypeBuilder aTypeBuilder = new EntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A");
         aTypeBuilder.setPrimaryKeyFields("SID");
         aTypeBuilder.addDirectMapping("id", int.class, "SID");

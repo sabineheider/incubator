@@ -223,8 +223,8 @@ public class SimpleTypes_OneToMany extends EclipseLinkORMTest {
         DynamicClassLoader dcl = DynamicClassLoader.lookup(shared);
 
         // Create Dynamic Classes
-        Class<?> simpleTypeA = dcl.creatDynamicClass("model.SimpleA");
-        Class<?> simpleTypeB = dcl.creatDynamicClass("model.SimpleB");
+        Class<?> simpleTypeA = dcl.createDynamicClass("model.SimpleA");
+        Class<?> simpleTypeB = dcl.createDynamicClass("model.SimpleB");
 
         // Build dynamic types with mappings
         EntityTypeBuilder aTypeBuilder = new EntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A");

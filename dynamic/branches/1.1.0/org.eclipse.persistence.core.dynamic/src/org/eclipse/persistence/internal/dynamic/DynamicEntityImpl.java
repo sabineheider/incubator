@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 1998, 2008 Oracle. All rights reserved.
+ * Copyright (c) 1998, 2009 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
  * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0 
  * which accompanies this distribution. 
@@ -9,7 +9,7 @@
  *
  * Contributors:
  *     dclarke - Dynamic Persistence INCUBATION - Enhancement 200045
- *     			 http://wiki.eclipse.org/EclipseLink/Development/JPA/Dynamic
+ *     			 http://wiki.eclipse.org/EclipseLink/Development/Dynamic
  *     
  * This code is being developed under INCUBATION and is not currently included 
  * in the automated EclipseLink build. The API in this code may change, or 
@@ -18,10 +18,12 @@
  ******************************************************************************/
 package org.eclipse.persistence.internal.dynamic;
 
+//javase imports
 import java.beans.PropertyChangeListener;
 import java.io.StringWriter;
 import java.util.Vector;
 
+//EclipseLink imports
 import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.exceptions.DynamicException;
@@ -32,7 +34,9 @@ import org.eclipse.persistence.internal.identitymaps.CacheKey;
 import org.eclipse.persistence.internal.localization.ExceptionLocalization;
 import org.eclipse.persistence.internal.weaving.PersistenceWeavedLazy;
 import org.eclipse.persistence.mappings.DatabaseMapping;
-import org.eclipse.persistence.queries.*;
+import org.eclipse.persistence.queries.FetchGroup;
+import org.eclipse.persistence.queries.FetchGroupTracker;
+import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.sessions.Session;
 
 /**
@@ -53,7 +57,7 @@ import org.eclipse.persistence.sessions.Session;
  * accessing the Java class needed for JPA and EclipseLink native API calls.
  * 
  * @author dclarke
- * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
+ * @since EclipseLink 1.2
  */
 public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker, PersistenceEntity, FetchGroupTracker, PersistenceWeavedLazy, Cloneable {
     /**
@@ -65,7 +69,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
     /**
      * Type of this entity
      */
-    private transient EntityTypeImpl type;
+    protected transient EntityTypeImpl type;
 
     /**
      * ChangeListener used for attribute change tracking processed in the
@@ -251,7 +255,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
             if (result == null) {
                 Object[] args = { query.getSelectionKey() };
                 String message = ExceptionLocalization.buildMessage("no_entities_retrieved_for_get_reference", args);
-                throw new javax.persistence.EntityNotFoundException(message);
+                throw DynamicException.entityNotFoundException(message);
             }
         }
     }

@@ -146,7 +146,7 @@ public class SimpleTypes_MultiTable {
         emf = Persistence.createEntityManagerFactory("empty");
         Server session = JpaHelper.getServerSession(emf);
         DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
-        Class<?> simpleTypeA = dcl.creatDynamicClass("model.SimpleA");
+        Class<?> simpleTypeA = dcl.createDynamicClass("model.SimpleA");
 
         EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A", "SIMPLE_TYPE_B", "SIMPLE_TYPE_C");
         typeBuilder.setPrimaryKeyFields("SIMPLE_TYPE_A.SID");

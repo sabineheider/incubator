@@ -46,15 +46,13 @@
 					<attribute-name>id</attribute-name>
 					<field table="SIMPLETABLE" name="ID" sql-typecode="3"
 						xsi:type="column" />
-					<attribute-classification>java.math.BigInteger
-					</attribute-classification>
+					<attribute-classification>java.math.BigInteger</attribute-classification>
 				</attribute-mapping>
 				<attribute-mapping xsi:type="direct-mapping">
 					<attribute-name>name</attribute-name>
 					<field table="SIMPLETABLE" name="NAME" sql-typecode="12"
 						xsi:type="column" />
-					<attribute-classification>java.lang.String
-					</attribute-classification>
+					<attribute-classification>java.lang.String</attribute-classification>
 				</attribute-mapping>
 				<attribute-mapping xsi:type="direct-mapping">
 					<attribute-name>since</attribute-name>

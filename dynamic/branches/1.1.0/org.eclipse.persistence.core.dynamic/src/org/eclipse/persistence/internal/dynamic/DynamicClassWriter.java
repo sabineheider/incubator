@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 1998, 2008 Oracle. All rights reserved.
+ * Copyright (c) 1998, 2009 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
  * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0 
  * which accompanies this distribution. 
@@ -9,7 +9,7 @@
  *
  * Contributors:
  *     dclarke - Dynamic Persistence INCUBATION - Enhancement 200045
- *     			 http://wiki.eclipse.org/EclipseLink/Development/JPA/Dynamic
+ *     			 http://wiki.eclipse.org/EclipseLink/Development/Dynamic
  *     
  * This code is being developed under INCUBATION and is not currently included 
  * in the automated EclipseLink build. The API in this code may change, or 
@@ -18,16 +18,27 @@
  ******************************************************************************/
 package org.eclipse.persistence.internal.dynamic;
 
-import static org.eclipse.persistence.internal.libraries.asm.Constants.*;
-
+//javase imports
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.lang.reflect.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
+//EclipseLink imports
 import org.eclipse.persistence.exceptions.DynamicException;
 import org.eclipse.persistence.internal.helper.Helper;
-import org.eclipse.persistence.internal.libraries.asm.*;
+import org.eclipse.persistence.internal.libraries.asm.ClassWriter;
+import org.eclipse.persistence.internal.libraries.asm.CodeVisitor;
 import org.eclipse.persistence.internal.libraries.asm.Type;
+import static org.eclipse.persistence.internal.libraries.asm.Constants.ACC_PROTECTED;
+import static org.eclipse.persistence.internal.libraries.asm.Constants.ACC_PUBLIC;
+import static org.eclipse.persistence.internal.libraries.asm.Constants.ACC_SUPER;
+import static org.eclipse.persistence.internal.libraries.asm.Constants.ALOAD;
+import static org.eclipse.persistence.internal.libraries.asm.Constants.ARETURN;
+import static org.eclipse.persistence.internal.libraries.asm.Constants.INVOKESPECIAL;
+import static org.eclipse.persistence.internal.libraries.asm.Constants.RETURN;
+import static org.eclipse.persistence.internal.libraries.asm.Constants.V1_5;
 
 /**
  * Write the byte codes of a dynamic entity class. The class writer will create

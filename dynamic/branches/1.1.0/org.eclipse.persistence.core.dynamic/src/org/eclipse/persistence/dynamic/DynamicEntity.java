@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 1998, 2008 Oracle. All rights reserved.
+ * Copyright (c) 1998, 2009 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
  * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0 
  * which accompanies this distribution. 
@@ -9,7 +9,8 @@
  *
  * Contributors:
  *     dclarke - Dynamic Persistence INCUBATION - Enhancement 200045
- *     			 http://wiki.eclipse.org/EclipseLink/Development/JPA/Dynamic
+ *     			 http://wiki.eclipse.org/EclipseLink/JPA/Dynamic
+ *     mnorman
  *     
  * This code is being developed under INCUBATION and is not currently included 
  * in the automated EclipseLink build. The API in this code may change, or 
@@ -18,58 +19,80 @@
  ******************************************************************************/
 package org.eclipse.persistence.dynamic;
 
+//EclipseLink imports
 import org.eclipse.persistence.exceptions.DynamicException;
 
 /**
- * DynamicEntity is the public interface for dealing with dynamic persistent
- * objects. Application code can using dynamic entities can access the
- * persistent state using property names with correspond to the attribute names
- * defined in the underlying descritpor's mappings.
+ * <code>DynamicEntity</code> is the public interface for dealing with dynamic persistent objects.
  * <p>
- * In order to understand what attributes are available the {@link EntityType}
- * can be accessed.
+ * The purpose of dynamic persistent objects is to enable (simple) data access when only mapping
+ * information is available <br />
+ * and no concrete Java model is present (specifically, no <tt>.class</tt> files .)
  * <p>
- * For Collection and Map operations request the attribute providing its
- * Collection/Map type and then manipulate the resulting container.
- * 
- * @author dclarke
- * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
+ * Applications using <code>DynamicEntity</code>'s can access the persistent state using property names
+ * which correspond <br />
+ * to the mapped attributes in the underlying EclipseLink descriptors.
+ * For properties mapped to containers ({@link java.util.Collection Collection},<br />
+ * {@link java.util.Map Map}, etc.), the property is retrieved then the resulting container can
+ * be manipulated.
+ * <pre>
+ *     ...
+ *     DynamicEntity de = ...; // retrieve from database
+ *     Collection&lt;String&gt; myListOfGroups = de.&lt;Collection&lt;String&gt;&gt;get("myListOfGroups");
+ *     if (!myListOfGroups.isEmpty()) {
+ *        myListOfGroups.add("FabFour");
+ *     }
+ * </pre>
+ * To discover meta-data about a DynamicEntity's properties, see the {@link DynamicHelper} class
+ *
+ * @author dclarke, mnorman
+ * @since EclipseLink 1.2
  */
 public interface DynamicEntity {
 
     /**
-     * Return the persistence value for the given property as the specified type
-     * (if provided). In the case of relationships this call will cause lazy
-     * load relationships to be instantiated.
-     * 
+     * Return the persistence value for the given property as the specified type.
+     * In the case of relationships, this call will populate lazy-loaded relationships
+     *
      * @param <T>
-     *            generic type of the attribute. If the value cannot be found or
-     *            it cannot be cast to the specific type a
-     *            {@link DynamicException} will be thrown.
-     * @param property
-     *            the name of the mapped attribute.
-     * @throws DynamicException
-     * @return persistent value or relationship container of the specified type
+     *      generic type of the property (if not provided, assume Object).
+     *      If the property cannot be cast to the specific type, a {@link DynamicException}will be thrown.
+     * @param
+     *      propertyPath the name of a mapped property, or a path-like expression that navigates to it.
+     *      If the property cannot be found, a {@link DynamicException} will be thrown.
+     * @throws
+     *      DynamicException
+     * @return
+     *      persistent value or relationship container of the specified type
      */
-    public <T> T get(String property) throws DynamicException;
+    public <T> T get(String propertyPath) throws DynamicException;
 
     /**
-     * TODO
-     * 
-     * @param property
-     * @param value
+     * Set the persistence value for the given property to the specified value
+     *
+     * @param
+     *      propertyPath the name of a mapped property, or a path-like expression that navigates to it.
+     *      If the property cannot be found, a {@link DynamicException} will be thrown.
+     * @param
+     *      value the specified object
+     * @throws
+     *      DynamicException
      * @return
-     * @throws DynamicException
+     *      the same DynamicEntity instance
      */
-    public DynamicEntity set(String property, Object value) throws DynamicException;
+    public DynamicEntity set(String propertyPath, Object value) throws DynamicException;
 
     /**
-     * TODO
-     * 
-     * @param property
+     * Discover if a property has a persistent value
+     *
+     * @param
+     *      propertyPath the name of a mapped property, or a path-like expression that navigates to it.
+     *      If the property cannot be found, a {@link DynamicException} will be thrown.
      * @return
-     * @throws DynamicException
+     *      true if the property has been set
+     * @throws
+     *      DynamicException
      */
-    public boolean isSet(String property) throws DynamicException;
+    public boolean isSet(String propertyPath) throws DynamicException;
 
 }

@@ -44,13 +44,13 @@ public class EmployeeDynamicMappings {
         Server session = JpaHelper.getServerSession(emf);
         DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
 
-        Class<?> employeeClass = dcl.creatDynamicClass(packagePrefix + "Employee");
-        Class<?> addressClass = dcl.creatDynamicClass(packagePrefix + "Address");
-        Class<?> phoneClass = dcl.creatDynamicClass(packagePrefix + "PhoneNumber");
-        Class<?> periodClass = dcl.creatDynamicClass(packagePrefix + "EmploymentPeriod");
-        Class<?> projectClass = dcl.creatDynamicClass(packagePrefix + "Project");
-        Class<?> smallProjectClass = dcl.creatDynamicClass(packagePrefix + "SmallProject", projectClass);
-        Class<?> largeProjectClass = dcl.creatDynamicClass(packagePrefix + "LargeProject", projectClass);
+        Class<?> employeeClass = dcl.createDynamicClass(packagePrefix + "Employee");
+        Class<?> addressClass = dcl.createDynamicClass(packagePrefix + "Address");
+        Class<?> phoneClass = dcl.createDynamicClass(packagePrefix + "PhoneNumber");
+        Class<?> periodClass = dcl.createDynamicClass(packagePrefix + "EmploymentPeriod");
+        Class<?> projectClass = dcl.createDynamicClass(packagePrefix + "Project");
+        Class<?> smallProjectClass = dcl.createDynamicClass(packagePrefix + "SmallProject", projectClass);
+        Class<?> largeProjectClass = dcl.createDynamicClass(packagePrefix + "LargeProject", projectClass);
 
         JPAEntityTypeBuilder employee = new JPAEntityTypeBuilder(employeeClass, null, "D_EMPLOYEE", "D_SALARY");
         JPAEntityTypeBuilder address = new JPAEntityTypeBuilder(addressClass, null, "D_ADDRESS");

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 1998, 2008 Oracle. All rights reserved.
+ * Copyright (c) 1998, 2009 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
  * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0 
  * which accompanies this distribution. 
@@ -9,7 +9,7 @@
  *
  * Contributors:
  *     dclarke - Dynamic Persistence INCUBATION - Enhancement 200045
- *               http://wiki.eclipse.org/EclipseLink/Development/JPA/Dynamic
+ *               http://wiki.eclipse.org/EclipseLink/Development/Dynamic
  *     
  * This code is being developed under INCUBATION and is not currently included 
  * in the automated EclipseLink build. The API in this code may change, or 
@@ -18,13 +18,14 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.tests.dynamic.orm.projectxml;
 
-import static junit.framework.Assert.assertNull;
-import static junit.framework.Assert.fail;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 
 import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.exceptions.XMLMarshalException;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.sessions.DatabaseLogin;
-import org.eclipse.persistence.sessions.Project;
 import org.junit.Test;
 
 /**
@@ -33,37 +34,26 @@ import org.junit.Test;
  */
 public class InvalidConfig {
 
-    @Test
-    public void nullResourceNullLogin() throws Exception {
-        try {
-            EntityTypeBuilder.loadDynamicProject(null, null);
-        } catch (NullPointerException e) {
-            return;
-        }
-        fail("NullPointerException expected");
+    @Test(expected=NullPointerException.class)
+    public void nullResource() throws Exception {
+        EntityTypeBuilder.loadDynamicProject((String)null, null, null);
+    }
+    
+    @Test(expected=NullPointerException.class)
+    public void nullClassLoader() throws Exception {
+        File temp = File.createTempFile("foo",".txt");
+        temp.deleteOnExit();
+        FileInputStream fis = new FileInputStream(temp);
+        EntityTypeBuilder.loadDynamicProject(fis, new DatabaseLogin(), null);
     }
 
-    @Test
-    public void emptyResourcePath() throws Exception {
-        try {
-            EntityTypeBuilder.loadDynamicProject("", null);
-        } catch (XMLMarshalException e) {
-            return;
-        }
-        fail("XMLMarshalException expected");
-    }
-
-    @Test
-    public void unknownResourcePathNullLogin() throws Exception {
-        Project project = EntityTypeBuilder.loadDynamicProject("/foo/bar.xml", null);
-
-        assertNull("Null project expected", project);
-    }
-
-    @Test
-    public void unknownResourcePath() throws Exception {
-        Project project = EntityTypeBuilder.loadDynamicProject("/foo/bar.xml", new DatabaseLogin());
-
-        assertNull("Null project expected", project);
+    @Test(expected=XMLMarshalException.class)
+    public void invalidResource() throws Exception {
+        DynamicClassLoader dynamicClassLoader = new DynamicClassLoader(
+            InvalidConfig.class.getClassLoader());
+        InputStream is = dynamicClassLoader.getResourceAsStream(
+            "org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/bar.xml");
+        EntityTypeBuilder.loadDynamicProject(is, new DatabaseLogin(),
+            dynamicClassLoader);
     }
 }

@@ -135,13 +135,13 @@ public class SimpleTypes_OneToOne extends EclipseLinkORMTest {
         DatabaseSession shared = super.createSharedSession();
         DynamicClassLoader dcl = DynamicClassLoader.lookup(shared);
 
-        Class<?> simpleTypeB = dcl.creatDynamicClass("model.SimpleB");
+        Class<?> simpleTypeB = dcl.createDynamicClass("model.SimpleB");
         EntityTypeBuilder bFactory = new EntityTypeBuilder(simpleTypeB, null, "SIMPLE_TYPE_B");
         bFactory.setPrimaryKeyFields("SID");
         bFactory.addDirectMapping("id", int.class, "SID");
         bFactory.addDirectMapping("value1", String.class, "VAL_1");
 
-        Class<?> simpleTypeA = dcl.creatDynamicClass("model.SimpleA");
+        Class<?> simpleTypeA = dcl.createDynamicClass("model.SimpleA");
         EntityTypeBuilder aFactory = new EntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A");
         aFactory.setPrimaryKeyFields("SID");
         aFactory.addDirectMapping("id", int.class, "SID");

@@ -90,9 +90,9 @@ public class SimpleDynamicMap_WithRelationships_JPAExample {
         ServerSession session = (ServerSession) JpaHelper.getServerSession(emf);
         DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
 
-        Class aClass = dcl.creatDynamicClass("model." + TYPE_A, DynamicMapEntity.class);
-        Class bClass = dcl.creatDynamicClass("model." + TYPE_B, DynamicMapEntity.class);
-        Class cClass = dcl.creatDynamicClass("model." + TYPE_C, DynamicMapEntity.class);
+        Class aClass = dcl.createDynamicClass("model." + TYPE_A, DynamicMapEntity.class);
+        Class bClass = dcl.createDynamicClass("model." + TYPE_B, DynamicMapEntity.class);
+        Class cClass = dcl.createDynamicClass("model." + TYPE_C, DynamicMapEntity.class);
 
         // Create SimpleTypeA with direct mappings
         RelationalDescriptor descriptorA = new RelationalDescriptor();

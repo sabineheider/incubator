@@ -138,7 +138,7 @@ public class TableSequencing {
         ((AbstractSession) session).getProject().getLogin().setDefaultSequence(sequence);
         sequence.onConnect(session.getPlatform());
 
-        Class<?> dynamicType = dcl.creatDynamicClass("model.sequencing." + ENTITY_TYPE);
+        Class<?> dynamicType = dcl.createDynamicClass("model.sequencing." + ENTITY_TYPE);
         EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(dynamicType, null, TABLE_NAME);
         typeBuilder.setPrimaryKeyFields("SID");
         typeBuilder.addDirectMapping("id", int.class, "SID");

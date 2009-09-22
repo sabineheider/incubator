@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 1998, 2008 Oracle. All rights reserved.
+ * Copyright (c) 1998, 2009 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
  * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0 
  * which accompanies this distribution. 
@@ -12,24 +12,44 @@
  ******************************************************************************/  
 package org.eclipse.persistence.descriptors;
 
-import java.io.*;
-import java.lang.reflect.*;
+//javase imports
+import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
-import java.util.*;
-import org.eclipse.persistence.exceptions.*;
-import org.eclipse.persistence.expressions.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
+
+//EclipseLink imports
+import org.eclipse.persistence.exceptions.DatabaseException;
+import org.eclipse.persistence.exceptions.DescriptorException;
+import org.eclipse.persistence.exceptions.QueryException;
+import org.eclipse.persistence.exceptions.ValidationException;
+import org.eclipse.persistence.expressions.Expression;
+import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.internal.descriptors.OptimisticLockingPolicy;
-import org.eclipse.persistence.internal.expressions.*;
-import org.eclipse.persistence.internal.helper.*;
-import org.eclipse.persistence.internal.queries.*;
+import org.eclipse.persistence.internal.expressions.SQLSelectStatement;
+import org.eclipse.persistence.internal.helper.ClassConstants;
+import org.eclipse.persistence.internal.helper.DatabaseField;
+import org.eclipse.persistence.internal.helper.DatabaseTable;
+import org.eclipse.persistence.internal.helper.Helper;
+import org.eclipse.persistence.internal.queries.ExpressionQueryMechanism;
 import org.eclipse.persistence.internal.security.PrivilegedAccessHelper;
 import org.eclipse.persistence.internal.security.PrivilegedClassForName;
-import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.internal.sessions.AbstractRecord;
-import org.eclipse.persistence.mappings.*;
-import org.eclipse.persistence.queries.*;
-import org.eclipse.persistence.sessions.remote.*;
+import org.eclipse.persistence.internal.sessions.AbstractSession;
+import org.eclipse.persistence.mappings.Association;
+import org.eclipse.persistence.mappings.TypedAssociation;
+import org.eclipse.persistence.queries.ObjectLevelReadQuery;
+import org.eclipse.persistence.queries.ReadAllQuery;
+import org.eclipse.persistence.queries.ReadObjectQuery;
+import org.eclipse.persistence.sessions.remote.DistributedSession;
 
 /**
  * <p><b>Purpose</b>: Allows customization of an object's inheritance.
@@ -331,6 +351,15 @@ public class InheritancePolicy implements Serializable, Cloneable {
             throw DescriptorException.missingClassIndicatorField(rowFromDatabase, getDescriptor());
         }
 
+        return classFromValue(classFieldValue, session);
+    }
+    
+    /**
+     * INTERNAL:
+     * This method is used to turn the a raw database field value classFieldValue into a Class object.  Used to determine
+     * which class objects to build from database results, and for class type expression
+     */
+    public Class classFromValue(Object classFieldValue, AbstractSession session) throws DescriptorException {
         Class concreteClass;
         if (!shouldUseClassNameAsIndicator()) {
             concreteClass = (Class)getClassIndicatorMapping().get(classFieldValue);
@@ -1077,23 +1106,7 @@ public class InheritancePolicy implements Serializable, Cloneable {
     public void preInitialize(AbstractSession session) throws DescriptorException {
         // Make sure that parent is already preinitialized.
         if (isChildDescriptor()) {
-            // Unique is required because the builder can add the same table many times.
-            Vector<DatabaseTable> childTables = getDescriptor().getTables();
-            Vector<DatabaseTable> parentTables = getParentDescriptor().getTables();
-            Vector<DatabaseTable> uniqueTables = Helper.concatenateUniqueVectors(parentTables, childTables);
-            getDescriptor().setTables(uniqueTables);
-            
-            // After filtering out any duplicate tables, set the default table
-            // if one is not already set. This must be done now before any other
-            // initialization occurs. In a joined strategy case, the default 
-            // table will be at an index greater than 0. Which is where
-            // setDefaultTable() assumes it is. Therefore, we need to send the 
-            // actual default table instead.
-            if (childTables.isEmpty()) {
-                getDescriptor().setInternalDefaultTable();
-            } else {
-                getDescriptor().setInternalDefaultTable(uniqueTables.get(uniqueTables.indexOf(childTables.get(0))));
-            }
+            updateTables();                       
         
             setClassIndicatorMapping(getParentDescriptor().getInheritancePolicy().getClassIndicatorMapping());
             setShouldUseClassNameAsIndicator(getParentDescriptor().getInheritancePolicy().shouldUseClassNameAsIndicator());
@@ -1737,6 +1750,32 @@ public class InheritancePolicy implements Serializable, Cloneable {
         return Helper.getShortClassName(getClass()) + "(" + getDescriptor() + ")";
     }
 
+    /**
+     * INTERNAL:
+     * set the tables on the child descriptor 
+     * overridden in org.eclipse.persistence.internal.oxm.QNameInheritancePolicy
+     */
+    protected void updateTables(){
+        // Unique is required because the builder can add the same table many times.
+        Vector<DatabaseTable> childTables = getDescriptor().getTables();
+        Vector<DatabaseTable> parentTables = getParentDescriptor().getTables();
+        Vector<DatabaseTable> uniqueTables = Helper.concatenateUniqueVectors(parentTables, childTables);
+        getDescriptor().setTables(uniqueTables);
+        
+        // After filtering out any duplicate tables, set the default table
+        // if one is not already set. This must be done now before any other
+        // initialization occurs. In a joined strategy case, the default 
+        // table will be at an index greater than 0. Which is where
+        // setDefaultTable() assumes it is. Therefore, we need to send the 
+        // actual default table instead.
+        if (childTables.isEmpty()) {
+            getDescriptor().setInternalDefaultTable();
+        } else {
+            getDescriptor().setInternalDefaultTable(uniqueTables.get(uniqueTables.indexOf(childTables.get(0))));
+        }
+    }
+    
+    
     /**
      * PUBLIC:
      * Set the descriptor to use the classes full name as the indicator.

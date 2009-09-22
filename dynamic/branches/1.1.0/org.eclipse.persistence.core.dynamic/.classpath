@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="**/.svn/**" kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.USER_LIBRARY/EclipseLink 1.1.2"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.antlr"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.asm"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.core"/>
+	<classpathentry excluding="**/.svn/**" kind="src" path="src"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

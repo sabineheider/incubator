@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 1998, 2008 Oracle. All rights reserved.
+ * Copyright (c) 1998, 2009 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
  * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0 
  * which accompanies this distribution. 
@@ -9,7 +9,7 @@
  *
  * Contributors:
  *     dclarke - Dynamic Persistence INCUBATION - Enhancement 200045
- *               http://wiki.eclipse.org/EclipseLink/Development/JPA/Dynamic
+ *               http://wiki.eclipse.org/EclipseLink/Development/Dynamic
  *     
  * This code is being developed under INCUBATION and is not currently included 
  * in the automated EclipseLink build. The API in this code may change, or 
@@ -18,26 +18,46 @@
  ******************************************************************************/
 package org.eclipse.persistence.dynamic;
 
+//javase imports
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 
+import org.w3c.dom.Document;
+
+//EclipseLink imports
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.descriptors.changetracking.AttributeChangeTrackingPolicy;
 import org.eclipse.persistence.exceptions.ValidationException;
-import org.eclipse.persistence.internal.dynamic.*;
+import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.internal.dynamic.DynamicClassWriter;
+import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.internal.dynamic.EntityTypeInstantiationPolicy;
+import org.eclipse.persistence.internal.dynamic.ValuesAccessor;
 import org.eclipse.persistence.internal.helper.ConversionManager;
 import org.eclipse.persistence.internal.helper.DatabaseField;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.internal.sessions.factories.ObjectPersistenceWorkbenchXMLProject;
-import org.eclipse.persistence.mappings.*;
+import org.eclipse.persistence.mappings.AggregateObjectMapping;
+import org.eclipse.persistence.mappings.DatabaseMapping;
+import org.eclipse.persistence.mappings.DirectCollectionMapping;
+import org.eclipse.persistence.mappings.DirectToFieldMapping;
+import org.eclipse.persistence.mappings.ForeignReferenceMapping;
+import org.eclipse.persistence.mappings.ManyToManyMapping;
+import org.eclipse.persistence.mappings.OneToManyMapping;
+import org.eclipse.persistence.mappings.OneToOneMapping;
 import org.eclipse.persistence.mappings.foundation.AbstractDirectMapping;
-import org.eclipse.persistence.oxm.XMLContext;
-import org.eclipse.persistence.oxm.XMLUnmarshaller;
 import org.eclipse.persistence.platform.database.DatabasePlatform;
+import org.eclipse.persistence.platform.xml.XMLParser;
+import org.eclipse.persistence.platform.xml.XMLPlatformFactory;
 import org.eclipse.persistence.sequencing.Sequence;
-import org.eclipse.persistence.sessions.*;
+import org.eclipse.persistence.sessions.DatabaseLogin;
+import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.Project;
+import org.eclipse.persistence.sessions.factories.XMLProjectReader;
 import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 
@@ -47,10 +67,12 @@ import org.eclipse.persistence.tools.schemaframework.SchemaManager;
  * then use the provided API to customize mapping information of the type.
  * 
  * @author dclarke
- * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
+ * @since EclipseLink 1.2
  */
 public class EntityTypeBuilder {
-
+    
+    static XMLParser xmlParser = XMLPlatformFactory.getInstance().getXMLPlatform().newXMLParser();
+    
     /**
      * The type being configured for dynamic use or being created/extended
      */
@@ -444,6 +466,8 @@ public class EntityTypeBuilder {
      * descriptors where the provided class name does not exist.
      * 
      * @param resourcePath
+     * @param login
+     * @param dynamicClassLoader
      * @return a Project with {@link DynamicClassLoader} and associated
      *         {@link DynamicClassWriter} configured. Ensure if a new
      *         Login/Platform is being configured that the
@@ -453,28 +477,53 @@ public class EntityTypeBuilder {
      *         deployment XML
      * @throws IOException
      */
-    public static Project loadDynamicProject(String resourcePath, DatabaseLogin login) throws IOException {
+    public static Project loadDynamicProject(String resourcePath, DatabaseLogin login,
+        DynamicClassLoader dynamicClassLoader) throws IOException {
+
+        if (resourcePath == null) {
+            throw new NullPointerException("null resourceStream");
+        }
+        if (dynamicClassLoader == null) {
+            throw new NullPointerException("null dynamicClassLoader");
+        }
+        return loadDynamicProject(dynamicClassLoader.getResourceAsStream(resourcePath), login,
+            dynamicClassLoader);
+    }
+    
+    /**
+     * Load a dynamic project from deployment XML creating dynamic types for all
+     * descriptors where the provided class name does not exist.
+     * 
+     * @param resourceStream
+     * @param login
+     * @param dynamicClassLoader
+     * @return a Project with {@link DynamicClassLoader} and associated
+     *         {@link DynamicClassWriter} configured. Ensure if a new
+     *         Login/Platform is being configured that the
+     *         {@link ConversionManager#getLoader()} is maintained.
+     *         <p>
+     *         <tt>null</tt> is returned if the resourcePath cannot locate a
+     *         deployment XML
+     * @throws IOException
+     */
+    public static Project loadDynamicProject(InputStream resourceStream, DatabaseLogin login,
+        DynamicClassLoader dynamicClassLoader) throws IOException {
+        
+        if (resourceStream == null) {
+            throw new NullPointerException("null resourceStream");
+        }
+        if (dynamicClassLoader == null) {
+            throw new NullPointerException("null dynamicClassLoader");
+        }
+        
         // Build an OXM project that loads the deployment XML without converting
         // the class names into classes
-        ObjectPersistenceWorkbenchXMLProject runtimeProject = new ObjectPersistenceWorkbenchXMLProject();
-        XMLContext context = new XMLContext(runtimeProject);
-        // Session opmSession = context.getSession(runtimeProject);
-        // opmSession.getEventManager().addListener(new
-        // MissingDescriptorListener());
-        XMLUnmarshaller unmarshaller = context.createUnmarshaller();
+        ObjectPersistenceWorkbenchXMLProject opmProject = new ObjectPersistenceWorkbenchXMLProject();
+        Document document = xmlParser.parse(resourceStream);
+        Project project = XMLProjectReader.readObjectPersistenceRuntimeFormat(document, 
+            dynamicClassLoader, opmProject);
 
-        DynamicClassLoader dcl = DynamicClassLoader.lookup(null);
-
-        Project project = null;
-        InputStream in = dcl.getResourceAsStream(resourcePath);
-
-        if (in != null) {
-            try {
-                project = (Project) unmarshaller.unmarshal(in);
-            } finally {
-                in.close();
-            }
-
+        if (project != null) {
             if (login == null) {
                 if (project.getLogin() == null) {
                     project.setLogin(new DatabaseLogin());
@@ -486,15 +535,15 @@ public class EntityTypeBuilder {
                 project.getLogin().setPlatform(new DatabasePlatform());
             }
 
-            project.getLogin().getPlatform().getConversionManager().setLoader(dcl);
+            project.getLogin().getPlatform().getConversionManager().setLoader(dynamicClassLoader);
 
             for (Iterator<?> i = project.getAliasDescriptors().values().iterator(); i.hasNext();) {
                 ClassDescriptor descriptor = (ClassDescriptor) i.next();
                 if (descriptor.getJavaClass() == null) {
-                    createType(dcl, descriptor, project);
+                    createType(dynamicClassLoader, descriptor, project);
                 }
             }
-            project.convertClassNamesToClasses(dcl);
+            project.convertClassNamesToClasses(dynamicClassLoader);
         }
 
         return project;

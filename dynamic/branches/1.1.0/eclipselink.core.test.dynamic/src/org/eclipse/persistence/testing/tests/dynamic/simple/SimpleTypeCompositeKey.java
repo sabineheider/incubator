@@ -19,7 +19,7 @@ public class SimpleTypeCompositeKey extends SimpleType {
         DatabaseSession session = getSharedSession();
 
         DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
-        Class<?> javaType = dcl.creatDynamicClass("model.Simple");
+        Class<?> javaType = dcl.createDynamicClass("model.Simple");
 
         EntityTypeBuilder typeBuilder = new EntityTypeBuilder(javaType, null, "SIMPLE_TYPE");
         typeBuilder.setPrimaryKeyFields("SID1", "SID2");

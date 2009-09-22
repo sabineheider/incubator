@@ -106,7 +106,7 @@ public class Transactions {
         // When merging the managed instance is returned from the call.
         // Further usage within the transaction must be done with this managed
         // entity.
-        emp = em.merge(emp);
+        emp = (DynamicEntity) em.merge(emp);
         em.getTransaction().commit();
 
         return emp;

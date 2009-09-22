@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 1998, 2008 Oracle. All rights reserved.
+ * Copyright (c) 1998, 2009 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
  * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0 
  * which accompanies this distribution. 
@@ -9,7 +9,7 @@
  *
  * Contributors:
  *     dclarke - Dynamic Persistence INCUBATION - Enhancement 200045
- *               http://wiki.eclipse.org/EclipseLink/Development/JPA/Dynamic
+ *               http://wiki.eclipse.org/EclipseLink/Development/Dynamic
  *     
  * This code is being developed under INCUBATION and is not currently included 
  * in the automated EclipseLink build. The API in this code may change, or 
@@ -18,9 +18,11 @@
  ******************************************************************************/
 package org.eclipse.persistence.internal.dynamic;
 
+//javase imports
 import java.util.HashMap;
 import java.util.Map;
 
+//EclipseLink imports
 import org.eclipse.persistence.exceptions.DynamicException;
 import org.eclipse.persistence.internal.helper.ConversionManager;
 import org.eclipse.persistence.sessions.Session;
@@ -33,7 +35,7 @@ import org.eclipse.persistence.sessions.Session;
  * class loader handles the lookup and storage of all created classes.
  * 
  * @author dclarke, mnorman
- * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
+ * @since EclipseLink 1.2
  */
 public class DynamicClassLoader extends ClassLoader {
 
@@ -49,7 +51,7 @@ public class DynamicClassLoader extends ClassLoader {
      * of the same name, same writer type, and the same parent class are
      * permitted but different parent classes or different writer types are not.
      */
-    private Map<String, DynamicClassWriter> classWriters = new HashMap<String, DynamicClassWriter>();
+    protected Map<String, DynamicClassWriter> classWriters = new HashMap<String, DynamicClassWriter>();
 
     /**
      * Default writer to use if one is not specified.
@@ -136,7 +138,7 @@ public class DynamicClassLoader extends ClassLoader {
      * class name to be loaded.
      * 
      */
-    public Class<?> creatDynamicClass(String className, DynamicClassWriter writer) throws DynamicException {
+    public Class<?> createDynamicClass(String className, DynamicClassWriter writer) throws DynamicException {
         addClass(className, writer);
 
         try {
@@ -152,8 +154,8 @@ public class DynamicClassLoader extends ClassLoader {
      * 
      * @see #creatDynamicClass(String, DynamicClassWriter)
      */
-    public Class<?> creatDynamicClass(String className) {
-        return creatDynamicClass(className, getDefaultWriter());
+    public Class<?> createDynamicClass(String className) {
+        return createDynamicClass(className, getDefaultWriter());
     }
 
     /**
@@ -162,8 +164,8 @@ public class DynamicClassLoader extends ClassLoader {
      * 
      * @see #creatDynamicClass(String, DynamicClassWriter)
      */
-    public Class<?> creatDynamicClass(String className, Class<?> parentClass) {
-        return creatDynamicClass(className, new DynamicClassWriter(parentClass));
+    public Class<?> createDynamicClass(String className, Class<?> parentClass) {
+        return createDynamicClass(className, new DynamicClassWriter(parentClass));
     }
 
     /**

@@ -39,10 +39,10 @@ public class DynamicClassLoaderTests {
 
         assertNull(dcl.getParent());
 
-        dcl.creatDynamicClass("java.lang.String");
+        dcl.createDynamicClass("java.lang.String");
 
         try {
-            dcl.creatDynamicClass("test.MyClass");
+            dcl.createDynamicClass("test.MyClass");
         } catch (NoClassDefFoundError e) {
             return;
         }
@@ -92,7 +92,7 @@ public class DynamicClassLoaderTests {
     public void createDynamicClass_DynamicEntityImpl() throws Exception {
         DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
 
-        Class dynamicClass = dcl.creatDynamicClass("test.MyClass");
+        Class dynamicClass = dcl.createDynamicClass("test.MyClass");
 
         assertNotNull(dynamicClass);
         assertEquals("test.MyClass", dynamicClass.getName());
@@ -131,7 +131,7 @@ public class DynamicClassLoaderTests {
         DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
 
         assertNull(dcl.getClassWriter("test.MyClass"));
-        Class dynamicClass = dcl.creatDynamicClass("test.MyClass");
+        Class dynamicClass = dcl.createDynamicClass("test.MyClass");
 
         assertNotNull(dynamicClass);
         assertEquals("test.MyClass", dynamicClass.getName());
@@ -139,7 +139,7 @@ public class DynamicClassLoaderTests {
         DynamicClassWriter writer = dcl.getClassWriter("test.MyClass");
         assertNotNull(writer);
 
-        Class dynamicClass2 = dcl.creatDynamicClass("test.MyClass");
+        Class dynamicClass2 = dcl.createDynamicClass("test.MyClass");
 
         assertSame(dynamicClass, dynamicClass2);
 
@@ -231,7 +231,7 @@ public class DynamicClassLoaderTests {
     public void createDynamicClass_WriteReplace() throws Exception {
         DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
 
-        Class dynamicClass = dcl.creatDynamicClass("test.MyClass", WriteReplace.class);
+        Class dynamicClass = dcl.createDynamicClass("test.MyClass", WriteReplace.class);
 
         assertNotNull(dynamicClass);
         assertEquals("test.MyClass", dynamicClass.getName());

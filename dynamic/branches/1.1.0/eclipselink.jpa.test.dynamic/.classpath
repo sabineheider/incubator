@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="**/.svn/**" kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
-	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
-	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.eclipse.persistence.jpa.dynamic"/>
-	<classpathentry kind="lib" path="C:/Eclipse/EclipseLink/eclipselink.extension.oracle.lib/ojdbc6_g.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="var" path="ORACLE_JDBC_LIB"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/javax.persistence 1.99"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/org.eclipse.persistence.core"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/org.eclipse.persistence.jpa"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/org.eclipse.persistence.core.dynamic"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/org.eclipse.persistence.jpa.dynamic"/>
+	<classpathentry excluding="**/.svn/**" kind="src" path="src"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/eclipselink.core.test.dynamic"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

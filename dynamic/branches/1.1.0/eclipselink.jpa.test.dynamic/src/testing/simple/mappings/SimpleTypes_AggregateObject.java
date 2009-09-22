@@ -196,17 +196,17 @@ public class SimpleTypes_AggregateObject {
         Server session = JpaHelper.getServerSession(emf);
         DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
 
-        Class<?> simpleTypeB = dcl.creatDynamicClass("model.SimpleB");
+        Class<?> simpleTypeB = dcl.createDynamicClass("model.SimpleB");
         EntityTypeBuilder bFactory = new JPAEntityTypeBuilder(simpleTypeB, null);
         bFactory.addDirectMapping("value2", boolean.class, "VAL_2");
         bFactory.addDirectMapping("value3", String.class, "VAL_3");
 
-        Class<?> simpleTypeC = dcl.creatDynamicClass("model.SimpleC");
+        Class<?> simpleTypeC = dcl.createDynamicClass("model.SimpleC");
         EntityTypeBuilder cFactory = new JPAEntityTypeBuilder(simpleTypeC, null);
         cFactory.addDirectMapping("value4", double.class, "VAL_4");
         cFactory.addDirectMapping("value5", String.class, "VAL_5");
 
-        Class<?> simpleTypeA = dcl.creatDynamicClass("model.SimpleA");
+        Class<?> simpleTypeA = dcl.createDynamicClass("model.SimpleA");
         EntityTypeBuilder aFactory = new JPAEntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A");
         aFactory.setPrimaryKeyFields("SID");
         aFactory.addDirectMapping("id", int.class, "SID");
