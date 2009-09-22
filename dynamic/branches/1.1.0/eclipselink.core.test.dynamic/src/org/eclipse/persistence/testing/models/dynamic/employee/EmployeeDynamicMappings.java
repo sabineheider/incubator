@@ -109,7 +109,7 @@ public class EmployeeDynamicMappings {
 
         employee.addOneToOneMapping("manager", employee.getType(), "MANAGER_ID");
 
-        OneToManyMapping phoneMapping = employee.addOneToManyMapping("phoneNumbers", phone.getType(), "OWNER_ID");
+        OneToManyMapping phoneMapping = employee.addOneToManyMapping("phoneNumbers", phone.getType(), "EMP_ID");
         phoneMapping.setCascadeAll(true);
         phoneMapping.setIsPrivateOwned(true);
 

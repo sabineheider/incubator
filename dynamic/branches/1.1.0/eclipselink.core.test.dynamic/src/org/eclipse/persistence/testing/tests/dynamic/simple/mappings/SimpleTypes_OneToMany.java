@@ -248,8 +248,8 @@ public class SimpleTypes_OneToMany extends EclipseLinkORMTest {
 
     @After
     public void clearDynamicTables() {
-        getSharedSession().executeNonSelectingSQL("DELETE FROM SimpleB");
-        getSharedSession().executeNonSelectingSQL("DELETE FROM SimpleA");
+        getSharedSession().executeNonSelectingSQL("DELETE FROM SIMPLE_TYPE_B");
+        getSharedSession().executeNonSelectingSQL("DELETE FROM SIMPLE_TYPE_A");
     }
 
     @AfterClass

@@ -126,7 +126,7 @@ public class SimpleTypes_MultiTable extends EclipseLinkORMTest {
 
         ReadObjectQuery findQuery = DynamicHelper.newReadObjectQuery(session, "SimpleA");
         findQuery.setSelectionCriteria(findQuery.getExpressionBuilder().get("id").equal(1));
-        DynamicEntityImpl a = (DynamicEntityImpl) session.executeQuery(findQuery);
+        DynamicEntityImpl a = (DynamicEntityImpl) uow.executeQuery(findQuery);
         
         assertNotNull(a);
         assertNotNull(a._persistence_getPropertyChangeListener());

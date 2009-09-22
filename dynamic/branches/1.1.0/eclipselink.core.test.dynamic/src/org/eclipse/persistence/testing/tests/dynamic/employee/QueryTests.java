@@ -24,6 +24,7 @@ import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.testing.models.dynamic.employee.*;
 import org.eclipse.persistence.testing.tests.dynamic.EclipseLinkORMTest;
+import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 import org.junit.Test;
 
 /**
@@ -105,7 +106,7 @@ public class QueryTests extends EclipseLinkORMTest {
         if (shared.getDescriptors().isEmpty()) {
             EmployeeDynamicMappings.createTypes(shared, "model.dynamic.employee", false);
         }
-
+        new SchemaManager(shared).replaceDefaultTables();
         this.samples = new Sample(shared);
         this.samples.persistAll(shared);
 

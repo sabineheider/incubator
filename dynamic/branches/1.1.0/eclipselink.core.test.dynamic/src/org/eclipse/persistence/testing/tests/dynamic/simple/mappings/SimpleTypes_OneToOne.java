@@ -114,6 +114,7 @@ public class SimpleTypes_OneToOne extends EclipseLinkORMTest {
 
         UnitOfWork uow = session.acquireUnitOfWork();
         uow.registerNewObject(simpleInstanceA);
+        uow.registerNewObject(simpleInstanceB);
         uow.commit();
 
         ReportQuery countQuery = DynamicHelper.newReportQuery(session, "SimpleB", new ExpressionBuilder());

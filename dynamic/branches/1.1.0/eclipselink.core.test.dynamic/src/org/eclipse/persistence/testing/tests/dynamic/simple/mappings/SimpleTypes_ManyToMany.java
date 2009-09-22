@@ -107,7 +107,7 @@ public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
         uow.registerNewObject(simpleInstance);
         uow.commit();
 
-        ReportQuery countQuery = DynamicHelper.newReportQuery(session, "SimpleA", new ExpressionBuilder());
+        ReportQuery countQuery = DynamicHelper.newReportQuery(session, simpleTypeB.getName(), new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
         int simpleCount = ((Number) session.executeQuery(countQuery)).intValue();
@@ -133,8 +133,6 @@ public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
         simpleInstanceA.set("id", 1);
         simpleInstanceA.set("value1", "A2");
         simpleInstanceA.<Collection<DynamicEntity>> get("b").add(simpleInstanceA);
-
-        simpleInstanceB.set("a", simpleInstanceB);
 
         UnitOfWork uow = session.acquireUnitOfWork();
         uow.registerNewObject(simpleInstanceB);
@@ -200,7 +198,6 @@ public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
 
         bFactory.addDirectMapping("id", int.class, "SID");
         bFactory.addDirectMapping("value1", String.class, "VAL_1");
-        //bFactory.addOneToOneMapping("a", aFactory.getType(), "A_FK");
 
         aFactory.addDirectMapping("id", int.class, "SID");
         aFactory.addDirectMapping("value1", String.class, "VAL_1");
