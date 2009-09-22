@@ -13,24 +13,17 @@
  ******************************************************************************/
 package testing.util;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.io.*;
+import java.util.*;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.persistence.PersistenceContext;
+import javax.persistence.*;
 
 import junit.framework.Assert;
 
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.testing.util.QuerySQLTracker;
 import org.junit.After;
 import org.junit.AfterClass;
-
 
 /**
  * Base test case for testing a JPA persistence unit in JavaSE using JUnit4.
@@ -46,150 +39,141 @@ import org.junit.AfterClass;
  */
 public abstract class EclipseLinkJPATest {
 
-	/**
-	 * This is he current EMF in use
-	 */
-	private static EntityManagerFactory emf;
+    /**
+     * This is he current EMF in use
+     */
+    private static EntityManagerFactory emf;
 
-	private EntityManager entityManager;
+    private EntityManager entityManager;
 
-	protected EntityManagerFactory getEMF() {
-		if (emf == null) {
-			emf = createEMF(getUnitName());
-		}
+    protected EntityManagerFactory getEMF() {
+        if (emf == null) {
+            emf = createEMF(getUnitName());
+        }
 
-		return emf;
-	}
+        return emf;
+    }
 
-	protected EntityManager getEntityManager() {
-		if (this.entityManager == null) {
-			this.entityManager = getEMF().createEntityManager();
-		}
+    protected EntityManager getEntityManager() {
+        if (this.entityManager == null) {
+            this.entityManager = getEMF().createEntityManager();
+        }
 
-		return this.entityManager;
-	}
+        return this.entityManager;
+    }
 
-	protected EntityManagerFactory createEMF(String unitName) {
-		if (emf != null) {
-			if (emf.isOpen()) {
-				emf.close();
-			}
-		}
+    protected EntityManagerFactory createEMF(String unitName) {
+        if (emf != null) {
+            if (emf.isOpen()) {
+                emf.close();
+            }
+        }
 
-		Assert.assertNotNull("EclipseLinkJPATest.createEMF:: Null unit name",
-				unitName);
+        Assert.assertNotNull("EclipseLinkJPATest.createEMF:: Null unit name", unitName);
 
-		try {
-			return createEMF(unitName, null);
-		} catch (RuntimeException e) {
-			System.out.println("Persistence.createEMF FAILED: "
-					+ e.getMessage());
-			e.printStackTrace();
-			throw e;
-		}
-	}
+        try {
+            return createEMF(unitName, null);
+        } catch (RuntimeException e) {
+            System.out.println("Persistence.createEMF FAILED: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
 
-	protected String getUnitName() {
-		PersistenceContext context = null;
-		Class javaClass = getClass();
+    protected String getUnitName() {
+        PersistenceContext context = null;
+        Class javaClass = getClass();
 
-		while (context == null && javaClass != Object.class) {
-			context = (PersistenceContext) javaClass
-					.getAnnotation(PersistenceContext.class);
-			javaClass = javaClass.getSuperclass();
-		}
-		Assert.assertNotNull("No @PersistenceContext found", context);
+        while (context == null && javaClass != Object.class) {
+            context = (PersistenceContext) javaClass.getAnnotation(PersistenceContext.class);
+            javaClass = javaClass.getSuperclass();
+        }
+        Assert.assertNotNull("No @PersistenceContext found", context);
 
-		return context.unitName();
-	}
+        return context.unitName();
+    }
 
-	/**
-	 * 
-	 * @param properties
-	 * @return
-	 * @throws Exception
-	 */
-	protected EntityManagerFactory createEMF(String unitName, Map properties) {
-		try {
-			Map emfProps = getEMFProperties();
+    /**
+     * 
+     * @param properties
+     * @return
+     * @throws Exception
+     */
+    protected EntityManagerFactory createEMF(String unitName, Map properties) {
+        try {
+            Map emfProps = getEMFProperties();
 
-			if (properties != null) {
-				emfProps.putAll(properties);
-			}
+            if (properties != null) {
+                emfProps.putAll(properties);
+            }
 
-			EntityManagerFactory emf = Persistence.createEntityManagerFactory(
-					unitName, emfProps);
-			QuerySQLTracker.install(JpaHelper.getServerSession(emf));
-			return emf;
-		} catch (Exception e) {
-			System.out.println("Persistence.createEMF FAILED: "
-					+ e.getMessage());
-			e.printStackTrace();
-			throw new RuntimeException("EclipseLinkJPATest.createEMF("
-					+ unitName + ", properties) - failed", e);
-		}
-	}
+            EntityManagerFactory emf = Persistence.createEntityManagerFactory(unitName, emfProps);
+            QuerySQLTracker.install(JpaHelper.getServerSession(emf));
+            return emf;
+        } catch (Exception e) {
+            System.out.println("Persistence.createEMF FAILED: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("EclipseLinkJPATest.createEMF(" + unitName + ", properties) - failed", e);
+        }
+    }
 
-	/**
-	 * 
-	 * @return
-	 */
-	protected Map getEMFProperties() {
-		Map properties = new HashMap();
+    /**
+     * 
+     * @return
+     */
+    protected Map getEMFProperties() {
+        Map properties = new HashMap();
 
-		try {
-			File examplePropertiesFile = new File(
-					"eclipselink-examples.properties");
-			if (examplePropertiesFile.exists()) {
-				Properties exampleProps = new Properties();
-				InputStream in = new FileInputStream(examplePropertiesFile);
-				exampleProps.load(in);
-				in.close();
-				properties.putAll(exampleProps);
-			}
-		} catch (Exception e) {
-			// TODO
-		}
+        try {
+            File examplePropertiesFile = new File("eclipselink-examples.properties");
+            if (examplePropertiesFile.exists()) {
+                Properties exampleProps = new Properties();
+                InputStream in = new FileInputStream(examplePropertiesFile);
+                exampleProps.load(in);
+                in.close();
+                properties.putAll(exampleProps);
+            }
+        } catch (Exception e) {
+            // TODO
+        }
 
-		properties.putAll(System.getProperties());
+        properties.putAll(System.getProperties());
 
-		return properties;
-	}
+        return properties;
+    }
 
-	protected QuerySQLTracker getQuerySQLTracker(EntityManager em) {
-		return QuerySQLTracker.getTracker(JpaHelper.getEntityManager(em)
-				.getActiveSession());
-	}
+    protected QuerySQLTracker getQuerySQLTracker(EntityManager em) {
+        return QuerySQLTracker.getTracker(JpaHelper.getEntityManager(em).getActiveSession());
+    }
 
-	@After
-	public void cleanupClosedEMF() {
-		if (this.entityManager != null) {
+    @After
+    public void cleanupClosedEMF() {
+        if (this.entityManager != null) {
 
-			if (this.entityManager.getTransaction().isActive()) {
-				this.entityManager.getTransaction().rollback();
-			}
-			if (this.entityManager.isOpen()) {
-				this.entityManager.close();
-			}
-		}
-		this.entityManager = null;
+            if (this.entityManager.getTransaction().isActive()) {
+                this.entityManager.getTransaction().rollback();
+            }
+            if (this.entityManager.isOpen()) {
+                this.entityManager.close();
+            }
+        }
+        this.entityManager = null;
 
-		if (emf != null) {
-			if (!emf.isOpen()) {
-				emf = null;
-			} else {
-				QuerySQLTracker.getTracker(JpaHelper.getServerSession(emf))
-						.reset();
-			}
-		}
-	}
+        if (emf != null) {
+            if (!emf.isOpen()) {
+                emf = null;
+            } else {
+                QuerySQLTracker.getTracker(JpaHelper.getServerSession(emf)).reset();
+            }
+        }
+    }
 
-	@AfterClass
-	public static void closeEMF() throws Exception {
-		if (emf != null && emf.isOpen()) {
-			emf.close();
-			emf = null;
-		}
-	}
+    @AfterClass
+    public static void closeEMF() throws Exception {
+        if (emf != null && emf.isOpen()) {
+            emf.close();
+            emf = null;
+        }
+    }
 
 }

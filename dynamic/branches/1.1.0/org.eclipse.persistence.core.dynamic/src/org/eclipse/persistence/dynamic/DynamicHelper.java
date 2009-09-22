@@ -21,8 +21,10 @@ package org.eclipse.persistence.dynamic;
 import java.util.Iterator;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
+import org.eclipse.persistence.queries.*;
 import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.sessions.Session;
 
@@ -44,9 +46,9 @@ public class DynamicHelper {
      * access to the meta model (type and properties) allowing for dynamic use
      * as well as optimized data value retrieval from an entity.
      */
-    public static EntityType getType(DatabaseSession session, String typeName)  {
+    public static EntityType getType(Session session, String typeName) {
         ClassDescriptor cd = session.getClassDescriptorForAlias(typeName);
-        
+
         if (cd == null) {
             return null;
         }
@@ -62,7 +64,8 @@ public class DynamicHelper {
      * 
      * @param entity
      * @return
-     * @throws ClassCastException if entity is not an instance of {@link DynamicEntityImpl}
+     * @throws ClassCastException
+     *             if entity is not an instance of {@link DynamicEntityImpl}
      */
     public static EntityType getType(DynamicEntity entity) throws ClassCastException {
         return ((DynamicEntityImpl) entity).getType();
@@ -94,6 +97,48 @@ public class DynamicHelper {
             session.getProject().getOrderedDescriptors().remove(descriptor);
             session.getProject().getDescriptors().remove(type.getJavaClass());
         }
+    }
+
+    /**
+     * Helper method to simplify creating a native ReadAllQuery using the entity
+     * type name (descriptor alias)
+     */
+    public static ReadAllQuery newReadAllQuery(Session session, String typeName) {
+        EntityType type = getType(session, typeName);
+
+        if (type == null) {
+            throw new IllegalArgumentException("DynamicHelper.createQuery: Dynamic type not found: " + typeName);
+        }
+
+        return new ReadAllQuery(type.getJavaClass());
+    }
+
+    /**
+     * Helper method to simplify creating a native ReadObjectQuery using the
+     * entity type name (descriptor alias)
+     */
+    public static ReadObjectQuery newReadObjectQuery(Session session, String typeName) {
+        EntityType type = getType(session, typeName);
+
+        if (type == null) {
+            throw new IllegalArgumentException("DynamicHelper.createQuery: Dynamic type not found: " + typeName);
+        }
+
+        return new ReadObjectQuery(type.getJavaClass());
+    }
+
+    /**
+     * Helper method to simplify creating a native ReportQuery using the entity
+     * type name (descriptor alias)
+     */
+    public static ReportQuery newReportQuery(Session session, String typeName, ExpressionBuilder builder) {
+        EntityType type = getType(session, typeName);
+
+        if (type == null) {
+            throw new IllegalArgumentException("DynamicHelper.createQuery: Dynamic type not found: " + typeName);
+        }
+
+        return new ReportQuery(type.getJavaClass(), builder);
     }
 
     /**

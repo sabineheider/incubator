@@ -60,7 +60,7 @@ public class Queries {
         List<DynamicEntity> emps = query.getResultList();
 
         for (DynamicEntity emp : emps) {
-            emp.<DynamicEntity>get("manager").<Collection>get("phoneNumbers").size();
+            emp.<DynamicEntity> get("manager").<Collection> get("phoneNumbers").size();
         }
 
         return emps;

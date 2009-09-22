@@ -16,17 +16,15 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package org.eclipse.persistence.testing.tests.dynamic.orm.projectxml;
+package org.eclipse.persistence.testing.tests.dynamic.simple;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-/**
- * Test suite for direct usage of EclipseLink native deployment XML with dynamic
- * persistence
- */
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { InvalidConfig.class, SimpleMapProject.class, SimpleMapProjectNoLogin.class })
+@Suite.SuiteClasses( { SimpleType.class, 
+                       SimpleTypeCompositeKey.class, 
+                       org.eclipse.persistence.testing.tests.dynamic.simple.mappings.AllTests.class, 
+                       org.eclipse.persistence.testing.tests.dynamic.simple.sequencing.AllTests.class })
 public class AllTests {
-
 }

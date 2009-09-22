@@ -11,7 +11,7 @@
  * 		dclarke - initial JPA Employee example using XML (bug 217884)
  * 				- ported from earlier Oracle TopLink examples
  ******************************************************************************/
-package testing.util;
+package org.eclipse.persistence.testing.util;
 
 import java.io.StringWriter;
 import java.util.ArrayList;

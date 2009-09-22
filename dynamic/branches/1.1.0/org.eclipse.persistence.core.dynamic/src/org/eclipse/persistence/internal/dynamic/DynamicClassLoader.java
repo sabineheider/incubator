@@ -21,10 +21,9 @@ package org.eclipse.persistence.internal.dynamic;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.persistence.exceptions.DynamicException;
 import org.eclipse.persistence.internal.helper.ConversionManager;
 import org.eclipse.persistence.sessions.Session;
-
-import com.sun.xml.internal.ws.org.objectweb.asm.ClassWriter;
 
 /**
  * This custom ClassLoader provides support for dynamically generating classes
@@ -39,12 +38,18 @@ import com.sun.xml.internal.ws.org.objectweb.asm.ClassWriter;
 public class DynamicClassLoader extends ClassLoader {
 
     /**
-     * Map of {@link ClassWriter} used to dynamically create a class in the
-     * {@link #findClass(String)} call. The application must register classes
-     * using addClass or createDynameClass prior to the
+     * Map of {@link DynamicClassWriter} used to dynamically create a class in
+     * the {@link #findClass(String)} call. The application must register
+     * classes using addClass or createDynameClass prior to the
      * {@link #findClass(String)} being invoked.
+     * <p>
+     * The map of writers is maintained for the life of this DynamicClassLoader
+     * instance to ensure additional requests to create dynamic classes of the
+     * same name are properly verified. Duplicate requests for dynamic classes
+     * of the same name, same writer type, and the same parent class are
+     * permitted but different parent classes or different writer types are not.
      */
-    private volatile Map<String, DynamicClassWriter> classWriters = new HashMap<String, DynamicClassWriter>();
+    private Map<String, DynamicClassWriter> classWriters = new HashMap<String, DynamicClassWriter>();
 
     /**
      * Default writer to use if one is not specified.
@@ -52,13 +57,17 @@ public class DynamicClassLoader extends ClassLoader {
     public DynamicClassWriter defaultWriter = new DynamicClassWriter();
 
     /**
-     * 
-     * @param delegate
+     * Create a DynamicClassLoader providing the delegate loader and leaving the
+     * defaultWriter as {@link DynamicClassWriter}
      */
     public DynamicClassLoader(ClassLoader delegate) {
         super(delegate);
     }
 
+    /**
+     * Create a DynamicClassLoader providing the delegate loader and a default
+     * {@link DynamicClassWriter}.
+     */
     public DynamicClassLoader(ClassLoader delegate, DynamicClassWriter writer) {
         this(delegate);
         this.defaultWriter = writer;
@@ -72,56 +81,66 @@ public class DynamicClassLoader extends ClassLoader {
         return this.classWriters;
     }
 
-    public boolean hasClassWriter(String className) {
-        return getClassWriter(className) != null;
-    }
-
     public DynamicClassWriter getClassWriter(String className) {
-        synchronized (getClassWriters()) {
-            return getClassWriters().get(className);
-        }
+        return getClassWriters().get(className);
     }
 
     /**
-     * Add a class to be dynamically written.
+     * Register a class to be dynamically created using the default
+     * {@link DynamicClassWriter}.
      * 
-     * @param className
+     * @see #addClass(String, DynamicClassWriter)
      */
     public void addClass(String className) {
-        synchronized (getClassWriters()) {
-            getClassWriters().put(className, getDefaultWriter());
-        }
+        addClass(className, getDefaultWriter());
     }
 
+    /**
+     * Register a class to be dynamically created using a copy of default
+     * {@link DynamicClassWriter} but specifying a different parent class.
+     * 
+     * @see #addClass(String, DynamicClassWriter)
+     */
     public void addClass(String className, Class<?> parentClass) {
-        synchronized (getClassWriters()) {
-            getClassWriters().put(className, new DynamicClassWriter(parentClass));
-        }
+        addClass(className, getDefaultWriter().createCopy(parentClass));
     }
 
-    public void addClass(String className, DynamicClassWriter writer) {
-        synchronized (getClassWriters()) {
+    /**
+     * Register a class to be dynamically created using the provided
+     * {@link DynamicClassWriter}. The registered writer is used when the
+     * {@link #findClass(String)} method is called back on this loader from the
+     * {@link #loadClass(String)} call.
+     * <p>
+     * If a duplicate request is made for the same className and the writers are
+     * not compatible a {@link DynamicException} will be thrown. If the
+     * duplicate request contains a compatible writer then the second request is
+     * ignored as the class may already have been generated.
+     * 
+     * @see #findClass(String)
+     */
+    public void addClass(String className, DynamicClassWriter writer) throws DynamicException {
+        DynamicClassWriter existingWriter = getClassWriter(className);
+
+        // Verify that the existing writer is compatible with the requested
+        if (existingWriter != null) {
+            if (!existingWriter.isCompatible(writer)) {
+                throw DynamicException.incompatibleDuplicateWriters(className, existingWriter, writer);
+            }
+        } else {
             getClassWriters().put(className, writer == null ? getDefaultWriter() : writer);
         }
     }
 
-    public Class<?> creatDynamicClass(String className, DynamicClassWriter writer) {
-        if (!hasClassWriter(className)) {
-            addClass(className, writer);
-        }
+    /**
+     * Create a dynamic class registering a writer and then forcing the provided
+     * class name to be loaded.
+     * 
+     */
+    public Class<?> creatDynamicClass(String className, DynamicClassWriter writer) throws DynamicException {
+        addClass(className, writer);
 
         try {
-            Class<?> dynamicClass = loadClass(className);
-
-            // The findClass call-back will remove the writer. This block is
-            // only used if the class already existed and that operation did not
-            // occur.
-            if (hasClassWriter(className)) {
-                synchronized (getClassWriters()) {
-                    getClassWriters().remove(className);
-                }
-            }
-            return dynamicClass;
+            return loadClass(className);
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("DyanmicClassLoader could not create class: " + className);
         }
@@ -131,8 +150,7 @@ public class DynamicClassLoader extends ClassLoader {
      * Create a new dynamic entity type for the specified name assuming the use
      * of the default writer and its default parent class.
      * 
-     * @param className
-     * @return
+     * @see #creatDynamicClass(String, DynamicClassWriter)
      */
     public Class<?> creatDynamicClass(String className) {
         return creatDynamicClass(className, getDefaultWriter());
@@ -142,9 +160,7 @@ public class DynamicClassLoader extends ClassLoader {
      * Create a new dynamic entity type for the specified name with the
      * specified parent class.
      * 
-     * @param className
-     * @param parentClass
-     * @return
+     * @see #creatDynamicClass(String, DynamicClassWriter)
      */
     public Class<?> creatDynamicClass(String className, Class<?> parentClass) {
         return creatDynamicClass(className, new DynamicClassWriter(parentClass));
@@ -158,17 +174,14 @@ public class DynamicClassLoader extends ClassLoader {
      */
     @Override
     protected Class<?> findClass(String className) throws ClassNotFoundException {
-        synchronized (getClassWriters()) {
-            DynamicClassWriter writer = getClassWriter(className);
-            if (writer != null) {
-                getClassWriters().remove(className);
+        DynamicClassWriter writer = getClassWriter(className);
 
-                try {
-                    byte[] bytes = writer.writeClass(className);
-                    return defineClass(className, bytes, 0, bytes.length);
-                } catch (ClassFormatError cfe) {
-                    throw new ClassNotFoundException(className, cfe);
-                }
+        if (writer != null) {
+            try {
+                byte[] bytes = writer.writeClass(this, className);
+                return defineClass(className, bytes, 0, bytes.length);
+            } catch (ClassFormatError cfe) {
+                throw new ClassNotFoundException(className, cfe);
             }
         }
 

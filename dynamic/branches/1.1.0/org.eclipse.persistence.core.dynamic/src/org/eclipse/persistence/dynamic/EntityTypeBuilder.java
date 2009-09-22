@@ -113,18 +113,11 @@ public class EntityTypeBuilder {
      * needed.
      */
     protected void addDynamicClasses(DynamicClassLoader dcl, String className, EntityType parentType) {
-        DynamicClassWriter writer = null;
-
-        if (parentType != null && parentType.getJavaClass() == null) {
-            if (dcl.getClassWriter(parentType.getClassName()) == null) {
-                dcl.addClass(parentType.getClassName());
-                writer = new DynamicClassWriter(dcl, parentType.getClassName());
-            } else {
-                writer = new DynamicClassWriter(dcl, parentType.getClassName());
-            }
+        if (parentType == null) {
+            dcl.addClass(className);
+        } else if (parentType.getJavaClass() == null) {
+            dcl.addClass(className, new DynamicClassWriter(parentType.getClassName()));
         }
-
-        dcl.addClass(className, writer);
     }
 
     /**
@@ -256,6 +249,14 @@ public class EntityTypeBuilder {
         return (OneToOneMapping) addMapping(mapping);
     }
 
+    /**
+     * TODO
+     * 
+     * @param name
+     * @param refType
+     * @param fkFieldNames
+     * @return
+     */
     public OneToManyMapping addOneToManyMapping(String name, EntityType refType, String... fkFieldNames) {
         if (fkFieldNames == null || getType().getDescriptor().getPrimaryKeyFields().size() != fkFieldNames.length) {
             throw new IllegalArgumentException("Invalid FK field names: " + fkFieldNames + " for target: " + refType);
@@ -275,9 +276,20 @@ public class EntityTypeBuilder {
         return (OneToManyMapping) addMapping(mapping);
     }
 
-    public DirectCollectionMapping addDirectCollectionMapping(String name, String targetTable, String valueColumn, Class<?> valueType, String... fkFieldNames) {
+    /**
+     * TODO
+     * 
+     * @param name
+     * @param targetTable
+     * @param valueColumn
+     * @param valueType
+     * @param fkFieldNames
+     * @return
+     * @throws IllegalArgumentException
+     */
+    public DirectCollectionMapping addDirectCollectionMapping(String name, String targetTable, String valueColumn, Class<?> valueType, String... fkFieldNames) throws IllegalArgumentException {
         if (fkFieldNames == null || getType().getDescriptor().getPrimaryKeyFields().size() != fkFieldNames.length) {
-            throw new IllegalArgumentException("Invalid FK field names: " + fkFieldNames + " for target: ");// TODO
+            throw new IllegalArgumentException("Invalid FK field names: " + fkFieldNames + " for target: ");
         }
 
         DirectCollectionMapping mapping = new DirectCollectionMapping();
@@ -296,6 +308,14 @@ public class EntityTypeBuilder {
         return (DirectCollectionMapping) addMapping(mapping);
     }
 
+    /**
+     * TODO 
+     * 
+     * @param name
+     * @param refType
+     * @param allowsNull
+     * @return
+     */
     public AggregateObjectMapping addAggregateObjectMapping(String name, EntityType refType, boolean allowsNull) {
         AggregateObjectMapping mapping = new AggregateObjectMapping();
         mapping.setAttributeName(name);
@@ -305,6 +325,13 @@ public class EntityTypeBuilder {
         return (AggregateObjectMapping) addMapping(mapping);
     }
 
+    /**
+     * TODO
+     * 
+     * @param name
+     * @param refType
+     * @param relationshipTableName
+     */
     public void addManyToManyMapping(String name, EntityType refType, String relationshipTableName) {
         ManyToManyMapping mapping = new ManyToManyMapping();
         mapping.setAttributeName(name);
@@ -365,8 +392,7 @@ public class EntityTypeBuilder {
         mapping.setAttributeAccessor(new ValuesAccessor(getType(), mapping, index));
 
         if (requiresInitialization(mapping)) {
-            // TODO: Remove impl dependency
-            ((EntityTypeImpl) getType()).getMappingsRequiringInitialization().add(mapping);
+            this.entityType.getMappingsRequiringInitialization().add(mapping);
         }
 
         return mapping;

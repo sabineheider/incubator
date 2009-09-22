@@ -8,25 +8,14 @@
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *     dclarke - Dynamic Persistence INCUBATION - Enhancement 200045
- *     			 http://wiki.eclipse.org/EclipseLink/Development/JPA/Dynamic
- *     
- * This code is being developed under INCUBATION and is not currently included 
- * in the automated EclipseLink build. The API in this code may change, or 
- * may never be included in the product. Please provide feedback through mailing 
- * lists or the bug database.
+ * 		dclarke - initial JPA Employee example using XML (bug 217884)
  ******************************************************************************/
-package org.eclipse.persistence.testing.tests.dynamic.orm.projectxml;
+package org.eclipse.persistence.testing.tests.dynamic.employee;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-/**
- * Test suite for direct usage of EclipseLink native deployment XML with dynamic
- * persistence
- */
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { InvalidConfig.class, SimpleMapProject.class, SimpleMapProjectNoLogin.class })
+@Suite.SuiteClasses( { MappingConfigTests.class,  QueryTests.class, TransactionTests.class })
 public class AllTests {
-
 }

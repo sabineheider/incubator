@@ -25,6 +25,7 @@ import java.io.Serializable;
 import java.lang.reflect.*;
 
 import org.eclipse.persistence.exceptions.DynamicException;
+import org.eclipse.persistence.internal.helper.Helper;
 import org.eclipse.persistence.internal.libraries.asm.*;
 import org.eclipse.persistence.internal.libraries.asm.Type;
 
@@ -36,21 +37,27 @@ import org.eclipse.persistence.internal.libraries.asm.Type;
  * The intent is to provide a common writer for dynamic JPA entities but also
  * allow for subclasses of this to be used in more complex writing situations
  * such as SDO and DBWS.
+ * <p>
+ * Instances of this class and any subclasses are maintained within the
+ * {@link DynamicClassLoader#getClassWriters()} and
+ * {@link DynamicClassLoader#defaultWriter} for the life of the class loader so
+ * it is important that no unnecessary state be maintained that may effect
+ * memory usage.
  * 
  * @author dclarke
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public class DynamicClassWriter {
 
-    protected static final String INIT = "<init>";
-
     protected Class<?> parentClass;
 
-    private String parentClassName;
-
-    private DynamicClassLoader loader;
-
-    private static final String WRITE_REPLACE = "writeReplace";
+    /**
+     * Name of parent class. This is used only when the parent class is not
+     * known at the time the dynamic class writer is registered. This is
+     * generally only required when loading from an XML mapping file where the
+     * order of class access is not known.
+     */
+    protected String parentClassName;
 
     public DynamicClassWriter() {
         this(DynamicEntityImpl.class);
@@ -69,40 +76,37 @@ public class DynamicClassWriter {
      * using the provided loader lazily.
      * 
      * @see #getParentClass()
-     * @see DynamicException#illegalDynamicClassWriter(DynamicClassLoader, String)
+     * @see DynamicException#illegalDynamicClassWriter(DynamicClassLoader,
+     *      String)
      */
-    public DynamicClassWriter(DynamicClassLoader loader, String parentClassName) {
-        if (loader == null || parentClassName == null || parentClassName.isEmpty()) {
-            throw DynamicException.illegalDynamicClassWriter(loader, parentClassName);
+    public DynamicClassWriter(String parentClassName) {
+        if (parentClassName == null || parentClassName.isEmpty()) {
+            throw DynamicException.illegalParentClassName(parentClassName);
         }
-        this.loader = loader;
         this.parentClassName = parentClassName;
     }
 
-    protected DynamicClassLoader getLoader() {
-        return this.loader;
-    }
-
-    /**
-     * 
-     * @throws ClassNotFoundException
-     *             if the parentClassName could not be converted into a class
-     */
-    public Class<?> getParentClass() throws ClassNotFoundException {
-        if (this.parentClass == null && this.parentClassName != null) {
-            this.parentClass = getLoader().loadClass(this.parentClassName);
-        }
-
+    public Class<?> getParentClass() {
         return this.parentClass;
     }
 
-    public byte[] writeClass(String className) throws ClassNotFoundException {
-        if (getParentClass() == null || getParentClass().isPrimitive() || getParentClass().isArray() || getParentClass().isEnum() || parentClass.isInterface() || Modifier.isFinal(parentClass.getModifiers())) {
-            throw new IllegalArgumentException("Invalid parent class: " + getParentClass());
+    public String getParentClassName() {
+        return this.parentClassName;
+    }
+
+    public byte[] writeClass(DynamicClassLoader loader, String className) throws ClassNotFoundException {
+        if (this.parentClass == null && this.parentClassName != null) {
+            this.parentClass = loader.loadClass(this.parentClassName);
+        }
+
+        Class<?> parent = getParentClass();
+
+        if (parent == null || parent.isPrimitive() || parent.isArray() || parent.isEnum() || parent.isInterface() || Modifier.isFinal(parent.getModifiers())) {
+            throw new IllegalArgumentException("Invalid parent class: " + parent);
         }
 
         ClassWriter cw = new ClassWriter(true);
-        cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, className.replace('.', '/'), Type.getType(getParentClass()).getInternalName(), getInterfaces(), null);
+        cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, className.replace('.', '/'), Type.getType(parent).getInternalName(), getInterfaces(), null);
 
         addFields(cw);
         addConstructors(cw);
@@ -129,7 +133,7 @@ public class DynamicClassWriter {
      * 
      * @see #addConstructor(ClassWriter, Constructor)
      */
-    protected void addConstructors(ClassWriter cw) throws ClassNotFoundException {
+    protected void addConstructors(ClassWriter cw) {
         Constructor<?>[] constructors = getParentClass().getDeclaredConstructors();
 
         for (int index = 0; index < constructors.length; index++) {
@@ -138,6 +142,8 @@ public class DynamicClassWriter {
             }
         }
     }
+
+    private static final String INIT = "<init>";
 
     /**
      * Add a new constructor based invoking the provided constructor from the
@@ -165,6 +171,8 @@ public class DynamicClassWriter {
         mv.visitMaxs(0, 0);
     }
 
+    private static final String WRITE_REPLACE = "writeReplace";
+
     /**
      * Add a writeReplace method if one is found in the parentClass. The created
      * writeReplace method will call the parent class version. This is provided
@@ -172,7 +180,7 @@ public class DynamicClassWriter {
      * method exist as a method on the {@link Serializable} class and not
      * provided through inheritance.
      */
-    protected void addWriteReplace(ClassWriter cw) throws ClassNotFoundException {
+    protected void addWriteReplace(ClassWriter cw) {
         boolean parentHasWriteReplace = false;
 
         try {
@@ -211,7 +219,49 @@ public class DynamicClassWriter {
      * Provided to allow subclasses to add their own methods. This must add
      * additional methods needed to implement any interfaces returned from
      * {@link #getInterfaces()}
+     * 
+     * @param loader
      */
     protected void addMethods(ClassWriter cw) {
+    }
+
+    /**
+     * Create a copy of this {@link DynamicClassWriter} but with a different
+     * parent class.
+     * 
+     * @see DynamicClassLoader#addClass(String, Class)
+     */
+    protected DynamicClassWriter createCopy(Class<?> parentClass) {
+        return new DynamicClassWriter(parentClass);
+    }
+
+    /**
+     * Verify that the provided writer is compatible with the current writer.
+     * Returning true means that the bytes that would be created using this
+     * writer are identical with what would come from the provided writer.
+     * <p>
+     * Used in {@link DynamicClassLoader#addClass(String, DynamicClassWriter)}
+     * to verify if a duplicate request of the same className can proceed and
+     * return the same class that may already exist.
+     */
+    protected boolean isCompatible(DynamicClassWriter writer) {
+        if (writer == null) {
+            return false;
+        }
+        // Ensure writers are the exact same class. If subclasses do not alter
+        // the bytes created then they must override this method and not return
+        // false on this check.
+        if (getClass() != writer.getClass()) {
+            return false;
+        }
+        if (getParentClass() == null) {
+            return getParentClassName() != null && getParentClassName().equals(writer.getParentClassName());
+        }
+        return getParentClass() == writer.getParentClass();
+    }
+
+    @Override
+    public String toString() {
+        return Helper.getShortClassName(getClass()) + "(" + getParentClass() == null ? getParentClassName() : getParentClass().getName() + ")";
     }
 }

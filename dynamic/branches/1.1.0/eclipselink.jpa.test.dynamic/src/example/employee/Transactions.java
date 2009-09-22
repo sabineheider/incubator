@@ -52,28 +52,28 @@ public class Transactions {
      */
     public DynamicEntity createUsingPersist(EntityManager em) {
         EntityType empType = DynamicHelper.getType(JpaHelper.getEntityManager(em).getServerSession(), "Employee");
-        EntityType addrType = DynamicHelper.getType(JpaHelper.getEntityManager(em).getServerSession(), "Address");
-        EntityType phoneType = DynamicHelper.getType(JpaHelper.getEntityManager(em).getServerSession(), "PhoneNumber");
+    EntityType addrType = DynamicHelper.getType(JpaHelper.getEntityManager(em).getServerSession(), "Address");
+    EntityType phoneType = DynamicHelper.getType(JpaHelper.getEntityManager(em).getServerSession(), "PhoneNumber");
 
-        DynamicEntity emp = (DynamicEntity) empType.newInstance();
-        emp.set("firstName", "Sample");
-        emp.set("lastName", "Employee");
-        emp.set("gender", "Male");
-        emp.set("salary", 123456);
+    DynamicEntity emp = (DynamicEntity) empType.newInstance();
+    emp.set("firstName", "Sample");
+    emp.set("lastName", "Employee");
+    emp.set("gender", "Male");
+    emp.set("salary", 123456);
 
-        DynamicEntity address = (DynamicEntity) addrType.newInstance();
-        emp.set("address", address);
+    DynamicEntity address = (DynamicEntity) addrType.newInstance();
+    emp.set("address", address);
 
-        DynamicEntity phone = (DynamicEntity) phoneType.newInstance();
-        phone.set("type", "Mobile");
-        phone.set("areaCode", "613");
-        phone.set("number", "555-1212");
-        phone.set("owner", emp);
-        emp.<Collection<DynamicEntity>>get("phoneNumbers").add( phone);
+    DynamicEntity phone = (DynamicEntity) phoneType.newInstance();
+    phone.set("type", "Mobile");
+    phone.set("areaCode", "613");
+    phone.set("number", "555-1212");
+    phone.set("owner", emp);
+    emp.<Collection<DynamicEntity>>get("phoneNumbers").add( phone);
 
-        em.getTransaction().begin();
-        em.persist(emp);
-        em.getTransaction().commit();
+    em.getTransaction().begin();
+    em.persist(emp);
+    em.getTransaction().commit();
 
         return emp;
     }

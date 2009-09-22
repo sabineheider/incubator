@@ -25,6 +25,7 @@ import java.util.Vector;
 import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.sessions.*;
+import org.eclipse.persistence.testing.tests.dynamic.DynamicTestHelper;
 import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -41,7 +42,7 @@ public class EmployeeProject {
     @SuppressWarnings( { "unchecked", "deprecation" })
     @BeforeClass
     public static void setUp() throws Exception {
-        DatabaseLogin login = AllTests.getTestLogin();
+        DatabaseLogin login = DynamicTestHelper.getTestLogin();
         p = EntityTypeBuilder.loadDynamicProject("org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/Employee_utf8.xml", login);
 
         ds = p.createDatabaseSession();

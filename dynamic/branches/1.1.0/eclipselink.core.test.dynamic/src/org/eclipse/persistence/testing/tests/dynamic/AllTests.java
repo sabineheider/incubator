@@ -23,9 +23,13 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses( { DynamicClassLoaderTests.class, 
+                       DynamicHelperTests.class, 
                        EntityTypeFromDescriptor.class, 
                        EntityTypeFromScratch.class, 
+                       org.eclipse.persistence.testing.tests.dynamic.simple.AllTests.class, 
                        org.eclipse.persistence.testing.tests.dynamic.orm.comics.AllTests.class, 
-                       org.eclipse.persistence.testing.tests.dynamic.orm.projectxml.AllTests.class })
+                       org.eclipse.persistence.testing.tests.dynamic.orm.projectxml.AllTests.class,
+                       org.eclipse.persistence.testing.tests.dynamic.employee.AllTests.class})
 public class AllTests {
+
 }

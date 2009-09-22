@@ -18,21 +18,15 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.tests.dynamic;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertNull;
-import static junit.framework.Assert.assertSame;
-import static junit.framework.Assert.fail;
+import static junit.framework.Assert.*;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 
 import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.internal.dynamic.DynamicClassWriter;
-import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.exceptions.DynamicException;
+import org.eclipse.persistence.internal.dynamic.*;
 import org.eclipse.persistence.internal.helper.ConversionManager;
 import org.eclipse.persistence.internal.helper.SerializationHelper;
 import org.junit.Test;
@@ -142,12 +136,16 @@ public class DynamicClassLoaderTests {
         assertNotNull(dynamicClass);
         assertEquals("test.MyClass", dynamicClass.getName());
 
-        assertNull(dcl.getClassWriter("test.MyClass"));
+        DynamicClassWriter writer = dcl.getClassWriter("test.MyClass");
+        assertNotNull(writer);
 
         Class dynamicClass2 = dcl.creatDynamicClass("test.MyClass");
 
         assertSame(dynamicClass, dynamicClass2);
-        assertNull(dcl.getClassWriter("test.MyClass"));
+
+        DynamicClassWriter writer2 = dcl.getClassWriter("test.MyClass");
+        assertNotNull(writer);
+        assertSame(writer, writer2);
     }
 
     @Test
@@ -257,6 +255,62 @@ public class DynamicClassLoaderTests {
         assertNotNull(deserializedValue);
         assertEquals(String.class, deserializedValue.getClass());
         assertEquals(dynamicClass.getName(), deserializedValue);
+    }
+
+    @Test
+    public void duplicateAddClassWithSameParent() throws Exception {
+        DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
+
+        dcl.addClass("test.MyClass", DefaultConstructor.class);
+        Class dynamicClass = dcl.loadClass("test.MyClass");
+
+        assertNotNull(dynamicClass);
+        assertSame(dynamicClass, dcl.loadClass("test.MyClass"));
+        assertSame(DefaultConstructor.class, dynamicClass.getSuperclass());
+        DynamicClassWriter firstWriter = dcl.getClassWriter("test.MyClass");
+
+        DefaultConstructor entity = (DefaultConstructor) dynamicClass.newInstance();
+
+        assertNotNull(entity);
+        assertNotNull("DCL does not contain expected writer", dcl.getClassWriter("test.MyClass"));
+
+        dcl.addClass("test.MyClass", DefaultConstructor.class);
+        DynamicClassWriter secondWriter = dcl.getClassWriter("test.MyClass");
+
+        assertSame(firstWriter, secondWriter);
+    }
+
+    /**
+     * Verify that a second request to create a class with the same name and
+     * different parents fails.
+     */
+    @Test
+    public void duplicateAddClassWithDifferentParent() throws Exception {
+        DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
+
+        dcl.addClass("test.MyClass", DefaultConstructor.class);
+        Class dynamicClass = dcl.loadClass("test.MyClass");
+
+        assertNotNull(dynamicClass);
+        assertSame(dynamicClass, dcl.loadClass("test.MyClass"));
+        assertSame(DefaultConstructor.class, dynamicClass.getSuperclass());
+
+        DefaultConstructor entity = (DefaultConstructor) dynamicClass.newInstance();
+
+        assertNotNull(entity);
+        assertNotNull("DCL does not contain expected writer", dcl.getClassWriter("test.MyClass"));
+
+        try {
+            dcl.addClass("test.MyClass", WriteReplace.class);
+        } catch (DynamicException de) {
+            String errorMessage = de.getMessage();
+            int errorCode = de.getErrorCode();
+
+            assertTrue("Incorrect dynamic exception", errorMessage.startsWith("\r\nException Description: Duplicate addClass request with incompatible writer:"));
+            assertEquals("Unexpected error code", 0, errorCode);
+            return;
+        }
+        fail("No DynamicException thrown for duplicate addClass with different parent");
     }
 
     public static class DefaultConstructor {

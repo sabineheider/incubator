@@ -33,25 +33,36 @@ import org.eclipse.persistence.mappings.DatabaseMapping;
  * @since EclipseLink - Dynamic Incubator (1.1.0-branch)
  */
 public class DynamicException extends EclipseLinkException {
-    public static final String ILLEGAL_MODIFY_SHARED = "Illegal attempt to modify shared cache instance on: ";
 
-    public DynamicException(String message) {
+    protected DynamicException(String message) {
         super(message);
     }
 
-    public DynamicException(String message, Throwable throwable) {
+    protected DynamicException(String message, Throwable throwable) {
         super(message, throwable);
     }
 
     /**
-     * Exception throw when attempting to access a dynamic property by name
-     * which does not have an associated mapping. Make sure the property name
-     * exists in {@link EntityType#getPropertiesNames()}
+     * A request to get a persistent value from a DynamicEntity was made
+     * providing a propertyName that does not correspond to any mappings in the
+     * underlying descriptor.
      * 
-     * @see EntityTypeImpl#getMapping(String)
-     */
+     * @see DynamicEntityImpl#get(String)
+     * */
     public static DynamicException invalidPropertyName(EntityType type, String propertyName) {
         return new DynamicException("Invalid DynamicEntity[" + type + "] property name: " + propertyName);
+    }
+
+    /**
+     * A request to get a persistent value from a DynamicEntity was made
+     * providing a propertyName that does exist but the provided return type
+     * failed when casting. The generic type specified on the get method must be
+     * supported by the underlying value stored in the dynamic entity.
+     * 
+     * @see DynamicEntityImpl#get(String)
+     */
+    public static DynamicException invalidPropertyType(DatabaseMapping mapping, ClassCastException cce) {
+        return new DynamicException("DynamicEntity:: Cannot return: " + mapping + ": " + cce.getMessage(), cce);
     }
 
     /**
@@ -66,16 +77,6 @@ public class DynamicException extends EclipseLinkException {
     }
 
     /**
-     * 
-     * @see DynamicEntityImpl#getCollection(DatabaseMapping)
-     * @see DynamicEntityImpl#getMap
-     */
-    public static DynamicException invalidPropertyType(DatabaseMapping mapping, ClassCastException cce) {
-        // TODO: Review readability of exception message
-        return new DynamicException("DynamicEntity:: Cannot return: " + mapping + ": " + cce.getMessage(), cce);
-    }
-
-    /**
      * A {@link DynamicClassWriter} was attempted to be instantiated with a null
      * loader or invalid parentClassName. The parentClassName must not be null
      * or an empty string.
@@ -85,12 +86,38 @@ public class DynamicException extends EclipseLinkException {
     }
 
     /**
-     * TODO
+     * The {@link DynamicEntityImpl} has a null type indicating an illegal state
+     * of the entity.
      * 
-     * @param entity
-     * @return
+     * @see DynamicEntityImpl#getType()
+     */
+    /*
+     * This should not happen in the current implementation but may be supported
+     * when detachment through serialization is added.
      */
     public static DynamicException entityHasNullType(DynamicEntityImpl entity) {
         return new DynamicException("DynamicEntity has null type: " + entity);
+    }
+
+    /**
+     * A null or empty string was provided as the parent class for a dynamic
+     * class being registered for creation.
+     * 
+     * @see DynamicClassWriter(String)
+     */
+    public static DynamicException illegalParentClassName(String parentClassName) {
+        return new DynamicException("Illegal parent class name for dynamic type: " + parentClassName);
+    }
+
+    /**
+     * A call to {@link DynamicClassLoader#addClass(String, DynamicClassWriter)}
+     * or
+     * {@link DynamicClassLoader#creatDynamicClass(String, DynamicClassWriter)}
+     * was invoked with a className that already had a
+     * {@link DynamicClassWriter} that is not compatible with the provided
+     * writer.
+     */
+    public static DynamicException incompatibleDuplicateWriters(String className, DynamicClassWriter existingWriter, DynamicClassWriter writer) {
+        return new DynamicException("Duplicate addClass request with incompatible writer: " + className + " - existing: " + existingWriter + " - new: " + writer);
     }
 }
