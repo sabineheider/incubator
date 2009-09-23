@@ -116,17 +116,20 @@ public class SimpleTypes_OneToOne extends EclipseLinkORMTest {
         uow.registerNewObject(simpleInstanceA);
         uow.registerNewObject(simpleInstanceB);
         uow.commit();
+        
+        assertEquals(2, getQuerySQLTracker(session).getTotalSQLINSERTCalls());
+        // There is no reason for a shallow insert and an update in this mapping
+        assertEquals("No update expected for new objects with 1:1", 0, getQuerySQLTracker(session).getTotalSQLUPDATECalls());
 
         ReportQuery countQuery = DynamicHelper.newReportQuery(session, "SimpleB", new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
-        int simpleCountB = ((Number) session.executeQuery(countQuery)).intValue();
-        Assert.assertEquals(1, simpleCountB);
+        Assert.assertEquals(1, ((Number) session.executeQuery(countQuery)).intValue());
+        
         countQuery = DynamicHelper.newReportQuery(session, "SimpleA", new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
-        int simpleCountA = ((Number) session.executeQuery(countQuery)).intValue();
-        Assert.assertEquals(1, simpleCountA);
+        Assert.assertEquals(1, ((Number) session.executeQuery(countQuery)).intValue());
 
     }
 

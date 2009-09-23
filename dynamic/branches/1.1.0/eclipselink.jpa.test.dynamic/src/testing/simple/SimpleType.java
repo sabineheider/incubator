@@ -1,34 +1,20 @@
 package testing.simple;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.fail;
+import static junit.framework.Assert.*;
 
 import java.util.Calendar;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
+import javax.persistence.*;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.dynamic.DynamicHelper;
-import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
 import org.eclipse.persistence.sessions.IdentityMapAccessor;
 import org.eclipse.persistence.sessions.server.Server;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 public class SimpleType {
 
@@ -92,12 +78,8 @@ public class SimpleType {
         simpleInstance = find(em, new Integer(1));
         assertNotNull("Could not find simple instance with id = Integer(1)", simpleInstance);
 
-        try {
-            em.find(getSimpleType().getJavaClass(), 1l);
-        } catch (IllegalArgumentException iae) {
-            return;
-        }
-        fail("em.find should have failed with incorrect PK type");
+        simpleInstance = find(em, 1l);
+        assertNotNull("Could not find simple instance with id = Integer(1)", simpleInstance);
     }
 
     @Test
@@ -181,8 +163,8 @@ public class SimpleType {
         return simpleInstance;
     }
 
-    protected DynamicEntity find(EntityManager em, int id) {
-        return (DynamicEntity) em.find(getSimpleType().getJavaClass(), 1);
+    protected DynamicEntity find(EntityManager em, Object id) {
+        return (DynamicEntity) em.find(getSimpleType().getJavaClass(), id);
     }
 
     @BeforeClass

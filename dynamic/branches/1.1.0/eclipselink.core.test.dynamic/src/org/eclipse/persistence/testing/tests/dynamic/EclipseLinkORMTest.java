@@ -16,13 +16,14 @@ public class EclipseLinkORMTest {
     protected DatabaseSession getSharedSession() {
         if (sharedSession == null) {
             sharedSession = createSharedSession();
+            QuerySQLTracker.install(sharedSession);
         }
 
         return sharedSession;
     }
 
     protected Session getSession() {
-        if (this.session == null) {
+        if (this.session == null || !this.session.isConnected()) {
             this.session = getSharedSession();
 
             if (this.session.isServerSession()) {
@@ -41,7 +42,6 @@ public class EclipseLinkORMTest {
         }
         try {
             sharedSession = DynamicTestHelper.createEmptySession();
-            QuerySQLTracker.install(sharedSession);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

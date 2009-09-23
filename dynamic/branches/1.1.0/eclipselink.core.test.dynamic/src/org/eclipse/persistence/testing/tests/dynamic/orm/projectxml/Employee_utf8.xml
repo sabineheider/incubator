@@ -110,6 +110,7 @@
 						</field-translation>
 					</field-translations>
 				</attribute-mapping>
+<!--  DirectCollection from XML does not work
 				<attribute-mapping xsi:type="direct-collection-mapping">
 					<attribute-name>responsibilitiesList</attribute-name>
 					<container xsi:type="list-container-policy">
@@ -122,7 +123,7 @@
 							<collection-type>java.util.Vector</collection-type>
 						</container>
 					</selection-query>
-					<reference-table>RESPONS</reference-table>
+					<reference-table>DX_RESPONS</reference-table>
 					<direct-field table="DX_RESPONS" name="DESCRIP" xsi:type="column" />
 					<reference-foreign-key>
 						<field-reference>
@@ -132,7 +133,8 @@
 								xsi:type="column" />
 						</field-reference>
 					</reference-foreign-key>
-				</attribute-mapping>
+				</attribute-mapping> 
+-->
 				<attribute-mapping xsi:type="one-to-one-mapping">
 					<attribute-name>address</attribute-name>
 					<reference-class>model.dynamic.employee.Address</reference-class>
@@ -219,7 +221,7 @@
 				<attribute-mapping xsi:type="many-to-many-mapping">
 					<attribute-name>projects</attribute-name>
 					<reference-class>model.dynamic.employee.Project</reference-class>
-					<relation-table>PROJ_EMP</relation-table>
+					<relation-table>DX_PROJ_EMP</relation-table>
 					<source-relation-foreign-key>
 						<field-reference>
 							<source-field table="DX_PROJ_EMP" name="EMP_ID"

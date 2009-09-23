@@ -18,93 +18,15 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.tests.dynamic.orm.projectxml;
 
-import static junit.framework.Assert.*;
-
-import java.math.BigInteger;
-import java.sql.Date;
-import java.util.Vector;
-
-import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.logging.SessionLog;
-import org.eclipse.persistence.mappings.DatabaseMapping;
-import org.eclipse.persistence.sessions.*;
-import org.eclipse.persistence.testing.tests.dynamic.DynamicTestHelper;
-import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 /*
  * Test cases verifying the use of the simple-map-project.xml 
  */
-public class SimpleMapProjectNoLogin {
+public class SimpleMapProjectNoLogin extends SimpleMapProject {
 
-    // JUnit static fixtures
-    static Project p;
-    static DatabaseSession ds;
-
-    @SuppressWarnings( { "unchecked", "deprecation" })
-    @BeforeClass
-    public static void setUp() throws Exception {
-        DatabaseLogin login = DynamicTestHelper.getTestLogin();
-        p = EntityTypeBuilder.loadDynamicProject(
-            "org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/simple-map-project-no-login.xml",
-            login, new DynamicClassLoader(SimpleMapProjectNoLogin.class.getClassLoader()));
-
-        ds = p.createDatabaseSession();
-        ds.setName(SimpleMapProjectNoLogin.class.getName());
-        ds.setLogLevel(SessionLog.FINE);
-        ds.login();
-
-        new DynamicSchemaManager(ds).createTables(new EntityType[0]);
-        ds.executeNonSelectingSQL("DELETE FROM SIMPLETABLE");
-
-        EntityType type = DynamicHelper.getType(ds, "simpletableType");
-
-        DynamicEntity entity = type.newInstance();
-        entity.set("id", new BigInteger("1"));
-        entity.set("name", "Doug");
-        entity.set("since", new Date(100, 06, 06));
-
-        ds.writeObject(entity);
-    }
-
-    @Test
-    public void verifyDescriptor() throws Exception {
-        ClassDescriptor descriptor = ds.getClassDescriptorForAlias("simpletableType");
-
-        assertNotNull(descriptor);
-        assertEquals("simpletable.Simpletable", descriptor.getJavaClassName());
-
-        assertEquals(3, descriptor.getMappings().size());
-
-        DatabaseMapping idMapping = descriptor.getMappingForAttributeName("id");
-        assertNotNull(idMapping);
-        assertTrue(idMapping.isDirectToFieldMapping());
-        assertEquals(BigInteger.class, idMapping.getAttributeClassification());
-
-        DatabaseMapping nameMapping = descriptor.getMappingForAttributeName("name");
-        assertNotNull(nameMapping);
-        assertTrue(nameMapping.isDirectToFieldMapping());
-        assertEquals(String.class, nameMapping.getAttributeClassification());
-
-        DatabaseMapping sinceMapping = descriptor.getMappingForAttributeName("since");
-        assertNotNull(sinceMapping);
-        assertTrue(sinceMapping.isDirectToFieldMapping());
-        assertEquals(Date.class, sinceMapping.getAttributeClassification());
-    }
-
-    @Test
-    public void readAll() {
-        EntityType type = DynamicHelper.getType(ds, "simpletableType");
-
-        Vector<Object> allObjects = ds.readAllObjects(type.getJavaClass());
-        for (Object o : allObjects) {
-            System.out.println(o);
-        }
-
-        System.identityHashCode(allObjects);
+    @Override
+    protected String getProjectLocation() {
+        return "org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/simple-map-project-no-login.xml";
     }
 
 }

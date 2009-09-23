@@ -98,7 +98,7 @@ public class SimpleTypeCompositeKey extends SimpleType {
     }
 
     @Override
-    protected DynamicEntity find(EntityManager em, int id) {
+    protected DynamicEntity find(EntityManager em, Object id) {
         return (DynamicEntity) em.find(getSimpleType().getJavaClass(), new Object[] { id, id });
     }
 

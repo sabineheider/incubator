@@ -9,7 +9,7 @@
  *
  * Contributors:
  *     Oracle - initial API and implementation from Oracle TopLink
- ******************************************************************************/  
+ ******************************************************************************/
 package org.eclipse.persistence.descriptors;
 
 //javase imports
@@ -27,18 +27,12 @@ import java.util.Map;
 import java.util.Vector;
 
 //EclipseLink imports
-import org.eclipse.persistence.exceptions.DatabaseException;
-import org.eclipse.persistence.exceptions.DescriptorException;
-import org.eclipse.persistence.exceptions.QueryException;
-import org.eclipse.persistence.exceptions.ValidationException;
+import org.eclipse.persistence.exceptions.*;
 import org.eclipse.persistence.expressions.Expression;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.internal.descriptors.OptimisticLockingPolicy;
 import org.eclipse.persistence.internal.expressions.SQLSelectStatement;
-import org.eclipse.persistence.internal.helper.ClassConstants;
-import org.eclipse.persistence.internal.helper.DatabaseField;
-import org.eclipse.persistence.internal.helper.DatabaseTable;
-import org.eclipse.persistence.internal.helper.Helper;
+import org.eclipse.persistence.internal.helper.*;
 import org.eclipse.persistence.internal.queries.ExpressionQueryMechanism;
 import org.eclipse.persistence.internal.security.PrivilegedAccessHelper;
 import org.eclipse.persistence.internal.security.PrivilegedClassForName;
@@ -52,17 +46,21 @@ import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.sessions.remote.DistributedSession;
 
 /**
- * <p><b>Purpose</b>: Allows customization of an object's inheritance.
- * The primary supported inheritance model uses a class type indicator
- * column in the table that stores the object's class type.
- * The class-to-type mapping is specified on this policy.
- * The full class name can also be used for the indicator instead of the mapping.
- * <p>Each subclass can either share their parents table, or in addition add their
+ * <p>
+ * <b>Purpose</b>: Allows customization of an object's inheritance. The primary
+ * supported inheritance model uses a class type indicator column in the table
+ * that stores the object's class type. The class-to-type mapping is specified
+ * on this policy. The full class name can also be used for the indicator
+ * instead of the mapping.
+ * <p>
+ * Each subclass can either share their parents table, or in addition add their
  * own table(s).
- * <p>For legacy models a customized inheritance class-extractor can be provided.
+ * <p>
+ * For legacy models a customized inheritance class-extractor can be provided.
  * This allows Java code to be used to compute the class type to use for a row.
- * When this customized inheritance model is used an only-instances and with-all-subclasses
- * filter expression may be required for concrete and branch querying.
+ * When this customized inheritance model is used an only-instances and
+ * with-all-subclasses filter expression may be required for concrete and branch
+ * querying.
  */
 @SuppressWarnings("unchecked")
 public class InheritancePolicy implements Serializable, Cloneable {
@@ -80,11 +78,14 @@ public class InheritancePolicy implements Serializable, Cloneable {
     protected transient Vector allChildClassIndicators;
     protected transient Expression onlyInstancesExpression;
     protected transient Expression withAllSubclassesExpression;
-    // null if there are no childrenTables, otherwise all tables for reference class plus childrenTables
+    // null if there are no childrenTables, otherwise all tables for reference
+    // class plus childrenTables
     protected transient Vector allTables;
-    // all tables for all subclasses (subclasses of subclasses included), should be in sync with childrenTablesJoinExpressions.
+    // all tables for all subclasses (subclasses of subclasses included), should
+    // be in sync with childrenTablesJoinExpressions.
     protected transient List childrenTables;
-    // join expression for each child table, keyed by the table, should be in sync with childrenTables.
+    // join expression for each child table, keyed by the table, should be in
+    // sync with childrenTables.
     protected transient Map childrenTablesJoinExpressions;
     // all expressions from childrenTablesJoinExpressions ANDed together
     protected transient Expression childrenJoinExpression;
@@ -94,9 +95,9 @@ public class InheritancePolicy implements Serializable, Cloneable {
     protected ClassDescriptor descriptor;
     protected boolean shouldAlwaysUseOuterJoin = false;
 
-    //CR 4005
+    // CR 4005
     protected boolean useDescriptorsToValidateInheritedObjects = false;
-    
+
     /** Define if an outer join should be used to read subclasses. */
     protected boolean shouldOuterJoinSubclasses = false;
 
@@ -105,13 +106,12 @@ public class InheritancePolicy implements Serializable, Cloneable {
 
     /** PERF: Cache root descriptor. */
     protected ClassDescriptor rootParentDescriptor;
-    
+
     protected boolean describesNonPersistentSubclasses = false;
-    
+
     /**
-     * INTERNAL:
-     * Create a new policy.
-     * Only descriptors involved in inheritance should have a policy.
+     * INTERNAL: Create a new policy. Only descriptors involved in inheritance
+     * should have a policy.
      */
     public InheritancePolicy() {
         this.classIndicatorMapping = new HashMap(10);
@@ -123,9 +123,8 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Create a new policy.
-     * Only descriptors involved in inheritance should have a policy.
+     * INTERNAL: Create a new policy. Only descriptors involved in inheritance
+     * should have a policy.
      */
     public InheritancePolicy(ClassDescriptor descriptor) {
         this();
@@ -133,25 +132,23 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Add child descriptor to the parent descriptor.
+     * INTERNAL: Add child descriptor to the parent descriptor.
      */
     public void addChildDescriptor(ClassDescriptor childDescriptor) {
         getChildDescriptors().addElement(childDescriptor);
     }
 
     /**
-     * INTERNAL:
-     * childrenTablesJoinExpressions, childrenTables, allTables and childrenJoinExpression 
-     * are created simultaneously and kept in sync.
+     * INTERNAL: childrenTablesJoinExpressions, childrenTables, allTables and
+     * childrenJoinExpression are created simultaneously and kept in sync.
      */
     protected void addChildTableJoinExpression(DatabaseTable table, Expression expression) {
-        if(childrenTablesJoinExpressions == null) {
-           childrenTablesJoinExpressions = new HashMap();
-           // childrenTables should've been null, too
-           childrenTables = new ArrayList();
-           // allTables should've been null, too
-           allTables = new Vector(getDescriptor().getTables());
+        if (childrenTablesJoinExpressions == null) {
+            childrenTablesJoinExpressions = new HashMap();
+            // childrenTables should've been null, too
+            childrenTables = new ArrayList();
+            // allTables should've been null, too
+            allTables = new Vector(getDescriptor().getTables());
         }
         childrenTables.add(table);
         allTables.add(table);
@@ -160,12 +157,11 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * call addChildTableJoinExpression on all parents
+     * INTERNAL: call addChildTableJoinExpression on all parents
      */
     public void addChildTableJoinExpressionToAllParents(DatabaseTable table, Expression expression) {
         ClassDescriptor parentDescriptor = getParentDescriptor();
-        while(parentDescriptor != null) {
+        while (parentDescriptor != null) {
             InheritancePolicy parentPolicy = parentDescriptor.getInheritancePolicy();
             parentPolicy.addChildTableJoinExpression(table, expression);
             parentDescriptor = parentPolicy.getParentDescriptor();
@@ -173,13 +169,13 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * PUBLIC:
-     * Add a class indicator for the root classes subclass.
-     * The indicator is used to determine the class to use for a row read from the database,
-     * and to query only instances of a class from the database.
-     * Every concrete persistent subclass must have a single unique indicator defined for it.
-     * If the root class is concrete then it must also define an indicator.
-     * Only the root class's descriptor of the entire inheritance hierarchy can define the class indicator mapping.
+     * PUBLIC: Add a class indicator for the root classes subclass. The
+     * indicator is used to determine the class to use for a row read from the
+     * database, and to query only instances of a class from the database. Every
+     * concrete persistent subclass must have a single unique indicator defined
+     * for it. If the root class is concrete then it must also define an
+     * indicator. Only the root class's descriptor of the entire inheritance
+     * hierarchy can define the class indicator mapping.
      */
     public void addClassIndicator(Class childClass, Object typeValue) {
         // Note we should think about supporting null values.
@@ -189,19 +185,16 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Add the class name reference by class name, used by the MW.
+     * INTERNAL: Add the class name reference by class name, used by the MW.
      */
     public void addClassNameIndicator(String childClassName, Object typeValue) {
         getClassNameIndicatorMapping().put(childClassName, typeValue);
     }
 
     /**
-     * INTERNAL:
-     * Add abstract class indicator information to the database row.  This is
-     * required when building a row for an insert or an update of a concrete child
-     * descriptor.
-     * This is only used to build a template row.
+     * INTERNAL: Add abstract class indicator information to the database row.
+     * This is required when building a row for an insert or an update of a
+     * concrete child descriptor. This is only used to build a template row.
      */
     public void addClassIndicatorFieldToInsertRow(AbstractRecord databaseRow) {
         if (hasClassExtractor()) {
@@ -213,10 +206,9 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Add abstract class indicator information to the database row.  This is
-     * required when building a row for an insert or an update of a concrete child
-     * descriptor.
+     * INTERNAL: Add abstract class indicator information to the database row.
+     * This is required when building a row for an insert or an update of a
+     * concrete child descriptor.
      */
     public void addClassIndicatorFieldToRow(AbstractRecord databaseRow) {
         if (hasClassExtractor()) {
@@ -230,8 +222,7 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Post initialize the child descriptors
+     * INTERNAL: Post initialize the child descriptors
      */
     protected void addClassIndicatorTypeToParent(Object indicator) {
         ClassDescriptor parentDescriptor = getDescriptor().getInheritancePolicy().getParentDescriptor();
@@ -245,8 +236,7 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Recursively adds fields to all the parents
+     * INTERNAL: Recursively adds fields to all the parents
      */
     protected void addFieldsToParent(Vector fields) {
         if (isChildDescriptor()) {
@@ -262,9 +252,8 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Return a select statement that will be used to query the class indicators required to query.
-     * This is used in the abstract-multiple read.
+     * INTERNAL: Return a select statement that will be used to query the class
+     * indicators required to query. This is used in the abstract-multiple read.
      */
     public SQLSelectStatement buildClassIndicatorSelectStatement(ObjectLevelReadQuery query) {
         SQLSelectStatement selectStatement;
@@ -274,11 +263,11 @@ public class InheritancePolicy implements Serializable, Cloneable {
         selectStatement.addField(getClassIndicatorField());
         // 2612538 - the default size of Map (32) is appropriate
         Map clonedExpressions = new IdentityHashMap();
-        selectStatement.setWhereClause(((ExpressionQueryMechanism)query.getQueryMechanism()).buildBaseSelectionCriteria(false, clonedExpressions));
+        selectStatement.setWhereClause(((ExpressionQueryMechanism) query.getQueryMechanism()).buildBaseSelectionCriteria(false, clonedExpressions));
         appendWithAllSubclassesExpression(selectStatement);
         selectStatement.setTranslationRow(query.getTranslationRow());
-        if (query.isReadAllQuery() && ((ReadAllQuery)query).hasHierarchicalExpressions()) {
-            ReadAllQuery readAllQuery = (ReadAllQuery)query;
+        if (query.isReadAllQuery() && ((ReadAllQuery) query).hasHierarchicalExpressions()) {
+            ReadAllQuery readAllQuery = (ReadAllQuery) query;
             selectStatement.setHierarchicalQueryExpressions(readAllQuery.getStartWithExpression(), readAllQuery.getConnectByExpression(), readAllQuery.getOrderSiblingsByExpressions());
         }
         selectStatement.setHintString(query.getHintString());
@@ -289,14 +278,15 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Append the branch with all subclasses expression to the statement.
+     * INTERNAL: Append the branch with all subclasses expression to the
+     * statement.
      */
     public void appendWithAllSubclassesExpression(SQLSelectStatement selectStatement) {
         if (getWithAllSubclassesExpression() != null) {
-            // For Flashback: Must always rebuild with simple expression on right.
+            // For Flashback: Must always rebuild with simple expression on
+            // right.
             if (selectStatement.getWhereClause() == null) {
-                selectStatement.setWhereClause((Expression)getWithAllSubclassesExpression().clone());
+                selectStatement.setWhereClause((Expression) getWithAllSubclassesExpression().clone());
             } else {
                 selectStatement.setWhereClause(selectStatement.getWhereClause().and(getWithAllSubclassesExpression()));
             }
@@ -304,23 +294,25 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Build a select statement for all subclasses on the view using the same
-     * selection criteria as the query.
+     * INTERNAL: Build a select statement for all subclasses on the view using
+     * the same selection criteria as the query.
      */
     public SQLSelectStatement buildViewSelectStatement(ObjectLevelReadQuery query) {
         // 2612538 - the default size of Map (32) is appropriate
         Map clonedExpressions = new IdentityHashMap();
-        ExpressionQueryMechanism mechanism = (ExpressionQueryMechanism)query.getQueryMechanism();
+        ExpressionQueryMechanism mechanism = (ExpressionQueryMechanism) query.getQueryMechanism();
 
-        // CR#3166555 - Have the mechanism build the statement to avoid duplicating code and ensure that lock-mode, hints, hierarchical, etc. are set.
+        // CR#3166555 - Have the mechanism build the statement to avoid
+        // duplicating code and ensure that lock-mode, hints, hierarchical, etc.
+        // are set.
         SQLSelectStatement selectStatement = mechanism.buildBaseSelectStatement(false, clonedExpressions);
         selectStatement.setTables(org.eclipse.persistence.internal.helper.NonSynchronizedVector.newInstance(1));
         selectStatement.addTable(getReadAllSubclassesView());
 
-        // Case, normal read for branch inheritance class that reads subclasses all in its own table(s).
+        // Case, normal read for branch inheritance class that reads subclasses
+        // all in its own table(s).
         if (getWithAllSubclassesExpression() != null) {
-            Expression branchIndicator = (Expression)getWithAllSubclassesExpression().clone();
+            Expression branchIndicator = (Expression) getWithAllSubclassesExpression().clone();
             if (branchIndicator != null) {
                 selectStatement.setWhereClause(branchIndicator.and(selectStatement.getWhereClause()));
             }
@@ -337,8 +329,7 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * This method is invoked only for the abstract descriptors.
+     * INTERNAL: This method is invoked only for the abstract descriptors.
      */
     public Class classFromRow(AbstractRecord rowFromDatabase, AbstractSession session) throws DescriptorException {
         if (hasClassExtractor()) {
@@ -353,25 +344,27 @@ public class InheritancePolicy implements Serializable, Cloneable {
 
         return classFromValue(classFieldValue, session);
     }
-    
+
     /**
-     * INTERNAL:
-     * This method is used to turn the a raw database field value classFieldValue into a Class object.  Used to determine
-     * which class objects to build from database results, and for class type expression
+     * INTERNAL: This method is used to turn the a raw database field value
+     * classFieldValue into a Class object. Used to determine which class
+     * objects to build from database results, and for class type expression
      */
     public Class classFromValue(Object classFieldValue, AbstractSession session) throws DescriptorException {
         Class concreteClass;
         if (!shouldUseClassNameAsIndicator()) {
-            concreteClass = (Class)getClassIndicatorMapping().get(classFieldValue);
+            concreteClass = (Class) getClassIndicatorMapping().get(classFieldValue);
             if (concreteClass == null) {
                 throw DescriptorException.missingClassForIndicatorFieldValue(classFieldValue, getDescriptor());
             }
         } else {
             try {
-                String className = (String)classFieldValue;
-                //PWK 2.5.1.7 can not use class for name, must go through conversion manager.
-                //Should use the root ClassDescriptor's classloader to avoid loading from a loader other
-                //than the one that loaded the project
+                String className = (String) classFieldValue;
+                // PWK 2.5.1.7 can not use class for name, must go through
+                // conversion manager.
+                // Should use the root ClassDescriptor's classloader to avoid
+                // loading from a loader other
+                // than the one that loaded the project
                 concreteClass = getDescriptor().getJavaClass().getClassLoader().loadClass(className);
                 if (concreteClass == null) {
                     throw DescriptorException.missingClassForIndicatorFieldValue(classFieldValue, getDescriptor());
@@ -387,16 +380,15 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Clone the policy
+     * INTERNAL: Clone the policy
      */
     public Object clone() {
         InheritancePolicy clone = null;
 
         try {
-            clone = (InheritancePolicy)super.clone();
+            clone = (InheritancePolicy) super.clone();
             if (hasClassIndicator()) {
-                clone.setClassIndicatorField((DatabaseField)clone.getClassIndicatorField().clone());
+                clone.setClassIndicatorField((DatabaseField) clone.getClassIndicatorField().clone());
             }
         } catch (Exception exception) {
             throw new InternalError("clone failed");
@@ -406,10 +398,11 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Convert all the class-name-based settings in this InheritancePolicy to actual class-based settings.
-     * This method is used when converting a project that has been built with class names to a project with classes.
-     * It will also convert referenced classes to the versions of the classes from the classLoader.
+     * INTERNAL: Convert all the class-name-based settings in this
+     * InheritancePolicy to actual class-based settings. This method is used
+     * when converting a project that has been built with class names to a
+     * project with classes. It will also convert referenced classes to the
+     * versions of the classes from the classLoader.
      */
     public void convertClassNamesToClasses(ClassLoader classLoader) {
         Iterator keysEnum = getClassNameIndicatorMapping().keySet().iterator();
@@ -420,66 +413,65 @@ public class InheritancePolicy implements Serializable, Cloneable {
             Object key = keysEnum.next();
             Object value = valuesEnum.next();
             Class theClass = null;
-            try{
-                if (PrivilegedAccessHelper.shouldUsePrivilegedAccess()){
+            try {
+                if (PrivilegedAccessHelper.shouldUsePrivilegedAccess()) {
                     try {
-                        theClass = (Class)AccessController.doPrivileged(new PrivilegedClassForName((String)key, true, classLoader));
+                        theClass = (Class) AccessController.doPrivileged(new PrivilegedClassForName((String) key, true, classLoader));
                     } catch (PrivilegedActionException exception) {
-                        throw ValidationException.classNotFoundWhileConvertingClassNames((String)key, (Exception)exception.getCause());
+                        throw ValidationException.classNotFoundWhileConvertingClassNames((String) key, (Exception) exception.getCause());
                     }
                 } else {
-                    theClass = org.eclipse.persistence.internal.security.PrivilegedAccessHelper.getClassForName((String)key, true, classLoader);
+                    theClass = org.eclipse.persistence.internal.security.PrivilegedAccessHelper.getClassForName((String) key, true, classLoader);
                 }
-            } catch (ClassNotFoundException exc){
-                throw ValidationException.classNotFoundWhileConvertingClassNames((String)key, exc);
+            } catch (ClassNotFoundException exc) {
+                throw ValidationException.classNotFoundWhileConvertingClassNames((String) key, exc);
             }
             this.classIndicatorMapping.put(theClass, value);
             this.classIndicatorMapping.put(value, theClass);
         }
-        if (getParentClassName() == null){
+        if (getParentClassName() == null) {
             return;
         }
         Class parentClass = null;
-        try{
-            if (PrivilegedAccessHelper.shouldUsePrivilegedAccess()){
+        try {
+            if (PrivilegedAccessHelper.shouldUsePrivilegedAccess()) {
                 try {
-                    parentClass = (Class)AccessController.doPrivileged(new PrivilegedClassForName(getParentClassName(), true, classLoader));
+                    parentClass = (Class) AccessController.doPrivileged(new PrivilegedClassForName(getParentClassName(), true, classLoader));
                 } catch (PrivilegedActionException exception) {
                     throw ValidationException.classNotFoundWhileConvertingClassNames(getParentClassName(), exception.getException());
                 }
             } else {
                 parentClass = org.eclipse.persistence.internal.security.PrivilegedAccessHelper.getClassForName(getParentClassName(), true, classLoader);
             }
-        } catch (ClassNotFoundException exc){
+        } catch (ClassNotFoundException exc) {
             throw ValidationException.classNotFoundWhileConvertingClassNames(parentClassName, exc);
         }
         setParentClass(parentClass);
     }
 
     /**
-     * PUBLIC:
-     * Set the descriptor to only read instance of itself when queried.
-     * This is used with inheritance to configure the result of queries.
-     * By default this is true for root inheritance descriptors, and false for all others.
+     * PUBLIC: Set the descriptor to only read instance of itself when queried.
+     * This is used with inheritance to configure the result of queries. By
+     * default this is true for root inheritance descriptors, and false for all
+     * others.
      */
     public void dontReadSubclassesOnQueries() {
         setShouldReadSubclasses(false);
     }
 
     /**
-     * PUBLIC:
-     * Set the descriptor not to use the class' full name as the indicator.
-     * The class indicator is used with inheritance to determine the class from a row.
-     * By default a class indicator mapping is required, this can be set to true if usage of the class name is desired.
-     * The field must be of a large enough size to store the fully qualified class name.
+     * PUBLIC: Set the descriptor not to use the class' full name as the
+     * indicator. The class indicator is used with inheritance to determine the
+     * class from a row. By default a class indicator mapping is required, this
+     * can be set to true if usage of the class name is desired. The field must
+     * be of a large enough size to store the fully qualified class name.
      */
     public void dontUseClassNameAsIndicator() {
         setShouldUseClassNameAsIndicator(false);
     }
 
     /**
-     * INTERNAL:
-     * Stores class indicators for all child and children's children.
+     * INTERNAL: Stores class indicators for all child and children's children.
      * Used for queries on branch classes only.
      */
     protected Vector getAllChildClassIndicators() {
@@ -487,10 +479,8 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Returns all the child descriptors, even descriptors for subclasses of
-     * subclasses.
-     * Required for bug 3019934.
+     * INTERNAL: Returns all the child descriptors, even descriptors for
+     * subclasses of subclasses. Required for bug 3019934.
      */
     public Vector getAllChildDescriptors() {
         // Guess the number of child descriptors...
@@ -499,12 +489,11 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Recursive subroutine of getAllChildDescriptors.
+     * INTERNAL: Recursive subroutine of getAllChildDescriptors.
      */
     protected Vector getAllChildDescriptors(Vector allChildDescriptors) {
         for (Enumeration enumtr = getChildDescriptors().elements(); enumtr.hasMoreElements();) {
-            ClassDescriptor childDescriptor = (ClassDescriptor)enumtr.nextElement();
+            ClassDescriptor childDescriptor = (ClassDescriptor) enumtr.nextElement();
             allChildDescriptors.addElement(childDescriptor);
             childDescriptor.getInheritancePolicyOrNull().getAllChildDescriptors(allChildDescriptors);
         }
@@ -512,97 +501,100 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * if reads subclasses, all tables for all read subclasses (indirect included).
+     * INTERNAL: if reads subclasses, all tables for all read subclasses
+     * (indirect included).
      */
     public List getChildrenTables() {
         return childrenTables;
     }
-    
+
     /**
-     * INTERNAL:
-     * join expression for each child table, keyed by the table
+     * INTERNAL: join expression for each child table, keyed by the table
      */
     public Map getChildrenTablesJoinExpressions() {
         return childrenTablesJoinExpressions;
     }
-    
+
     /**
-     * INTERNAL:
-     * all expressions from childrenTablesJoinExpressions ANDed together
+     * INTERNAL: all expressions from childrenTablesJoinExpressions ANDed
+     * together
      */
     public Expression getChildrenJoinExpression() {
         return childrenJoinExpression;
     }
-    
+
     /**
-     * INTERNAL:
-     * all tables for reference class plus childrenTables
+     * INTERNAL: all tables for reference class plus childrenTables
      */
     public Vector getAllTables() {
-        if(allTables == null) {
+        if (allTables == null) {
             return this.getDescriptor().getTables();
         } else {
             return allTables;
         }
     }
-    
+
     /**
-     * INTERNAL:
-     * Return all the immediate child descriptors.  Only descriptors from
-     * direct subclasses are returned.
+     * INTERNAL: Return all the immediate child descriptors. Only descriptors
+     * from direct subclasses are returned.
      */
     public Vector getChildDescriptors() {
         return childDescriptors;
     }
 
     /**
-     * INTERNAL:
-     * Return all the classExtractionMethod
+     * INTERNAL: Return all the classExtractionMethod
      */
     protected Method getClassExtractionMethod() {
         if (classExtractor instanceof MethodClassExtractor) {
-            return ((MethodClassExtractor)classExtractor).getClassExtractionMethod();
+            return ((MethodClassExtractor) classExtractor).getClassExtractionMethod();
         } else {
             return null;
         }
     }
 
     /**
-     * ADVANCED:
-     * A class extraction method can be registered with the descriptor to override the default inheritance mechanism.
-     * This allows for a user defined class indicator in place of providing an explicit class indicator field.
-     * The method registered must be a static method on the class which has that descriptor. The method must take a 
-     * Record as an argument (for example, a DatabaseRecord), and must return the class to use for that record. 
-     * This method will be used to decide which class to instantiate when reading from the database. 
-     * It is the application's responsibility to populate any typing information in the database required
-     * to determine the class from the record. 
-     * If this method is used, then the class indicator field and mapping cannot be used, and in addition, 
-     * the descriptor's withAllSubclasses and onlyInstances expressions must also be setup correctly.
-     *
+     * ADVANCED: A class extraction method can be registered with the descriptor
+     * to override the default inheritance mechanism. This allows for a user
+     * defined class indicator in place of providing an explicit class indicator
+     * field. The method registered must be a static method on the class which
+     * has that descriptor. The method must take a Record as an argument (for
+     * example, a DatabaseRecord), and must return the class to use for that
+     * record. This method will be used to decide which class to instantiate
+     * when reading from the database. It is the application's responsibility to
+     * populate any typing information in the database required to determine the
+     * class from the record. If this method is used, then the class indicator
+     * field and mapping cannot be used, and in addition, the descriptor's
+     * withAllSubclasses and onlyInstances expressions must also be setup
+     * correctly.
+     * 
      * @see #setWithAllSubclassesExpression(Expression)
      * @see #setOnlyInstancesExpression(Expression)
      */
     public String getClassExtractionMethodName() {
         if (classExtractor instanceof MethodClassExtractor) {
-            return ((MethodClassExtractor)classExtractor).getClassExtractionMethodName();
+            return ((MethodClassExtractor) classExtractor).getClassExtractionMethodName();
         } else {
             return null;
         }
     }
 
     /**
-     * ADVANCED:
-     * A class extractor can be registered with the descriptor to override the default inheritance mechanism.
-     * This allows for a user defined class indicator in place of providing an explicit class indicator field.
-     * The instance registered must extend the ClassExtractor class and implement the extractClass(Map) method.
-     * The method must take database row (a Record/Map) as an argument and must return the class to use for that row.
-     * This method will be used to decide which class to instantiate when reading from the database.
-     * It is the application's responsibility to populate any typing information in the database required
-     * to determine the class from the row, such as usage of a direct or transformation mapping for the type fields.
-     * If this method is used then the class indicator field and mapping cannot be used, and in addition, 
-     * the descriptor's withAllSubclasses and onlyInstances expressions must also be setup correctly.
-     *
+     * ADVANCED: A class extractor can be registered with the descriptor to
+     * override the default inheritance mechanism. This allows for a user
+     * defined class indicator in place of providing an explicit class indicator
+     * field. The instance registered must extend the ClassExtractor class and
+     * implement the extractClass(Map) method. The method must take database row
+     * (a Record/Map) as an argument and must return the class to use for that
+     * row. This method will be used to decide which class to instantiate when
+     * reading from the database. It is the application's responsibility to
+     * populate any typing information in the database required to determine the
+     * class from the row, such as usage of a direct or transformation mapping
+     * for the type fields. If this method is used then the class indicator
+     * field and mapping cannot be used, and in addition, the descriptor's
+     * withAllSubclasses and onlyInstances expressions must also be setup
+     * correctly.
+     * 
      * @see #setWithAllSubclassesExpression(Expression)
      * @see #setOnlyInstancesExpression(Expression)
      */
@@ -611,17 +603,21 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * ADVANCED:
-     * A class extractor can be registered with the descriptor to override the default inheritance mechanism.
-     * This allows for a user defined class indicator in place of providing an explicit class indicator field.
-     * The instance registered must extend the ClassExtractor class and implement the extractClass(Map) method.
-     * The method must take database row (a Record/Map) as an argument and must return the class to use for that row.
-     * This method will be used to decide which class to instantiate when reading from the database.
-     * It is the application's responsibility to populate any typing information in the database required
-     * to determine the class from the row, such as usage of a direct or transformation mapping for the type fields.
-     * If this method is used then the class indicator field and mapping cannot be used, and in addition, 
-     * the descriptor's withAllSubclasses and onlyInstances expressions must also be setup correctly.
-     *
+     * ADVANCED: A class extractor can be registered with the descriptor to
+     * override the default inheritance mechanism. This allows for a user
+     * defined class indicator in place of providing an explicit class indicator
+     * field. The instance registered must extend the ClassExtractor class and
+     * implement the extractClass(Map) method. The method must take database row
+     * (a Record/Map) as an argument and must return the class to use for that
+     * row. This method will be used to decide which class to instantiate when
+     * reading from the database. It is the application's responsibility to
+     * populate any typing information in the database required to determine the
+     * class from the row, such as usage of a direct or transformation mapping
+     * for the type fields. If this method is used then the class indicator
+     * field and mapping cannot be used, and in addition, the descriptor's
+     * withAllSubclasses and onlyInstances expressions must also be setup
+     * correctly.
+     * 
      * @see #setWithAllSubclassesExpression(Expression)
      * @see #setOnlyInstancesExpression(Expression)
      */
@@ -630,9 +626,8 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Return the class indicator associations for XML.
-     * List of class-name/value associations.
+     * INTERNAL: Return the class indicator associations for XML. List of
+     * class-name/value associations.
      */
     public Vector getClassIndicatorAssociations() {
         Vector associations = new Vector(getClassNameIndicatorMapping().size() / 2);
@@ -643,7 +638,7 @@ public class InheritancePolicy implements Serializable, Cloneable {
 
             // If the project was built in runtime is a class, MW is a string.
             if (className instanceof Class) {
-                className = ((Class)className).getName();
+                className = ((Class) className).getName();
             }
             Object value = valuesEnum.next();
             associations.addElement(new TypedAssociation(className, value));
@@ -653,17 +648,16 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Returns field that the class type indicator is store when using inheritance.
+     * INTERNAL: Returns field that the class type indicator is store when using
+     * inheritance.
      */
     public DatabaseField getClassIndicatorField() {
         return classIndicatorField;
     }
 
     /**
-     * PUBLIC:
-     * Return the class indicator field name.
-     * This is the name of the field in the table that stores what type of object this is.
+     * PUBLIC: Return the class indicator field name. This is the name of the
+     * field in the table that stores what type of object this is.
      */
     public String getClassIndicatorFieldName() {
         if (getClassIndicatorField() == null) {
@@ -674,16 +668,15 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Return the association of indicators and classes using specified ConversionManager
+     * INTERNAL: Return the association of indicators and classes using
+     * specified ConversionManager
      */
     public Map getClassIndicatorMapping() {
         return classIndicatorMapping;
     }
 
     /**
-     * INTERNAL:
-     * Return the mapping from class name to indicator, used by MW.
+     * INTERNAL: Return the mapping from class name to indicator, used by MW.
      */
     public Map getClassNameIndicatorMapping() {
         if (classNameIndicatorMapping.isEmpty() && !classIndicatorMapping.isEmpty()) {
@@ -693,7 +686,7 @@ public class InheritancePolicy implements Serializable, Cloneable {
                 Object key = keysEnum.next();
                 Object value = valuesEnum.next();
                 if (key instanceof Class) {
-                    String className = ((Class)key).getName();
+                    String className = ((Class) key).getName();
                     classNameIndicatorMapping.put(className, value);
                 }
             }
@@ -703,17 +696,16 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Returns value of the abstract class indicator for the Java class.
+     * INTERNAL: Returns value of the abstract class indicator for the Java
+     * class.
      */
     protected Object getClassIndicatorValue() {
         return getClassIndicatorValue(getDescriptor().getJavaClass());
     }
 
     /**
-     * INTERNAL:
-     * Returns the indicator field value for the given class
-     * If no abstract indicator mapping is specified, use the class name.
+     * INTERNAL: Returns the indicator field value for the given class If no
+     * abstract indicator mapping is specified, use the class name.
      */
     protected Object getClassIndicatorValue(Class javaClass) {
         if (shouldUseClassNameAsIndicator()) {
@@ -724,46 +716,41 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Returns the descriptor which the policy belongs to.
+     * INTERNAL: Returns the descriptor which the policy belongs to.
      */
     public ClassDescriptor getDescriptor() {
         return descriptor;
     }
 
     /**
-     * ADVANCED:
-     * Determines whether the descriptors using this inheritance policy
-     * should be used as descriptors for subclasses of the classes they
+     * ADVANCED: Determines whether the descriptors using this inheritance
+     * policy should be used as descriptors for subclasses of the classes they
      * describe if those subclasses do not have their own descriptor
      * 
-     * e.g. If Employee.class has a descriptor and EmployeeSubClass does
-     * not have a descriptor, if describesNonPersistenceSubclasses is true
+     * e.g. If Employee.class has a descriptor and EmployeeSubClass does not
+     * have a descriptor, if describesNonPersistenceSubclasses is true
      * Employee's descriptor will be used as the descriptor for Employee
      */
-    public boolean getDescribesNonPersistentSubclasses(){
+    public boolean getDescribesNonPersistentSubclasses() {
         return describesNonPersistentSubclasses;
     }
-    
+
     /**
-     * ADVANCED:
-     * Return the 'only instances expression'.
+     * ADVANCED: Return the 'only instances expression'.
      */
     public Expression getOnlyInstancesExpression() {
         return onlyInstancesExpression;
     }
 
     /**
-     * PUBLIC:
-     * Return the parent class.
+     * PUBLIC: Return the parent class.
      */
     public Class getParentClass() {
         return parentClass;
     }
 
     /**
-     * INTERNAL:
-     * Return the parent class name.
+     * INTERNAL: Return the parent class name.
      */
     public String getParentClassName() {
         if ((parentClassName == null) && (parentClass != null)) {
@@ -773,28 +760,28 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Return the parent descriptor.
+     * INTERNAL: Return the parent descriptor.
      */
     public ClassDescriptor getParentDescriptor() {
         return parentDescriptor;
     }
 
     /**
-     * INTERNAL:
-     * The view can be used to optimize/customize the query for all subclasses where they have multiple tables.
-     * This view can do the outer join, we require the view because we cannot generate dynamic platform independent SQL
-     * for outer joins (i.e. not possible to do so either).
+     * INTERNAL: The view can be used to optimize/customize the query for all
+     * subclasses where they have multiple tables. This view can do the outer
+     * join, we require the view because we cannot generate dynamic platform
+     * independent SQL for outer joins (i.e. not possible to do so either).
      */
     public DatabaseTable getReadAllSubclassesView() {
         return readAllSubclassesView;
     }
 
     /**
-     * ADVANCED:
-     * The view can be used to optimize/customize the query for all subclasses where they have multiple tables.
-     * This view can use outer joins or unions to combine the results of selecting from all of the subclass tables.
-     * If a view is not given then TopLink must make an individual call for each subclass.
+     * ADVANCED: The view can be used to optimize/customize the query for all
+     * subclasses where they have multiple tables. This view can use outer joins
+     * or unions to combine the results of selecting from all of the subclass
+     * tables. If a view is not given then TopLink must make an individual call
+     * for each subclass.
      */
     public String getReadAllSubclassesViewName() {
         if (getReadAllSubclassesView() == null) {
@@ -804,8 +791,7 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Return the root parent descriptor
+     * INTERNAL: Return the root parent descriptor
      */
     public ClassDescriptor getRootParentDescriptor() {
         if (this.rootParentDescriptor == null) {
@@ -819,13 +805,12 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * use aggregate in inheritance
+     * INTERNAL: use aggregate in inheritance
      */
     public ClassDescriptor getSubclassDescriptor(Class theClass) {
         if (hasChildren()) {
             for (Iterator enumtr = getChildDescriptors().iterator(); enumtr.hasNext();) {
-                ClassDescriptor childDescriptor = (ClassDescriptor)enumtr.next();
+                ClassDescriptor childDescriptor = (ClassDescriptor) enumtr.next();
                 if (childDescriptor.getJavaClass().equals(theClass)) {
                     return childDescriptor;
                 } else {
@@ -840,11 +825,11 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Returns descriptor corresponding to the class owning the policy or its subclass - otherwise null.
+     * INTERNAL: Returns descriptor corresponding to the class owning the policy
+     * or its subclass - otherwise null.
      */
     public ClassDescriptor getDescriptor(Class theClass) {
-        if(getDescriptor().getJavaClass().equals(theClass)) {
+        if (getDescriptor().getJavaClass().equals(theClass)) {
             return getDescriptor();
         } else {
             return getSubclassDescriptor(theClass);
@@ -852,8 +837,7 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * return if we should use the descriptor inheritance to determine
+     * INTERNAL: return if we should use the descriptor inheritance to determine
      * if an object can be returned from the identity map or not.
      */
     public boolean getUseDescriptorsToValidateInheritedObjects() {
@@ -861,16 +845,14 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * ADVANCED:
-     * Return the Expression which gets all subclasses.
+     * ADVANCED: Return the Expression which gets all subclasses.
      */
     public Expression getWithAllSubclassesExpression() {
         return withAllSubclassesExpression;
     }
 
     /**
-     * INTERNAL:
-     * Check if descriptor has children
+     * INTERNAL: Check if descriptor has children
      */
     public boolean hasChildren() {
         return !getChildDescriptors().isEmpty();
@@ -884,37 +866,35 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Checks if the class is invloved in inheritance
+     * INTERNAL: Checks if the class is invloved in inheritance
      */
     public boolean hasClassIndicator() {
         return getClassIndicatorField() != null;
     }
 
     /**
-     * INTERNAL:
-     * Return if any children of this descriptor require information from another table
-     * not specified at the parent level.
+     * INTERNAL: Return if any children of this descriptor require information
+     * from another table not specified at the parent level.
      */
     public boolean hasMultipleTableChild() {
         return childrenTables != null;
     }
 
     /**
-     * INTERNAL:
-     * Return if a view is used for inheritance reads.
+     * INTERNAL: Return if a view is used for inheritance reads.
      */
     public boolean hasView() {
         return getReadAllSubclassesView() != null;
     }
 
     /**
-     * INTERNAL:
-     * Initialized the inheritance properties of the descriptor once the mappings are initialized.
-     * This is done before formal postInitialize during the end of mapping initialize.
+     * INTERNAL: Initialized the inheritance properties of the descriptor once
+     * the mappings are initialized. This is done before formal postInitialize
+     * during the end of mapping initialize.
      */
     public void initialize(AbstractSession session) {
-        // Must reset this in the case that a child thinks it wants to read its subclasses.
+        // Must reset this in the case that a child thinks it wants to read its
+        // subclasses.
         if ((shouldReadSubclasses == null) || shouldReadSubclasses()) {
             setShouldReadSubclasses(!getChildDescriptors().isEmpty());
         }
@@ -924,9 +904,9 @@ public class InheritancePolicy implements Serializable, Cloneable {
             getDescriptor().setQueryKeys(Helper.concatenateMaps(getParentDescriptor().getQueryKeys(), getDescriptor().getQueryKeys()));
             addFieldsToParent(getDescriptor().getFields());
             // Parents fields must be first for indexing to work.
-            Vector parentsFields = (Vector)getParentDescriptor().getFields().clone();
+            Vector parentsFields = (Vector) getParentDescriptor().getFields().clone();
 
-            //bug fix on Oracle duplicate field SQL using "order by"
+            // bug fix on Oracle duplicate field SQL using "order by"
             Helper.addAllUniqueToVector(parentsFields, getDescriptor().getFields());
             getDescriptor().setFields(parentsFields);
 
@@ -943,7 +923,8 @@ public class InheritancePolicy implements Serializable, Cloneable {
                 getDescriptor().setReturningPolicy(new ReturningPolicy());
             }
 
-            // create CMPPolicy on child if parent has one and it does not.  Then copy individual fields
+            // create CMPPolicy on child if parent has one and it does not. Then
+            // copy individual fields
             CMPPolicy parentCMPPolicy = getDescriptor().getInheritancePolicy().getParentDescriptor().getCMPPolicy();
             if (parentCMPPolicy != null) {
                 CMPPolicy cmpPolicy = getDescriptor().getCMPPolicy();
@@ -952,9 +933,10 @@ public class InheritancePolicy implements Serializable, Cloneable {
                     getDescriptor().setCMPPolicy(cmpPolicy);
                 }
 
-                //copy pessimistic locking policy from the parent if this child does not have one
+                // copy pessimistic locking policy from the parent if this child
+                // does not have one
                 if (parentCMPPolicy.hasPessimisticLockingPolicy() && !cmpPolicy.hasPessimisticLockingPolicy()) {
-                    cmpPolicy.setPessimisticLockingPolicy((PessimisticLockingPolicy)parentCMPPolicy.getPessimisticLockingPolicy().clone());
+                    cmpPolicy.setPessimisticLockingPolicy((PessimisticLockingPolicy) parentCMPPolicy.getPessimisticLockingPolicy().clone());
                 }
 
                 // copy forceUpdate value if not set in child
@@ -967,7 +949,7 @@ public class InheritancePolicy implements Serializable, Cloneable {
                     cmpPolicy.internalSetUpdateAllFields(parentCMPPolicy.internalGetUpdateAllFields());
                 }
             }
-            
+
             // Inherit the native connection requirement.
             if (getParentDescriptor().isNativeConnectionRequired()) {
                 getDescriptor().setIsNativeConnectionRequired(true);
@@ -985,8 +967,8 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Setup the default classExtractionMethod, or if one was specified by the user make sure it is valid.
+     * INTERNAL: Setup the default classExtractionMethod, or if one was
+     * specified by the user make sure it is valid.
      */
     protected void initializeClassExtractor(AbstractSession session) throws DescriptorException {
         if (getClassExtractor() == null) {
@@ -999,8 +981,8 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Initialize the expression to use to check the specific type field.
+     * INTERNAL: Initialize the expression to use to check the specific type
+     * field.
      */
     protected void initializeOnlyInstancesExpression() throws DescriptorException {
         if (getOnlyInstancesExpression() == null) {
@@ -1035,22 +1017,20 @@ public class InheritancePolicy implements Serializable, Cloneable {
         }
     }
 
-
     /**
-     * INTERNAL:
-     * Potentially override the optimistic locking behavior
+     * INTERNAL: Potentially override the optimistic locking behavior
      */
-    protected void initializeOptimisticLocking(){
+    protected void initializeOptimisticLocking() {
         // CR#3214106, do not override if specified in subclass.
         if (!getDescriptor().usesOptimisticLocking() && getParentDescriptor().usesOptimisticLocking()) {
-            getDescriptor().setOptimisticLockingPolicy((OptimisticLockingPolicy)getParentDescriptor().getOptimisticLockingPolicy().clone());
+            getDescriptor().setOptimisticLockingPolicy((OptimisticLockingPolicy) getParentDescriptor().getOptimisticLockingPolicy().clone());
             getDescriptor().getOptimisticLockingPolicy().setDescriptor(getDescriptor());
         }
     }
-    
+
     /**
-     * INTERNAL:
-     * Initialize the expression to use for queries to the class and its subclasses.
+     * INTERNAL: Initialize the expression to use for queries to the class and
+     * its subclasses.
      */
     protected void initializeWithAllSubclassesExpression() throws DescriptorException {
         if (getWithAllSubclassesExpression() == null) {
@@ -1062,52 +1042,64 @@ public class InheritancePolicy implements Serializable, Cloneable {
             }
         }
     }
-    
+
     /**
-     * INTERNAL:
-     * Check if it is a child descriptor.
+     * INTERNAL: Check if it is a child descriptor.
      */
     public boolean isChildDescriptor() {
         return getParentClassName() != null;
     }
-    
+
     /**
-     * INTERNAL:
-     * Indicate whether a single table or joined inheritance strategy is being used.  Since we currently do
-     * not support TABLE_PER_CLASS, indicating either joined/not joined is sufficient.
+     * INTERNAL: Indicate whether a single table or joined inheritance strategy
+     * is being used. Since we currently do not support TABLE_PER_CLASS,
+     * indicating either joined/not joined is sufficient.
      * 
      * @return isJoinedStrategy value
      */
     public boolean isJoinedStrategy() {
         return isJoinedStrategy;
     }
-    
+
     /**
-     * INTERNAL:
-     * Return whether or not is root parent descriptor
+     * INTERNAL: Return whether or not is root parent descriptor
      */
     public boolean isRootParentDescriptor() {
         return getParentDescriptor() == null;
     }
 
     /**
-     * INTERNAL:
-     * Initialized the inheritance properties that cannot be initialized
-     * unitl after the mappings have been.
+     * INTERNAL: Initialized the inheritance properties that cannot be
+     * initialized unitl after the mappings have been.
      */
     public void postInitialize(AbstractSession session) {
     }
 
     /**
-     * INTERNAL:
-     * Allow the inheritance properties of the descriptor to be initialized.
-     * The descriptor's parent must first be initialized.
+     * INTERNAL: Allow the inheritance properties of the descriptor to be
+     * initialized. The descriptor's parent must first be initialized.
      */
     public void preInitialize(AbstractSession session) throws DescriptorException {
+        // Bug 200045 - Initialize missing class indicators if they only exist
+        // in the string map
+        if (this.classNameIndicatorMapping.size() > getClassIndicatorMapping().size()) {
+            // Check each indicator name to ensure it exists
+            for (Iterator i = getClassNameIndicatorMapping().keySet().iterator(); i.hasNext();) {
+                String childClassName = (String) i.next();
+
+                // TODO: What if the child class name is not found
+                Class<?> childClass = session.getPlatform().getConversionManager().convertClassNameToClass(childClassName);
+                if (!getClassIndicatorMapping().containsKey(childClass)) {
+                    Object indicatorValue = getClassNameIndicatorMapping().get(childClassName);
+                    addClassIndicator(childClass, indicatorValue);
+                }
+            }
+        }
+
         // Make sure that parent is already preinitialized.
         if (isChildDescriptor()) {
-            updateTables();                       
-        
+            updateTables();
+
             setClassIndicatorMapping(getParentDescriptor().getInheritancePolicy().getClassIndicatorMapping());
             setShouldUseClassNameAsIndicator(getParentDescriptor().getInheritancePolicy().shouldUseClassNameAsIndicator());
 
@@ -1135,13 +1127,13 @@ public class InheritancePolicy implements Serializable, Cloneable {
 
             setClassIndicatorField(getParentDescriptor().getInheritancePolicy().getClassIndicatorField());
 
-            //if child has sequencing setting, do not bother to call the parent
+            // if child has sequencing setting, do not bother to call the parent
             if (!getDescriptor().usesSequenceNumbers()) {
                 getDescriptor().setSequenceNumberField(getParentDescriptor().getSequenceNumberField());
                 getDescriptor().setSequenceNumberName(getParentDescriptor().getSequenceNumberName());
             }
         } else {
-            // This must be done now before any other initialization occurs. 
+            // This must be done now before any other initialization occurs.
             getDescriptor().setInternalDefaultTable();
         }
 
@@ -1174,18 +1166,17 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * PUBLIC:
-     * Set the descriptor to read instance of itself and its subclasses when queried.
-     * This is used with inheritance to configure the result of queries.
-     * By default this is true for root inheritance descriptors, and false for all others.
+     * PUBLIC: Set the descriptor to read instance of itself and its subclasses
+     * when queried. This is used with inheritance to configure the result of
+     * queries. By default this is true for root inheritance descriptors, and
+     * false for all others.
      */
     public void readSubclassesOnQueries() {
         setShouldReadSubclasses(true);
     }
 
     /**
-     * INTERNAL:
-     * Used to initialize a remote descriptor.
+     * INTERNAL: Used to initialize a remote descriptor.
      */
     public void remoteInitialization(DistributedSession session) {
         if (isChildDescriptor()) {
@@ -1200,7 +1191,7 @@ public class InheritancePolicy implements Serializable, Cloneable {
         Vector tempChildren = new Vector(getChildDescriptors().size());
         Enumeration childEnum = getChildDescriptors().elements();
         while (childEnum.hasMoreElements()) {
-            ClassDescriptor childDescriptor = (ClassDescriptor)childEnum.nextElement();
+            ClassDescriptor childDescriptor = (ClassDescriptor) childEnum.nextElement();
             if (session.hasCorrespondingDescriptor(childDescriptor)) {
                 tempChildren.addElement(session.getDescriptor(childDescriptor.getJavaClass()));
             } else {
@@ -1213,39 +1204,43 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Return if this descriptor has children that define additional tables and needs to read them.
-     * This case requires a special read, because the query cannot be done through a single SQL call with normal joins.
+     * INTERNAL: Return if this descriptor has children that define additional
+     * tables and needs to read them. This case requires a special read, because
+     * the query cannot be done through a single SQL call with normal joins.
      */
     public boolean requiresMultipleTableSubclassRead() {
         return hasMultipleTableChild() && shouldReadSubclasses();
     }
 
     /**
-     * INTERNAL:
-     * Select all rows from a abstract table descriptor.
-     * This is accomplished by selecting for all of the concrete classes and then merging the rows.
-     * This does not optimize using type select, as the type information is not known.
+     * INTERNAL: Select all rows from a abstract table descriptor. This is
+     * accomplished by selecting for all of the concrete classes and then
+     * merging the rows. This does not optimize using type select, as the type
+     * information is not known.
+     * 
      * @return vector containing database rows.
-     * @exception  DatabaseException - an error has occurred on the database.
+     * @exception DatabaseException
+     *                - an error has occurred on the database.
      */
     protected Vector selectAllRowUsingCustomMultipleTableSubclassRead(ReadAllQuery query) throws DatabaseException {
         Vector rows = new Vector();
-        // CR#3701077, it must either have a filter only instances expression, or not have subclasses.
-        // This method recurses, so even though this is only called when shouldReadSubclasses is true, it may be false for subclasses.
-        if ((getOnlyInstancesExpression() != null)  || (! shouldReadSubclasses())) {
-            ReadAllQuery concreteQuery = (ReadAllQuery)query.clone();
+        // CR#3701077, it must either have a filter only instances expression,
+        // or not have subclasses.
+        // This method recurses, so even though this is only called when
+        // shouldReadSubclasses is true, it may be false for subclasses.
+        if ((getOnlyInstancesExpression() != null) || (!shouldReadSubclasses())) {
+            ReadAllQuery concreteQuery = (ReadAllQuery) query.clone();
             concreteQuery.setReferenceClass(getDescriptor().getJavaClass());
             concreteQuery.setDescriptor(getDescriptor());
 
-            Vector concreteRows = ((ExpressionQueryMechanism)concreteQuery.getQueryMechanism()).selectAllRowsFromConcreteTable();
+            Vector concreteRows = ((ExpressionQueryMechanism) concreteQuery.getQueryMechanism()).selectAllRowsFromConcreteTable();
             rows = Helper.concatenateVectors(rows, concreteRows);
         }
 
-        // Recursively collect all rows from all concrete children and their children.
-        for (Enumeration childrenEnum = getChildDescriptors().elements();
-                 childrenEnum.hasMoreElements();) {
-            ClassDescriptor concreteDescriptor = (ClassDescriptor)childrenEnum.nextElement();
+        // Recursively collect all rows from all concrete children and their
+        // children.
+        for (Enumeration childrenEnum = getChildDescriptors().elements(); childrenEnum.hasMoreElements();) {
+            ClassDescriptor concreteDescriptor = (ClassDescriptor) childrenEnum.nextElement();
             Vector concreteRows = concreteDescriptor.getInheritancePolicy().selectAllRowUsingCustomMultipleTableSubclassRead(query);
             rows = Helper.concatenateVectors(rows, concreteRows);
         }
@@ -1254,57 +1249,66 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Select all rows from a abstract table descriptor.
-     * This is accomplished by selecting for all of the concrete classes and then merging the rows.
+     * INTERNAL: Select all rows from a abstract table descriptor. This is
+     * accomplished by selecting for all of the concrete classes and then
+     * merging the rows.
+     * 
      * @return vector containing database rows.
-     * @exception  DatabaseException - an error has occurred on the database.
+     * @exception DatabaseException
+     *                - an error has occurred on the database.
      */
     protected Vector selectAllRowUsingDefaultMultipleTableSubclassRead(ReadAllQuery query) throws DatabaseException, QueryException {
         // Get all rows for the given class indicator field
-        // The indicator select is prepared in the original query, so can just be executed.
-        Vector classIndicators = ((ExpressionQueryMechanism)query.getQueryMechanism()).selectAllRowsFromTable();
+        // The indicator select is prepared in the original query, so can just
+        // be executed.
+        Vector classIndicators = ((ExpressionQueryMechanism) query.getQueryMechanism()).selectAllRowsFromTable();
 
         Vector classes = new Vector();
         for (Enumeration rowsEnum = classIndicators.elements(); rowsEnum.hasMoreElements();) {
-            AbstractRecord row = (AbstractRecord)rowsEnum.nextElement();
+            AbstractRecord row = (AbstractRecord) rowsEnum.nextElement();
             Class concreteClass = classFromRow(row, query.getSession());
-            if (!classes.contains(concreteClass)) {//Ensure unique ** we should do a distinct.. we do
+            if (!classes.contains(concreteClass)) {// Ensure unique ** we should
+                                                   // do a distinct.. we do
                 classes.addElement(concreteClass);
             }
         }
 
         Vector rows = new Vector();
-        // joinedMappingIndexes contains Integer indexes corresponding to the number of fields
+        // joinedMappingIndexes contains Integer indexes corresponding to the
+        // number of fields
         // to which the query reference class is mapped, for instance:
         // referenceClass = SmallProject => joinedMappingIndexes(0) = 6;
         // referenceClass = LargeProject => joinedMappingIndexes(0) = 8;
-        // This information should be preserved in the main query against the parent class,
-        // therefore in this case joinedMappedIndexes contains a Map of classes to Integers:
-        // referenceClass = Project => joinedMappingIndexes(0) = Map {SmallProject -> 6; LargeProject -> 8}.
-        // These maps are populated in the loop below, and set into the main query joinedMappingIndexes.
+        // This information should be preserved in the main query against the
+        // parent class,
+        // therefore in this case joinedMappedIndexes contains a Map of classes
+        // to Integers:
+        // referenceClass = Project => joinedMappingIndexes(0) = Map
+        // {SmallProject -> 6; LargeProject -> 8}.
+        // These maps are populated in the loop below, and set into the main
+        // query joinedMappingIndexes.
         HashMap joinedMappingIndexes = null;
         if (query.hasJoining()) {
             joinedMappingIndexes = new HashMap();
         }
         for (Enumeration classesEnum = classes.elements(); classesEnum.hasMoreElements();) {
-            Class concreteClass = (Class)classesEnum.nextElement();
+            Class concreteClass = (Class) classesEnum.nextElement();
             ClassDescriptor concreteDescriptor = getDescriptor(concreteClass);
             if (concreteDescriptor == null) {
                 throw QueryException.noDescriptorForClassFromInheritancePolicy(query, concreteClass);
             }
-            ReadAllQuery concreteQuery = (ReadAllQuery)query.clone();
+            ReadAllQuery concreteQuery = (ReadAllQuery) query.clone();
             concreteQuery.setReferenceClass(concreteClass);
             concreteQuery.setDescriptor(concreteDescriptor);
 
-            Vector concreteRows = ((ExpressionQueryMechanism)concreteQuery.getQueryMechanism()).selectAllRowsFromConcreteTable();
+            Vector concreteRows = ((ExpressionQueryMechanism) concreteQuery.getQueryMechanism()).selectAllRowsFromConcreteTable();
             rows = Helper.concatenateVectors(rows, concreteRows);
-            
+
             if (joinedMappingIndexes != null) {
                 Iterator it = concreteQuery.getJoinedAttributeManager().getJoinedMappingIndexes_().entrySet().iterator();
                 while (it.hasNext()) {
-                    Map.Entry entry = (Map.Entry)it.next();
-                    HashMap map = (HashMap)joinedMappingIndexes.get(entry.getKey());
+                    Map.Entry entry = (Map.Entry) it.next();
+                    HashMap map = (HashMap) joinedMappingIndexes.get(entry.getKey());
                     if (map == null) {
                         map = new HashMap(classes.size());
                         joinedMappingIndexes.put(entry.getKey(), map);
@@ -1321,11 +1325,13 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Select all rows from a abstract table descriptor.
-     * This is accomplished by selecting for all of the concrete classes and then merging the rows.
+     * INTERNAL: Select all rows from a abstract table descriptor. This is
+     * accomplished by selecting for all of the concrete classes and then
+     * merging the rows.
+     * 
      * @return vector containing database rows.
-     * @exception  DatabaseException - an error has occurred on the database.
+     * @exception DatabaseException
+     *                - an error has occurred on the database.
      */
     public Vector selectAllRowUsingMultipleTableSubclassRead(ReadAllQuery query) throws DatabaseException {
         if (hasClassExtractor()) {
@@ -1336,31 +1342,35 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Select one rows from a abstract table descriptor.
-     * This is accomplished by selecting for all of the concrete classes until a row is found.
-     * This does not optimize using type select, as the type information is not known.
-     * @exception  DatabaseException - an error has occurred on the database.
+     * INTERNAL: Select one rows from a abstract table descriptor. This is
+     * accomplished by selecting for all of the concrete classes until a row is
+     * found. This does not optimize using type select, as the type information
+     * is not known.
+     * 
+     * @exception DatabaseException
+     *                - an error has occurred on the database.
      */
     protected AbstractRecord selectOneRowUsingCustomMultipleTableSubclassRead(ReadObjectQuery query) throws DatabaseException {
-        // CR#3701077, it must either have a filter only instances expression, or not have subclasses.
-        // This method recurses, so even though this is only called when shouldReadSubclasses is true, it may be false for subclasses.
-        if ((getOnlyInstancesExpression() != null)  || (! shouldReadSubclasses())) {
-            ReadObjectQuery concreteQuery = (ReadObjectQuery)query.clone();
+        // CR#3701077, it must either have a filter only instances expression,
+        // or not have subclasses.
+        // This method recurses, so even though this is only called when
+        // shouldReadSubclasses is true, it may be false for subclasses.
+        if ((getOnlyInstancesExpression() != null) || (!shouldReadSubclasses())) {
+            ReadObjectQuery concreteQuery = (ReadObjectQuery) query.clone();
             concreteQuery.setReferenceClass(getDescriptor().getJavaClass());
             concreteQuery.setDescriptor(getDescriptor());
 
-            AbstractRecord row = ((ExpressionQueryMechanism)concreteQuery.getQueryMechanism()).selectOneRowFromConcreteTable();
+            AbstractRecord row = ((ExpressionQueryMechanism) concreteQuery.getQueryMechanism()).selectOneRowFromConcreteTable();
 
             if (row != null) {
                 return row;
             }
         }
 
-        // Recursively collect all rows from all concrete children and their children.
-        for (Enumeration childrenEnum = getChildDescriptors().elements();
-                 childrenEnum.hasMoreElements();) {
-            ClassDescriptor concreteDescriptor = (ClassDescriptor)childrenEnum.nextElement();
+        // Recursively collect all rows from all concrete children and their
+        // children.
+        for (Enumeration childrenEnum = getChildDescriptors().elements(); childrenEnum.hasMoreElements();) {
+            ClassDescriptor concreteDescriptor = (ClassDescriptor) childrenEnum.nextElement();
             AbstractRecord row = concreteDescriptor.getInheritancePolicy().selectOneRowUsingCustomMultipleTableSubclassRead(query);
 
             if (row != null) {
@@ -1372,14 +1382,14 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Select one row of any concrete subclass,
-     * This must use two selects, the first retrieves the type field only.
+     * INTERNAL: Select one row of any concrete subclass, This must use two
+     * selects, the first retrieves the type field only.
      */
     protected AbstractRecord selectOneRowUsingDefaultMultipleTableSubclassRead(ReadObjectQuery query) throws DatabaseException, QueryException {
         // Get the row for the given class indicator field
-        // The indicator select is prepared in the original query, so can just be executed.
-        AbstractRecord typeRow = ((ExpressionQueryMechanism)query.getQueryMechanism()).selectOneRowFromTable();
+        // The indicator select is prepared in the original query, so can just
+        // be executed.
+        AbstractRecord typeRow = ((ExpressionQueryMechanism) query.getQueryMechanism()).selectOneRowFromTable();
 
         if (typeRow == null) {
             return null;
@@ -1391,19 +1401,18 @@ public class InheritancePolicy implements Serializable, Cloneable {
             throw QueryException.noDescriptorForClassFromInheritancePolicy(query, concreteClass);
         }
 
-        ReadObjectQuery concreteQuery = (ReadObjectQuery)query.clone();
+        ReadObjectQuery concreteQuery = (ReadObjectQuery) query.clone();
         concreteQuery.setReferenceClass(concreteClass);
         concreteQuery.setDescriptor(concreteDescriptor);
 
-        AbstractRecord resultRow = ((ExpressionQueryMechanism)concreteQuery.getQueryMechanism()).selectOneRowFromConcreteTable();
+        AbstractRecord resultRow = ((ExpressionQueryMechanism) concreteQuery.getQueryMechanism()).selectOneRowFromConcreteTable();
 
         return resultRow;
     }
 
     /**
-     * INTERNAL:
-     * Select one row of any concrete subclass,
-     * This must use two selects, the first retrieves the type field only.
+     * INTERNAL: Select one row of any concrete subclass, This must use two
+     * selects, the first retrieves the type field only.
      */
     public AbstractRecord selectOneRowUsingMultipleTableSubclassRead(ReadObjectQuery query) throws DatabaseException, QueryException {
         if (hasClassExtractor()) {
@@ -1428,17 +1437,20 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * ADVANCED:
-     * A class extraction method can be registered with the descriptor to override the default inheritance mechanism.
-     * This allows for a user defined class indicator in place of providing an explicit class indicator field.
-     * The method registered must be a static method on the class which has that descriptor. The method must take Record 
-     * as an argument (for example, a DatabaseRecord), and must return the class to use for that record.
-     * This method will be used to decide which class to instantiate when reading from the database.
-     * It is the application's responsibility to populate any typing information in the database required
-     * to determine the class from the record.
-     * If this method is used then the class indicator field and mapping cannot be used, and in addition, 
-     * the descriptor's withAllSubclasses and onlyInstances expressions must also be set up correctly.
-     *
+     * ADVANCED: A class extraction method can be registered with the descriptor
+     * to override the default inheritance mechanism. This allows for a user
+     * defined class indicator in place of providing an explicit class indicator
+     * field. The method registered must be a static method on the class which
+     * has that descriptor. The method must take Record as an argument (for
+     * example, a DatabaseRecord), and must return the class to use for that
+     * record. This method will be used to decide which class to instantiate
+     * when reading from the database. It is the application's responsibility to
+     * populate any typing information in the database required to determine the
+     * class from the record. If this method is used then the class indicator
+     * field and mapping cannot be used, and in addition, the descriptor's
+     * withAllSubclasses and onlyInstances expressions must also be set up
+     * correctly.
+     * 
      * @see #setWithAllSubclassesExpression(Expression)
      * @see #setOnlyInstancesExpression(Expression)
      */
@@ -1449,42 +1461,47 @@ public class InheritancePolicy implements Serializable, Cloneable {
         if (!(getClassExtractor() instanceof MethodClassExtractor)) {
             setClassExtractor(new MethodClassExtractor());
         }
-        ((MethodClassExtractor)getClassExtractor()).setClassExtractionMethodName(staticClassClassExtractionMethod);
+        ((MethodClassExtractor) getClassExtractor()).setClassExtractionMethodName(staticClassClassExtractionMethod);
     }
 
     /**
-     * INTERNAL:
-     * Set the class indicator associations from reading the deployment XML.
+     * INTERNAL: Set the class indicator associations from reading the
+     * deployment XML.
      */
     public void setClassIndicatorAssociations(Vector classIndicatorAssociations) {
         setClassNameIndicatorMapping(new HashMap(classIndicatorAssociations.size() + 1));
         setClassIndicatorMapping(new HashMap((classIndicatorAssociations.size() * 2) + 1));
         for (Iterator iterator = classIndicatorAssociations.iterator(); iterator.hasNext();) {
-            Association association = (Association)iterator.next();
+            Association association = (Association) iterator.next();
             Object key = association.getKey();
-            // Allow for 904 format which stored class name, may not use correct class loader.
-            // TODO: Dynamic Persistence requires that class name conversions be deferred until initialization. 
+            // Allow for 904 format which stored class name, may not use correct
+            // class loader.
+            // TODO: Dynamic Persistence requires that class name conversions be
+            // deferred until initialization.
             if (key instanceof String) {
-                addClassNameIndicator((String)key, association.getValue());
+                try {
+                    key = ConversionManager.getDefaultManager().convertClassNameToClass((String) key);
+                    addClassIndicator((Class) key, association.getValue());
+                } catch (ConversionException ce) {
+                    addClassNameIndicator((String) key, association.getValue());
+                }
             } else {
-                addClassIndicator((Class)key, association.getValue());
+                addClassIndicator((Class) key, association.getValue());
             }
         }
     }
 
     /**
-     * ADVANCED:
-     * To set the class indicator field.
-     * This can be used for advanced field types, such as XML nodes, or to set the field type.
+     * ADVANCED: To set the class indicator field. This can be used for advanced
+     * field types, such as XML nodes, or to set the field type.
      */
     public void setClassIndicatorField(DatabaseField classIndicatorField) {
         this.classIndicatorField = classIndicatorField;
     }
 
     /**
-     * PUBLIC:
-     * To set the class indicator field name.
-     * This is the name of the field in the table that stores what type of object this is.
+     * PUBLIC: To set the class indicator field name. This is the name of the
+     * field in the table that stores what type of object this is.
      */
     public void setClassIndicatorFieldName(String fieldName) {
         if (fieldName == null) {
@@ -1495,49 +1512,44 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * PUBLIC:
-     * Set the association of indicators and classes.
-     * This may be desired to be used by clients in strange inheritance models.
+     * PUBLIC: Set the association of indicators and classes. This may be
+     * desired to be used by clients in strange inheritance models.
      */
     public void setClassIndicatorMapping(Map classIndicatorMapping) {
         this.classIndicatorMapping = classIndicatorMapping;
     }
 
     /**
-     * INTERNAL:
-     * Set the class name indicator mapping, used by the MW.
+     * INTERNAL: Set the class name indicator mapping, used by the MW.
      */
     public void setClassNameIndicatorMapping(Map classNameIndicatorMapping) {
         this.classNameIndicatorMapping = classNameIndicatorMapping;
     }
 
     /**
-     * INTERNAL:
-     * Set the descriptor.
+     * INTERNAL: Set the descriptor.
      */
     public void setDescriptor(ClassDescriptor descriptor) {
         this.descriptor = descriptor;
     }
 
     /**
-     * ADVANCED:
-     * Determines whether the descriptors using this inheritance policy
-     * should be used as descriptors for subclasses of the classes they
+     * ADVANCED: Determines whether the descriptors using this inheritance
+     * policy should be used as descriptors for subclasses of the classes they
      * describe if those subclasses do not have their own descriptor
      * 
-     * e.g. If Employee.class has a descriptor and EmployeeSubClass does
-     * not have a descriptor, if describesNonPersistenceSubclasses is true
+     * e.g. If Employee.class has a descriptor and EmployeeSubClass does not
+     * have a descriptor, if describesNonPersistenceSubclasses is true
      * Employee's descriptor will be used as the descriptor for Employee
      * 
      * @param describesNonPersistenceSubclasses
      */
-    public void setDescribesNonPersistentSubclasses(boolean describesNonPersistentSubclasses){
+    public void setDescribesNonPersistentSubclasses(boolean describesNonPersistentSubclasses) {
         this.describesNonPersistentSubclasses = describesNonPersistentSubclasses;
     }
-    
+
     /**
-     * INTERNAL:
-     * Used to indicate a JOINED inheritance strategy.
+     * INTERNAL: Used to indicate a JOINED inheritance strategy.
      * 
      */
     public void setJoinedStrategy() {
@@ -1545,21 +1557,19 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * ADVANCED:
-     * Sets the expression used to select instance of the class only. Can be used to customize the
-     * inheritance class indicator expression.
+     * ADVANCED: Sets the expression used to select instance of the class only.
+     * Can be used to customize the inheritance class indicator expression.
      */
     public void setOnlyInstancesExpression(Expression onlyInstancesExpression) {
         this.onlyInstancesExpression = onlyInstancesExpression;
     }
 
     /**
-     * PUBLIC:
-     * Set the parent class.
-     * A descriptor can inherit from another descriptor through defining it as its parent.
-     * The root descriptor must define a class indicator field and mapping.
-     * All children must share the same table as their parent but can add additional tables.
-     * All children must share the root descriptor primary key.
+     * PUBLIC: Set the parent class. A descriptor can inherit from another
+     * descriptor through defining it as its parent. The root descriptor must
+     * define a class indicator field and mapping. All children must share the
+     * same table as their parent but can add additional tables. All children
+     * must share the root descriptor primary key.
      */
     public void setParentClass(Class parentClass) {
         this.parentClass = parentClass;
@@ -1569,9 +1579,8 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Set the parent class name, used by MW to avoid referencing the real class for
-     * deployment XML generation.
+     * INTERNAL: Set the parent class name, used by MW to avoid referencing the
+     * real class for deployment XML generation.
      */
     public void setParentClassName(String parentClassName) {
         this.parentClassName = parentClassName;
@@ -1585,20 +1594,21 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * The view can be used to optimize/customize the query for all subclasses where they have multiple tables.
-     * This view can do the outer join, we require the view because we cannot generate dynamic platform independent SQL
-     * for outer joins (i.e. not possible to do so either).
+     * INTERNAL: The view can be used to optimize/customize the query for all
+     * subclasses where they have multiple tables. This view can do the outer
+     * join, we require the view because we cannot generate dynamic platform
+     * independent SQL for outer joins (i.e. not possible to do so either).
      */
     protected void setReadAllSubclassesView(DatabaseTable readAllSubclassesView) {
         this.readAllSubclassesView = readAllSubclassesView;
     }
 
     /**
-     * ADVANCED:
-     * The view can be used to optimize/customize the query for all subclasses where they have multiple tables.
-     * This view can use outer joins or unions to combine the results of selecting from all of the subclass tables.
-     * If a view is not given then TopLink must make an individual call for each subclass.
+     * ADVANCED: The view can be used to optimize/customize the query for all
+     * subclasses where they have multiple tables. This view can use outer joins
+     * or unions to combine the results of selecting from all of the subclass
+     * tables. If a view is not given then TopLink must make an individual call
+     * for each subclass.
      */
     public void setReadAllSubclassesViewName(String readAllSubclassesViewName) {
         if (readAllSubclassesViewName == null) {
@@ -1609,41 +1619,40 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Set the descriptor to read instance of itself and its subclasses when queried.
-     * This is used with inheritance to configure the result of queries.
-     * By default this is true for root inheritance descriptors, and false for all others.
+     * INTERNAL: Set the descriptor to read instance of itself and its
+     * subclasses when queried. This is used with inheritance to configure the
+     * result of queries. By default this is true for root inheritance
+     * descriptors, and false for all others.
      */
     public void setShouldReadSubclasses(Boolean shouldReadSubclasses) {
         this.shouldReadSubclasses = shouldReadSubclasses;
     }
 
     /**
-     * PUBLIC:
-     * Set the descriptor to read instance of itself and its subclasses when queried.
-     * This is used with inheritance to configure the result of queries.
-     * By default this is true for root inheritance descriptors, and false for all others.
+     * PUBLIC: Set the descriptor to read instance of itself and its subclasses
+     * when queried. This is used with inheritance to configure the result of
+     * queries. By default this is true for root inheritance descriptors, and
+     * false for all others.
      */
     public void setShouldReadSubclasses(boolean shouldReadSubclasses) {
         this.shouldReadSubclasses = Boolean.valueOf(shouldReadSubclasses);
     }
 
     /**
-     * PUBLIC:
-     * Set if the descriptor uses the classes fully qualified name as the indicator.
-     * The class indicator is used with inheritance to determine the class from a row.
-     * By default a class indicator mapping is required, this can be set to true if usage of the class
-     * name is desired.
-     * The field must be of a large enough size to store the fully qualified class name.
+     * PUBLIC: Set if the descriptor uses the classes fully qualified name as
+     * the indicator. The class indicator is used with inheritance to determine
+     * the class from a row. By default a class indicator mapping is required,
+     * this can be set to true if usage of the class name is desired. The field
+     * must be of a large enough size to store the fully qualified class name.
      */
     public void setShouldUseClassNameAsIndicator(boolean shouldUseClassNameAsIndicator) {
         this.shouldUseClassNameAsIndicator = shouldUseClassNameAsIndicator;
     }
 
     /**
-     * PUBLIC:
-     * Sets the inheritance policy to always use an outer join when querying across a relationship of class.
-     * used when using getAllowingNull(), or anyOfAllowingNone()
+     * PUBLIC: Sets the inheritance policy to always use an outer join when
+     * querying across a relationship of class. used when using
+     * getAllowingNull(), or anyOfAllowingNone()
      */
 
     // cr3546
@@ -1652,10 +1661,10 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Used to indicate a SINGLE_TABLE inheritance strategy.  Since only JOINED and SINGLE_TABLE
-     * strategies are supported at this time (no support for TABLE_PER_CLASS) using a 
-     * !isJoinedStrategy an an indicator for SINGLE_TABLE is sufficient.
+     * INTERNAL: Used to indicate a SINGLE_TABLE inheritance strategy. Since
+     * only JOINED and SINGLE_TABLE strategies are supported at this time (no
+     * support for TABLE_PER_CLASS) using a !isJoinedStrategy an an indicator
+     * for SINGLE_TABLE is sufficient.
      * 
      */
     public void setSingleTableStrategy() {
@@ -1663,27 +1672,26 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Sets if we should use the descriptor inheritance to determine
+     * INTERNAL: Sets if we should use the descriptor inheritance to determine
      * if an object can be returned from the identity map or not.
      */
     public void setUseDescriptorsToValidateInheritedObjects(boolean useDescriptorsToValidateInheritedObjects) {
-        //CR 4005
+        // CR 4005
         this.useDescriptorsToValidateInheritedObjects = useDescriptorsToValidateInheritedObjects;
     }
 
     /**
-     * ADVANCED:
-     * Sets the expression to be used for querying for a class and all its subclasses. Can be used
-     * to customize the inheritance class indicator expression.
+     * ADVANCED: Sets the expression to be used for querying for a class and all
+     * its subclasses. Can be used to customize the inheritance class indicator
+     * expression.
      */
     public void setWithAllSubclassesExpression(Expression withAllSubclassesExpression) {
         this.withAllSubclassesExpression = withAllSubclassesExpression;
     }
 
     /**
-     * PUBLIC:
-     * Return true if this descriptor should read instances of itself and subclasses on queries.
+     * PUBLIC: Return true if this descriptor should read instances of itself
+     * and subclasses on queries.
      */
     public boolean shouldReadSubclasses() {
         if (shouldReadSubclasses == null) {
@@ -1693,16 +1701,16 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * Return true if this descriptor should read instances of itself and subclasses on queries.
+     * INTERNAL: Return true if this descriptor should read instances of itself
+     * and subclasses on queries.
      */
     public Boolean shouldReadSubclassesValue() {
         return shouldReadSubclasses;
     }
 
     /**
-     * PUBLIC:
-     * returns if the inheritance policy will always use an outerjoin when selecting class type
+     * PUBLIC: returns if the inheritance policy will always use an outerjoin
+     * when selecting class type
      */
 
     // cr3546
@@ -1710,34 +1718,32 @@ public class InheritancePolicy implements Serializable, Cloneable {
         return this.shouldAlwaysUseOuterJoin;
     }
 
-    
     /**
-     * PUBLIC:
-     * Return if an outer join should be used to read subclasses.
-     * By default a separate query is done for each subclass when querying for
-     * a root or branch inheritance class that has subclasses that span multiple tables.
+     * PUBLIC: Return if an outer join should be used to read subclasses. By
+     * default a separate query is done for each subclass when querying for a
+     * root or branch inheritance class that has subclasses that span multiple
+     * tables.
      */
     public boolean shouldOuterJoinSubclasses() {
         return shouldOuterJoinSubclasses;
     }
-            
+
     /**
-     * PUBLIC:
-     * Set if an outer join should be used to read subclasses.
-     * By default a separate query is done for each subclass when querying for
-     * a root or branch inheritance class that has subclasses that span multiple tables.
+     * PUBLIC: Set if an outer join should be used to read subclasses. By
+     * default a separate query is done for each subclass when querying for a
+     * root or branch inheritance class that has subclasses that span multiple
+     * tables.
      */
     public void setShouldOuterJoinSubclasses(boolean shouldOuterJoinSubclasses) {
         this.shouldOuterJoinSubclasses = shouldOuterJoinSubclasses;
     }
-    
+
     /**
-     * PUBLIC:
-     * Return true if the descriptor use the classes full name as the indicator.
-     * The class indicator is used with inheritance to determine the class from a row.
-     * By default a class indicator mapping is required, this can be set to true if usage of the class
-     * name is desired.
-     * The field must be of a large enough size to store the fully qualified class name.
+     * PUBLIC: Return true if the descriptor use the classes full name as the
+     * indicator. The class indicator is used with inheritance to determine the
+     * class from a row. By default a class indicator mapping is required, this
+     * can be set to true if usage of the class name is desired. The field must
+     * be of a large enough size to store the fully qualified class name.
      */
     public boolean shouldUseClassNameAsIndicator() {
         return shouldUseClassNameAsIndicator;
@@ -1751,22 +1757,22 @@ public class InheritancePolicy implements Serializable, Cloneable {
     }
 
     /**
-     * INTERNAL:
-     * set the tables on the child descriptor 
-     * overridden in org.eclipse.persistence.internal.oxm.QNameInheritancePolicy
+     * INTERNAL: set the tables on the child descriptor overridden in
+     * org.eclipse.persistence.internal.oxm.QNameInheritancePolicy
      */
-    protected void updateTables(){
-        // Unique is required because the builder can add the same table many times.
+    protected void updateTables() {
+        // Unique is required because the builder can add the same table many
+        // times.
         Vector<DatabaseTable> childTables = getDescriptor().getTables();
         Vector<DatabaseTable> parentTables = getParentDescriptor().getTables();
         Vector<DatabaseTable> uniqueTables = Helper.concatenateUniqueVectors(parentTables, childTables);
         getDescriptor().setTables(uniqueTables);
-        
+
         // After filtering out any duplicate tables, set the default table
         // if one is not already set. This must be done now before any other
-        // initialization occurs. In a joined strategy case, the default 
+        // initialization occurs. In a joined strategy case, the default
         // table will be at an index greater than 0. Which is where
-        // setDefaultTable() assumes it is. Therefore, we need to send the 
+        // setDefaultTable() assumes it is. Therefore, we need to send the
         // actual default table instead.
         if (childTables.isEmpty()) {
             getDescriptor().setInternalDefaultTable();
@@ -1774,15 +1780,13 @@ public class InheritancePolicy implements Serializable, Cloneable {
             getDescriptor().setInternalDefaultTable(uniqueTables.get(uniqueTables.indexOf(childTables.get(0))));
         }
     }
-    
-    
+
     /**
-     * PUBLIC:
-     * Set the descriptor to use the classes full name as the indicator.
-     * The class indicator is used with inheritance to determine the class from a row.
-     * By default a class indicator mapping is required, this can be set to true if usage of the class
-     * name is desired.
-     * The field must be of a large enough size to store the fully qualified class name.
+     * PUBLIC: Set the descriptor to use the classes full name as the indicator.
+     * The class indicator is used with inheritance to determine the class from
+     * a row. By default a class indicator mapping is required, this can be set
+     * to true if usage of the class name is desired. The field must be of a
+     * large enough size to store the fully qualified class name.
      */
     public void useClassNameAsIndicator() {
         setShouldUseClassNameAsIndicator(true);

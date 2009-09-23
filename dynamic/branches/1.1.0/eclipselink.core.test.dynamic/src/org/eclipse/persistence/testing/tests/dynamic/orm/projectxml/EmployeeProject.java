@@ -18,63 +18,79 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.tests.dynamic.orm.projectxml;
 
+import static junit.framework.Assert.assertEquals;
+
+import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.Date;
-import java.util.Vector;
+import java.util.List;
 
 import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.logging.SessionLog;
+import org.eclipse.persistence.queries.ReportQuery;
 import org.eclipse.persistence.sessions.*;
 import org.eclipse.persistence.testing.tests.dynamic.DynamicTestHelper;
-import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
-import org.junit.BeforeClass;
+import org.eclipse.persistence.testing.tests.dynamic.EclipseLinkORMTest;
 import org.junit.Test;
 
 /*
  * Test cases verifying the use of the simple-map-project.xml 
  */
-public class EmployeeProject {
-
-    // JUnit static fixtures
-    static Project p;
-    static DatabaseSession ds;
-
-    @SuppressWarnings( { "unchecked", "deprecation" })
-    @BeforeClass
-    public static void setUp() throws Exception {
+public class EmployeeProject extends EclipseLinkORMTest {
+ 
+    @Override
+    protected DatabaseSession createSharedSession() {
         DatabaseLogin login = DynamicTestHelper.getTestLogin();
-        p = EntityTypeBuilder.loadDynamicProject(
-            "org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/Employee_utf8.xml",
-            login, new DynamicClassLoader(EmployeeProject.class.getClassLoader()));
+        Project project = null;
+        try {
+            project = EntityTypeBuilder.loadDynamicProject("org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/Employee_utf8.xml", login, new DynamicClassLoader(EmployeeProject.class.getClassLoader()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-        ds = p.createDatabaseSession();
+        DatabaseSession ds = project.createDatabaseSession();
         ds.setLogLevel(SessionLog.FINE);
+
         ds.login();
 
-        new DynamicSchemaManager(ds).createTables(new EntityType[0]);
-        ds.executeNonSelectingSQL("DELETE FROM SIMPLETABLE");
+        return ds;
+    }
 
-        EntityType type = DynamicHelper.getType(ds, "simpletableType");
+    @SuppressWarnings("deprecation")
+    @Test
+    public void createNewInstance() throws Exception {
+        Session session = getSession();
+
+        EntityType type = DynamicHelper.getType(session, "Employee");
 
         DynamicEntity entity = type.newInstance();
         entity.set("id", new BigInteger("1"));
         entity.set("name", "Doug");
         entity.set("since", new Date(100, 06, 06));
 
-        ds.writeObject(entity);
+        UnitOfWork uow = session.acquireUnitOfWork();
+        uow.registerNewObject(entity);
+        uow.commit();
+
+        ReportQuery countQuery = DynamicHelper.newReportQuery(session, "Employee", new ExpressionBuilder());
+        countQuery.addCount();
+        countQuery.setShouldReturnSingleValue(true);
+        assertEquals(1, ((Number) session.executeQuery(countQuery)).intValue());
+
+        session.release();
     }
 
     @Test
-    public void readAll() {
-        EntityType type = DynamicHelper.getType(ds, "simpletableType");
+    public void readAll() throws Exception {
+        Session session = getSession();
 
-        Vector<Object> allObjects = ds.readAllObjects(type.getJavaClass());
-        for (Object o : allObjects) {
-            System.out.println(o);
-        }
+        createNewInstance();
+        EntityType type = DynamicHelper.getType(session, "Employee");
 
-        System.identityHashCode(allObjects);
+        List<DynamicEntity> allObjects = session.readAllObjects(type.getJavaClass());
+        assertEquals(1, allObjects.size());
     }
 
 }

@@ -70,9 +70,9 @@ import org.eclipse.persistence.tools.schemaframework.SchemaManager;
  * @since EclipseLink 1.2
  */
 public class EntityTypeBuilder {
-    
+
     static XMLParser xmlParser = XMLPlatformFactory.getInstance().getXMLPlatform().newXMLParser();
-    
+
     /**
      * The type being configured for dynamic use or being created/extended
      */
@@ -137,8 +137,12 @@ public class EntityTypeBuilder {
     protected void addDynamicClasses(DynamicClassLoader dcl, String className, EntityType parentType) {
         if (parentType == null) {
             dcl.addClass(className);
-        } else if (parentType.getJavaClass() == null) {
-            dcl.addClass(className, new DynamicClassWriter(parentType.getClassName()));
+        } else {
+            if (parentType.getJavaClass() == null) {
+                dcl.addClass(className, new DynamicClassWriter(parentType.getClassName()));
+            } else {
+                dcl.addClass(className, parentType.getJavaClass());
+            }
         }
     }
 
@@ -331,7 +335,7 @@ public class EntityTypeBuilder {
     }
 
     /**
-     * TODO 
+     * TODO
      * 
      * @param name
      * @param refType
@@ -477,8 +481,7 @@ public class EntityTypeBuilder {
      *         deployment XML
      * @throws IOException
      */
-    public static Project loadDynamicProject(String resourcePath, DatabaseLogin login,
-        DynamicClassLoader dynamicClassLoader) throws IOException {
+    public static Project loadDynamicProject(String resourcePath, DatabaseLogin login, DynamicClassLoader dynamicClassLoader) throws IOException {
 
         if (resourcePath == null) {
             throw new NullPointerException("null resourceStream");
@@ -486,10 +489,9 @@ public class EntityTypeBuilder {
         if (dynamicClassLoader == null) {
             throw new NullPointerException("null dynamicClassLoader");
         }
-        return loadDynamicProject(dynamicClassLoader.getResourceAsStream(resourcePath), login,
-            dynamicClassLoader);
+        return loadDynamicProject(dynamicClassLoader.getResourceAsStream(resourcePath), login, dynamicClassLoader);
     }
-    
+
     /**
      * Load a dynamic project from deployment XML creating dynamic types for all
      * descriptors where the provided class name does not exist.
@@ -506,22 +508,20 @@ public class EntityTypeBuilder {
      *         deployment XML
      * @throws IOException
      */
-    public static Project loadDynamicProject(InputStream resourceStream, DatabaseLogin login,
-        DynamicClassLoader dynamicClassLoader) throws IOException {
-        
+    public static Project loadDynamicProject(InputStream resourceStream, DatabaseLogin login, DynamicClassLoader dynamicClassLoader) throws IOException {
+
         if (resourceStream == null) {
             throw new NullPointerException("null resourceStream");
         }
         if (dynamicClassLoader == null) {
             throw new NullPointerException("null dynamicClassLoader");
         }
-        
+
         // Build an OXM project that loads the deployment XML without converting
         // the class names into classes
         ObjectPersistenceWorkbenchXMLProject opmProject = new ObjectPersistenceWorkbenchXMLProject();
         Document document = xmlParser.parse(resourceStream);
-        Project project = XMLProjectReader.readObjectPersistenceRuntimeFormat(document, 
-            dynamicClassLoader, opmProject);
+        Project project = XMLProjectReader.readObjectPersistenceRuntimeFormat(document, dynamicClassLoader, opmProject);
 
         if (project != null) {
             if (login == null) {

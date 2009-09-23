@@ -26,7 +26,7 @@ import org.junit.runners.Suite;
  * persistence
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { InvalidConfig.class, SimpleMapProject.class, SimpleMapProjectNoLogin.class })
+@Suite.SuiteClasses( { InvalidConfig.class, SimpleMapProject.class, SimpleMapProjectNoLogin.class, EmployeeProject.class })
 public class AllTests {
 
 }

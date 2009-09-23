@@ -273,6 +273,7 @@ public class DynamicClassWriter {
 
     @Override
     public String toString() {
-        return Helper.getShortClassName(getClass()) + "(" + getParentClass() == null ? getParentClassName() : getParentClass().getName() + ")";
+        String parentName = getParentClass() == null ? getParentClassName() : getParentClass().getName();
+        return Helper.getShortClassName(getClass()) + "(" + parentName + ")";
     }
 }
