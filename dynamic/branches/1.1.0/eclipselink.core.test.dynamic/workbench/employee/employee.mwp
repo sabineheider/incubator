@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project type="relational">
+   <name>employee</name>
+   <product-version>1.1.2</product-version>
+   <schema-version>7.0</schema-version>
+   <class-repository>
+      <user-type-names>
+         <name>model.dynamic.employee.Address</name>
+         <name>model.dynamic.employee.Employee</name>
+      </user-type-names>
+   </class-repository>
+   <descriptor-names>
+      <descriptor-name>model.dynamic.employee.Address</descriptor-name>
+      <descriptor-name>model.dynamic.employee.Employee</descriptor-name>
+   </descriptor-names>
+   <defaults-policy type="relational">
+      <use-method-accessing>false</use-method-accessing>
+      <caching-policy>
+         <cache-expiry/>
+      </caching-policy>
+      <cache-all-statements>false</cache-all-statements>
+      <bind-all-parameters>true</bind-all-parameters>
+   </defaults-policy>
+   <deployment-xml-file>../../src/org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/employee-project.xml</deployment-xml-file>
+   <table-repository>
+      <platform-name>Oracle</platform-name>
+      <table-names>
+         <name>DX_ADDRESS</name>
+         <name>DX_EMPLOYEE</name>
+      </table-names>
+   </table-repository>
+   <sequencing>
+      <preallocation-size>50</preallocation-size>
+   </sequencing>
+   <table-generation>
+      <default-primary-key-name>ID</default-primary-key-name>
+      <primary-key-search-pattern>*ID</primary-key-search-pattern>
+   </table-generation>
+</project>

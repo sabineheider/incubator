@@ -22,43 +22,49 @@ import static junit.framework.Assert.assertEquals;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.sql.Date;
 import java.util.List;
 
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.EntityType;
+import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.queries.ReportQuery;
-import org.eclipse.persistence.sessions.*;
+import org.eclipse.persistence.sessions.DatabaseLogin;
+import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.Project;
+import org.eclipse.persistence.sessions.Session;
+import org.eclipse.persistence.sessions.UnitOfWork;
 import org.eclipse.persistence.testing.tests.dynamic.DynamicTestHelper;
 import org.eclipse.persistence.testing.tests.dynamic.EclipseLinkORMTest;
+import org.eclipse.persistence.tools.schemaframework.SchemaManager;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 /*
  * Test cases verifying the use of the simple-map-project.xml 
  */
 public class EmployeeProject extends EclipseLinkORMTest {
- 
+
     @Override
     protected DatabaseSession createSharedSession() {
         DatabaseLogin login = DynamicTestHelper.getTestLogin();
         Project project = null;
         try {
-            project = EntityTypeBuilder.loadDynamicProject("org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/Employee_utf8.xml", login, new DynamicClassLoader(EmployeeProject.class.getClassLoader()));
+            project = EntityTypeBuilder.loadDynamicProject("org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/employee-project.xml", login, new DynamicClassLoader(EmployeeProject.class.getClassLoader()));
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         DatabaseSession ds = project.createDatabaseSession();
-        ds.setLogLevel(SessionLog.FINE);
-
         ds.login();
+        new SchemaManager(ds).replaceDefaultTables();
 
         return ds;
     }
 
-    @SuppressWarnings("deprecation")
     @Test
     public void createNewInstance() throws Exception {
         Session session = getSession();
@@ -66,9 +72,9 @@ public class EmployeeProject extends EclipseLinkORMTest {
         EntityType type = DynamicHelper.getType(session, "Employee");
 
         DynamicEntity entity = type.newInstance();
-        entity.set("id", new BigInteger("1"));
-        entity.set("name", "Doug");
-        entity.set("since", new Date(100, 06, 06));
+        //entity.set("id", 1);
+        entity.set("firstName", "First");
+        entity.set("lastName", "Last");
 
         UnitOfWork uow = session.acquireUnitOfWork();
         uow.registerNewObject(entity);
@@ -91,6 +97,18 @@ public class EmployeeProject extends EclipseLinkORMTest {
 
         List<DynamicEntity> allObjects = session.readAllObjects(type.getJavaClass());
         assertEquals(1, allObjects.size());
+    }
+
+    @After
+    public void clearDatabase() {
+        getSharedSession().executeNonSelectingSQL("DELETE FROM DX_ADDRESS");
+        getSharedSession().executeNonSelectingSQL("DELETE FROM DX_EMPLOYEE");
+    }
+
+    @AfterClass
+    public static void dropTables() {
+        sharedSession.executeNonSelectingSQL("DROP TABLE DX_EMPLOYEE CASCADE CONSTRAINTS");
+        sharedSession.executeNonSelectingSQL("DROP TABLE DX_ADDRESS CASCADE CONSTRAINTS");
     }
 
 }

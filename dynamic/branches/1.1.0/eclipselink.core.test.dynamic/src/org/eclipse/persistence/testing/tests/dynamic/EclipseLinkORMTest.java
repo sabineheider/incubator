@@ -23,6 +23,9 @@ public class EclipseLinkORMTest {
             sharedSession.getSessionLog().setShouldPrintSession(false);
             sharedSession.getSessionLog().setShouldPrintThread(false);
             QuerySQLTracker.install(sharedSession);
+            if (!sharedSession.isConnected()) {
+                sharedSession.login();
+            }
         }
 
         return sharedSession;

@@ -79,7 +79,6 @@ public class DynamicTestHelper {
         Project project = new Project(getTestLogin());
         DatabaseSession session = project.createDatabaseSession();
         session.getSessionLog().setLevel(SessionLog.FINE);
-        session.login();
         return session;
     }
 }

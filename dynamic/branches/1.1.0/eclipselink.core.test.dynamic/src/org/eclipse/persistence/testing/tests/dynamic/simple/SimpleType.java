@@ -1,19 +1,33 @@
 package org.eclipse.persistence.testing.tests.dynamic.simple;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.fail;
 
 import java.util.Calendar;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.EntityType;
+import org.eclipse.persistence.dynamic.EntityTypeBuilder;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.queries.ReportQuery;
-import org.eclipse.persistence.sessions.*;
+import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.IdentityMapAccessor;
+import org.eclipse.persistence.sessions.Session;
+import org.eclipse.persistence.sessions.UnitOfWork;
 import org.eclipse.persistence.testing.tests.dynamic.EclipseLinkORMTest;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class SimpleType extends EclipseLinkORMTest {
 
@@ -47,6 +61,20 @@ public class SimpleType extends EclipseLinkORMTest {
         typeBuilder.addToSession(session, true, true);
 
         return typeBuilder.getType();
+    }
+
+    @Test
+    public void invalidDirectMappingSet_id() throws Exception {
+        EntityType type = DynamicHelper.getType(getSharedSession(), "Simple");
+
+        DynamicEntity entity = type.newInstance();
+
+        try {
+            entity.set("id", 1l);
+        } catch (Exception e) {
+            return;
+        }
+        fail("Should have thrown DynamicException for invalid set type");
     }
 
     @Test
