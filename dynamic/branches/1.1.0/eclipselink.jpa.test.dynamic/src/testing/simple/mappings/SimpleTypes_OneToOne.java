@@ -1,14 +1,12 @@
 package testing.simple.mappings;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.*;
 
 import javax.persistence.*;
 
-import junit.framework.Assert;
-
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.exceptions.DynamicException;
 import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
@@ -115,7 +113,7 @@ public class SimpleTypes_OneToOne {
         DynamicEntity simpleInstanceA = simpleTypeA.newInstance();
         simpleInstanceA.set("id", 2);
         simpleInstanceA.set("value1", "A2");
-        simpleInstanceA.set("b", simpleInstanceA);
+        simpleInstanceA.set("b", simpleInstanceB);
 
         em.getTransaction().begin();
         em.persist(simpleInstanceB);
@@ -128,6 +126,32 @@ public class SimpleTypes_OneToOne {
         Assert.assertEquals(1, simpleCountA);
 
         em.close();
+    }
+
+    @Test
+    public void invalidTypeSet() {
+        Server session = JpaHelper.getServerSession(emf);
+        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        Assert.assertNotNull(simpleTypeA);
+        EntityTypeImpl simpleTypeB = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleB");
+        Assert.assertNotNull(simpleTypeB);
+
+        Assert.assertNotNull(JpaHelper.getServerSession(emf).getDescriptorForAlias("SimpleB"));
+
+        DynamicEntity simpleInstanceB = simpleTypeB.newInstance();
+        simpleInstanceB.set("id", 2);
+        simpleInstanceB.set("value1", "B2");
+
+        DynamicEntity simpleInstanceA = simpleTypeA.newInstance();
+        simpleInstanceA.set("id", 2);
+        simpleInstanceA.set("value1", "A2");
+
+        try {
+            simpleInstanceA.set("b", simpleInstanceA);
+        } catch (DynamicException de) {
+            return;
+        }
+        fail("Should have caught DynamicException for invalid set type");
     }
 
     @BeforeClass
@@ -147,7 +171,7 @@ public class SimpleTypes_OneToOne {
         aFactory.setPrimaryKeyFields("SID");
         aFactory.addDirectMapping("id", int.class, "SID");
         aFactory.addDirectMapping("value1", String.class, "VAL_1");
-        aFactory.addOneToOneMapping("b", bFactory.getType(), "B_FK");
+        aFactory.addOneToOneMapping("b", bFactory.getType(), "B_FK").setCascadePersist(true);
 
         EntityTypeBuilder.addToSession(session, true, true, aFactory.getType(), bFactory.getType());
     }

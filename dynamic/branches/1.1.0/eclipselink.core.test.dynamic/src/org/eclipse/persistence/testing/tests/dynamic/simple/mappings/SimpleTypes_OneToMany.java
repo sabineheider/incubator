@@ -135,9 +135,9 @@ public class SimpleTypes_OneToMany extends EclipseLinkORMTest {
         DynamicEntity simpleInstanceA = simpleTypeA.newInstance();
         simpleInstanceA.set("id", 1);
         simpleInstanceA.set("value1", "A2");
-        simpleInstanceA.<Collection<DynamicEntity>> get("b").add(simpleInstanceA);
+        simpleInstanceA.<Collection<DynamicEntity>> get("b").add(simpleInstanceB);
 
-        simpleInstanceB.set("a", simpleInstanceB);
+        simpleInstanceB.set("a", simpleInstanceA);
 
         UnitOfWork uow = session.acquireUnitOfWork();
         uow.registerNewObject(simpleInstanceB);

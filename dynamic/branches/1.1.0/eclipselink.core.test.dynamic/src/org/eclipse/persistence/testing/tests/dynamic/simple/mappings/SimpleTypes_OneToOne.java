@@ -10,11 +10,14 @@ import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.mappings.OneToOneMapping;
 import org.eclipse.persistence.queries.ReportQuery;
 import org.eclipse.persistence.sessions.*;
+import org.eclipse.persistence.testing.tests.dynamic.DynamicTestHelper;
 import org.eclipse.persistence.testing.tests.dynamic.EclipseLinkORMTest;
+import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 import org.junit.*;
 
 public class SimpleTypes_OneToOne extends EclipseLinkORMTest {
@@ -110,7 +113,7 @@ public class SimpleTypes_OneToOne extends EclipseLinkORMTest {
         DynamicEntity simpleInstanceA = simpleTypeA.newInstance();
         simpleInstanceA.set("id", 2);
         simpleInstanceA.set("value1", "A2");
-        simpleInstanceA.set("b", simpleInstanceA);
+        simpleInstanceA.set("b", simpleInstanceB);
 
         UnitOfWork uow = session.acquireUnitOfWork();
         uow.registerNewObject(simpleInstanceA);
@@ -135,7 +138,8 @@ public class SimpleTypes_OneToOne extends EclipseLinkORMTest {
 
     @Override
     protected DatabaseSession createSharedSession() {
-        DatabaseSession shared = super.createSharedSession();
+        Project project = new Project(DynamicTestHelper.getTestLogin());
+        DatabaseSession shared = project.createDatabaseSession();
         DynamicClassLoader dcl = DynamicClassLoader.lookup(shared);
 
         Class<?> simpleTypeB = dcl.createDynamicClass("model.SimpleB");
@@ -151,8 +155,13 @@ public class SimpleTypes_OneToOne extends EclipseLinkORMTest {
         aFactory.addDirectMapping("value1", String.class, "VAL_1");
         aFactory.addOneToOneMapping("b", bFactory.getType(), "B_FK");
 
-        EntityTypeBuilder.addToSession(shared, true, true, aFactory.getType(), bFactory.getType());
+        EntityTypeBuilder.addToSession(shared, false, true, aFactory.getType(), bFactory.getType());
 
+        shared.getSessionLog().setLevel(SessionLog.FINE);
+        shared.login();
+        
+        new SchemaManager(shared).replaceDefaultTables();
+        
         return shared;
     }
 

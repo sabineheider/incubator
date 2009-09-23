@@ -64,8 +64,18 @@ public class DynamicException extends EclipseLinkException {
      * 
      * @see DynamicEntityImpl#get(String)
      */
-    public static DynamicException invalidPropertyType(DatabaseMapping mapping, ClassCastException cce) {
+    public static DynamicException invalidGetPropertyType(DatabaseMapping mapping, ClassCastException cce) {
         return new DynamicException("DynamicEntity:: Cannot return: " + mapping + ": " + cce.getMessage(), cce);
+    }
+
+    /**
+     * TODO 
+     * @param mapping
+     * @param value
+     * @return
+     */
+    public static DynamicException invalidSetPropertyType(DatabaseMapping mapping, Object value) {
+        return new DynamicException("DynamicEntity:: Cannot set: " + mapping + " with: " + value);
     }
 
     /**

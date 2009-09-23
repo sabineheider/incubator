@@ -18,6 +18,7 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.models.dynamic.employee;
 
+import java.sql.Date;
 import java.util.Calendar;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
@@ -120,8 +121,8 @@ public class EmployeeDynamicMappings {
     }
 
     private static void configurePeriod(EntityTypeBuilder period) {
-        period.addDirectMapping("startDate", Calendar.class, "START_DATE");
-        period.addDirectMapping("endDate", Calendar.class, "END_DATE");
+        period.addDirectMapping("startDate", Date.class, "START_DATE");
+        period.addDirectMapping("endDate", Date.class, "END_DATE");
     }
 
     private static void configureProject(EntityTypeBuilder project, EntityTypeBuilder smallProject, EntityTypeBuilder largeProject, EntityTypeBuilder employee) {

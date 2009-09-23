@@ -136,9 +136,9 @@ public class SimpleTypes_ManyToMany {
         DynamicEntity simpleInstanceA = simpleTypeA.newInstance();
         simpleInstanceA.set("id", 1);
         simpleInstanceA.set("value1", "A2");
-        simpleInstanceA.<Collection<DynamicEntity>>get("b").add(simpleInstanceA);
+        simpleInstanceA.<Collection<DynamicEntity>>get("b").add(simpleInstanceB);
 
-        simpleInstanceB.set("a", simpleInstanceB);
+        simpleInstanceB.set("a", simpleInstanceA);
 
         em.getTransaction().begin();
         em.persist(simpleInstanceB);

@@ -23,20 +23,19 @@ import java.beans.PropertyChangeListener;
 import java.io.StringWriter;
 import java.util.Vector;
 
-//EclipseLink imports
 import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.exceptions.DynamicException;
 import org.eclipse.persistence.indirection.IndirectContainer;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.internal.descriptors.PersistenceEntity;
+import org.eclipse.persistence.internal.helper.Helper;
 import org.eclipse.persistence.internal.identitymaps.CacheKey;
 import org.eclipse.persistence.internal.localization.ExceptionLocalization;
 import org.eclipse.persistence.internal.weaving.PersistenceWeavedLazy;
 import org.eclipse.persistence.mappings.DatabaseMapping;
-import org.eclipse.persistence.queries.FetchGroup;
-import org.eclipse.persistence.queries.FetchGroupTracker;
-import org.eclipse.persistence.queries.ReadObjectQuery;
+import org.eclipse.persistence.mappings.ForeignReferenceMapping;
+import org.eclipse.persistence.queries.*;
 import org.eclipse.persistence.sessions.Session;
 
 /**
@@ -148,12 +147,15 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         try {
             return (T) value;
         } catch (ClassCastException cce) {
-            throw DynamicException.invalidPropertyType(mapping, cce);
+            throw DynamicException.invalidGetPropertyType(mapping, cce);
         }
     }
 
     public DynamicEntity set(String propertyName, Object value) {
         DatabaseMapping mapping = getType().getMapping(propertyName);
+
+        checkSetType(mapping, value);
+
         Object currentValue = mapping.getAttributeValueFromObject(this);
 
         if (currentValue instanceof ValueHolderInterface) {
@@ -162,6 +164,34 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
             mapping.setAttributeValueInObject(this, value);
         }
         return this;
+    }
+
+    /**
+     * Ensure the value being set is supported by the mapping. If the mapping is
+     * direct/basic and the mapping's type is primitive ensure the non-primitive
+     * type is allowed.
+     */
+    // TODO: Is this check a performance issue? Should it be optional?
+    protected void checkSetType(DatabaseMapping mapping, Object value) {
+        if (value == null) {
+            if (mapping.getAttributeClassification().isPrimitive()) {
+                throw DynamicException.invalidSetPropertyType(mapping, value);
+            }
+            return;
+        }
+
+        Class<?> expectedType = mapping.getAttributeClassification();
+        if (mapping.isForeignReferenceMapping()) {
+            expectedType = ((ForeignReferenceMapping) mapping).getReferenceClass();
+        }
+        if (expectedType != null && expectedType.isPrimitive() && !value.getClass().isPrimitive()) {
+            expectedType = Helper.getObjectClass(expectedType);
+        }
+        
+        if (expectedType != null && !expectedType.isAssignableFrom(value.getClass())) {
+            throw DynamicException.invalidSetPropertyType(mapping, value);
+        }
+
     }
 
     public boolean isSet(DatabaseMapping mapping) {

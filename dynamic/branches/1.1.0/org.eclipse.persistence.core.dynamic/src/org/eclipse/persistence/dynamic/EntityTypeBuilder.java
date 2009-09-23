@@ -37,8 +37,7 @@ import org.eclipse.persistence.internal.dynamic.DynamicClassWriter;
 import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.internal.dynamic.EntityTypeInstantiationPolicy;
 import org.eclipse.persistence.internal.dynamic.ValuesAccessor;
-import org.eclipse.persistence.internal.helper.ConversionManager;
-import org.eclipse.persistence.internal.helper.DatabaseField;
+import org.eclipse.persistence.internal.helper.*;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.internal.sessions.factories.ObjectPersistenceWorkbenchXMLProject;
 import org.eclipse.persistence.mappings.AggregateObjectMapping;
@@ -235,6 +234,10 @@ public class EntityTypeBuilder {
      * expected must be added without the help of EclipseLink or use the
      * {@link SchemaManager#replaceObject(org.eclipse.persistence.tools.schemaframework.DatabaseObjectDefinition)}
      * to DROP and CREATE the table. WARNING: This will cause data loss.
+     * 
+     * @param javaType
+     *            is the type of the attribute. If the type is a primitive it
+     *            will be converted to the comparable non-primitive type.
      */
     public DirectToFieldMapping addDirectMapping(String name, Class<?> javaType, String fieldName) {
         DirectToFieldMapping mapping = new DirectToFieldMapping();
