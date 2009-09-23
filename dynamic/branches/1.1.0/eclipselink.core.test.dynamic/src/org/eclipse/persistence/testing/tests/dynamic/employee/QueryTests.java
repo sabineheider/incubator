@@ -56,7 +56,7 @@ public class QueryTests extends EclipseLinkORMTest {
      * sorted by lastName and firstName.
      */
     @Test
-    public void readAllEmployees_JPQL() {
+    public void readAllEmployees() {
         Session session = getSession();
 
         List<DynamicEntity> emps = getQueries().readAllEmployees(session);

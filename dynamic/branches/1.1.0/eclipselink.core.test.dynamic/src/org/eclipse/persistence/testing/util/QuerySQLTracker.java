@@ -206,11 +206,12 @@ public class QuerySQLTracker extends SessionEventAdapter {
 	}
 
 	/**
-	 * This custom SessionLog implementation wraps the existng one and redirects
-	 * all SQL calls to the tracker. All messages are also passed to the orginal
+	 * This custom SessionLog implementation wraps the existing one and redirects
+	 * all SQL calls to the tracker. All messages are also passed to the original
 	 * tracker.
 	 */
 	public class SQLTrackingSessionLog extends DefaultSessionLog {
+	    
 		private QuerySQLTracker tracker;
 
 		private SessionLog originalLog;
@@ -258,10 +259,7 @@ public class QuerySQLTracker extends SessionEventAdapter {
 
 		@Override
 		public boolean shouldPrintConnection() {
-			// Since the connection is nofigurable in persistence.xml we'll
-			// assume the session flag indicates if connection should be
-			// printed.
-			return this.originalLog.shouldPrintSession();
+			return this.originalLog.shouldPrintConnection();
 		}
 
 		@Override

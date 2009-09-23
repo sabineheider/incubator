@@ -1,5 +1,6 @@
 package org.eclipse.persistence.testing.tests.dynamic;
 
+import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.sessions.server.Server;
@@ -16,6 +17,11 @@ public class EclipseLinkORMTest {
     protected DatabaseSession getSharedSession() {
         if (sharedSession == null) {
             sharedSession = createSharedSession();
+            sharedSession.getSessionLog().setLevel(SessionLog.FINE);
+            sharedSession.getSessionLog().setShouldPrintConnection(false);
+            sharedSession.getSessionLog().setShouldPrintDate(false);
+            sharedSession.getSessionLog().setShouldPrintSession(false);
+            sharedSession.getSessionLog().setShouldPrintThread(false);
             QuerySQLTracker.install(sharedSession);
         }
 
