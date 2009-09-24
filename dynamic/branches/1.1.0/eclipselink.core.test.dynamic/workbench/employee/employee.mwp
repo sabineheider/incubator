@@ -7,11 +7,13 @@
       <user-type-names>
          <name>model.dynamic.employee.Address</name>
          <name>model.dynamic.employee.Employee</name>
+         <name>model.dynamic.employee.EmploymentPeriod</name>
       </user-type-names>
    </class-repository>
    <descriptor-names>
       <descriptor-name>model.dynamic.employee.Address</descriptor-name>
       <descriptor-name>model.dynamic.employee.Employee</descriptor-name>
+      <descriptor-name>model.dynamic.employee.EmploymentPeriod</descriptor-name>
    </descriptor-names>
    <defaults-policy type="relational">
       <use-method-accessing>false</use-method-accessing>
@@ -27,6 +29,7 @@
       <table-names>
          <name>DX_ADDRESS</name>
          <name>DX_EMPLOYEE</name>
+         <name>DX_SALARY</name>
       </table-names>
    </table-repository>
    <sequencing>

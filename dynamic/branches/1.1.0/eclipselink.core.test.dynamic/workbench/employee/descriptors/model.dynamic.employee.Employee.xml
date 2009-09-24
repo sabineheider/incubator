@@ -67,6 +67,55 @@
             <column-name>L_NAME</column-name>
          </column-handle>
       </mapping>
+      <mapping type="aggregate">
+         <name>period</name>
+         <attribute-handle>
+            <attribute-declaring-type-name>model.dynamic.employee.Employee</attribute-declaring-type-name>
+            <attribute-name>period</attribute-name>
+         </attribute-handle>
+         <reference-descriptor-handle>
+            <descriptor-name>model.dynamic.employee.EmploymentPeriod</descriptor-name>
+         </reference-descriptor-handle>
+         <paths-to-fields>
+            <aggregate-path-to-field>
+               <field-description>DIRECT</field-description>
+               <column-handle>
+                  <column-table-name>DX_EMPLOYEE</column-table-name>
+                  <column-name>END_DATE</column-name>
+               </column-handle>
+               <mapping-handles>
+                  <mapping-handle>
+                     <mapping-descriptor-name>model.dynamic.employee.EmploymentPeriod</mapping-descriptor-name>
+                     <mapping-name>endDate</mapping-name>
+                  </mapping-handle>
+               </mapping-handles>
+            </aggregate-path-to-field>
+            <aggregate-path-to-field>
+               <field-description>DIRECT</field-description>
+               <column-handle>
+                  <column-table-name>DX_EMPLOYEE</column-table-name>
+                  <column-name>START_DATE</column-name>
+               </column-handle>
+               <mapping-handles>
+                  <mapping-handle>
+                     <mapping-descriptor-name>model.dynamic.employee.EmploymentPeriod</mapping-descriptor-name>
+                     <mapping-name>startDate</mapping-name>
+                  </mapping-handle>
+               </mapping-handles>
+            </aggregate-path-to-field>
+         </paths-to-fields>
+      </mapping>
+      <mapping type="direct-to-field">
+         <name>salary</name>
+         <attribute-handle>
+            <attribute-declaring-type-name>model.dynamic.employee.Employee</attribute-declaring-type-name>
+            <attribute-name>salary</attribute-name>
+         </attribute-handle>
+         <column-handle>
+            <column-table-name>DX_SALARY</column-table-name>
+            <column-name>SALARY</column-name>
+         </column-handle>
+      </mapping>
    </mappings>
    <primary-table-handle>
       <table-name>DX_EMPLOYEE</table-name>
@@ -80,4 +129,14 @@
       <column-table-name>DX_EMPLOYEE</column-table-name>
       <column-name>EMP_ID</column-name>
    </sequence-number-column-handle>
+   <multi-table-info-policy>
+      <secondary-table-holders>
+         <table-holder>
+            <table-handle>
+               <table-name>DX_SALARY</table-name>
+            </table-handle>
+            <primary-keys-have-same-name>true</primary-keys-have-same-name>
+         </table-holder>
+      </secondary-table-holders>
+   </multi-table-info-policy>
 </descriptor>

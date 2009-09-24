@@ -21,7 +21,7 @@ package org.eclipse.persistence.testing.tests.dynamic.orm.projectxml;
 import static junit.framework.Assert.assertEquals;
 
 import java.io.IOException;
-import java.math.BigInteger;
+import java.util.Calendar;
 import java.util.List;
 
 import org.eclipse.persistence.dynamic.DynamicEntity;
@@ -69,12 +69,19 @@ public class EmployeeProject extends EclipseLinkORMTest {
     public void createNewInstance() throws Exception {
         Session session = getSession();
 
-        EntityType type = DynamicHelper.getType(session, "Employee");
+        EntityType employeeType = DynamicHelper.getType(session, "Employee");
+        EntityType periodType = DynamicHelper.getType(session, "EmploymentPeriod");
 
-        DynamicEntity entity = type.newInstance();
-        //entity.set("id", 1);
+        DynamicEntity entity = employeeType.newInstance();
+        // entity.set("id", 1);
         entity.set("firstName", "First");
         entity.set("lastName", "Last");
+        entity.set("salary", 12345);
+
+        DynamicEntity period = periodType.newInstance();
+        period.set("startDate", Calendar.getInstance());
+
+        entity.set("period", period);
 
         UnitOfWork uow = session.acquireUnitOfWork();
         uow.registerNewObject(entity);
@@ -102,12 +109,14 @@ public class EmployeeProject extends EclipseLinkORMTest {
     @After
     public void clearDatabase() {
         getSharedSession().executeNonSelectingSQL("DELETE FROM DX_ADDRESS");
+        getSharedSession().executeNonSelectingSQL("DELETE FROM DX_SALARY");
         getSharedSession().executeNonSelectingSQL("DELETE FROM DX_EMPLOYEE");
     }
 
     @AfterClass
     public static void dropTables() {
         sharedSession.executeNonSelectingSQL("DROP TABLE DX_EMPLOYEE CASCADE CONSTRAINTS");
+        sharedSession.executeNonSelectingSQL("DROP TABLE DX_SALARY CASCADE CONSTRAINTS");
         sharedSession.executeNonSelectingSQL("DROP TABLE DX_ADDRESS CASCADE CONSTRAINTS");
     }
 

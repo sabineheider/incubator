@@ -16,6 +16,11 @@
          <primary-key>true</primary-key>
       </column>
       <column>
+         <name>END_DATE</name>
+         <type>DATE</type>
+         <allows-null>true</allows-null>
+      </column>
+      <column>
          <name>F_NAME</name>
          <type>VARCHAR2</type>
          <size>20</size>
@@ -25,6 +30,11 @@
          <name>L_NAME</name>
          <type>VARCHAR2</type>
          <size>20</size>
+         <allows-null>true</allows-null>
+      </column>
+      <column>
+         <name>START_DATE</name>
+         <type>DATE</type>
          <allows-null>true</allows-null>
       </column>
    </columns>

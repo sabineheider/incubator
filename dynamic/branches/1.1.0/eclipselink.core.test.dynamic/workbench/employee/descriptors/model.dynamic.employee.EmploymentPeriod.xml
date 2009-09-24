@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<descriptor type="aggregate">
+   <name>model.dynamic.employee.EmploymentPeriod</name>
+   <class-handle>
+      <type-name>model.dynamic.employee.EmploymentPeriod</type-name>
+   </class-handle>
+   <mappings>
+      <mapping type="direct-to-field">
+         <name>endDate</name>
+         <attribute-handle>
+            <attribute-declaring-type-name>model.dynamic.employee.EmploymentPeriod</attribute-declaring-type-name>
+            <attribute-name>endDate</attribute-name>
+         </attribute-handle>
+      </mapping>
+      <mapping type="direct-to-field">
+         <name>startDate</name>
+         <attribute-handle>
+            <attribute-declaring-type-name>model.dynamic.employee.EmploymentPeriod</attribute-declaring-type-name>
+            <attribute-name>startDate</attribute-name>
+         </attribute-handle>
+      </mapping>
+   </mappings>
+</descriptor>

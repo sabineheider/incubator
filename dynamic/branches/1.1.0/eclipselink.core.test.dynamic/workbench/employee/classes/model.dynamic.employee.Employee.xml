@@ -35,10 +35,28 @@
       </class-attribute>
       <class-attribute>
          <name>lastName</name>
-         <modifier>1</modifier>
+         <modifier>2</modifier>
          <type-declaration>
             <type-handle>
                <type-name>java.lang.String</type-name>
+            </type-handle>
+         </type-declaration>
+      </class-attribute>
+      <class-attribute>
+         <name>period</name>
+         <modifier>2</modifier>
+         <type-declaration>
+            <type-handle>
+               <type-name>model.dynamic.employee.EmploymentPeriod</type-name>
+            </type-handle>
+         </type-declaration>
+      </class-attribute>
+      <class-attribute>
+         <name>salary</name>
+         <modifier>2</modifier>
+         <type-declaration>
+            <type-handle>
+               <type-name>int</type-name>
             </type-handle>
          </type-declaration>
       </class-attribute>
