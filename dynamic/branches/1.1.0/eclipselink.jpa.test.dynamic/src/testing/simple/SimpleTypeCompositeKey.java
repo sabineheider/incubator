@@ -10,15 +10,14 @@ import java.util.Calendar;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
-import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.jpa.dynamic.DynamicIdentityPolicy;
-import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
-import org.eclipse.persistence.sessions.server.Server;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicHelper;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicTypeBuilder;
 import org.junit.Assert;
 
 public class SimpleTypeCompositeKey extends SimpleType {
@@ -26,18 +25,19 @@ public class SimpleTypeCompositeKey extends SimpleType {
     public void verifyConfig() throws Exception {
         super.verifyConfig();
 
-        EntityType type = getSimpleType();
+        DynamicType type = getSimpleType();
         assertNotNull(type.getDescriptor().getCMPPolicy());
         assertEquals(Object[].class, ((DynamicIdentityPolicy) type.getDescriptor().getCMPPolicy()).getPKClass());
     }
 
     @Override
-    protected EntityType createSimpleType() {
-        Server session = JpaHelper.getServerSession(emf);
-        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+    protected DynamicType createSimpleType() {
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
+        DynamicClassLoader dcl = helper.getDynamicClassLoader();
         Class<?> javaType = dcl.createDynamicClass("model.Simple");
 
-        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(javaType, null, "SIMPLE_TYPE");
+        DynamicTypeBuilder typeBuilder = new JPADynamicTypeBuilder(javaType, null, "SIMPLE_TYPE");
         typeBuilder.setPrimaryKeyFields("SID1", "SID2");
         typeBuilder.addDirectMapping("id1", int.class, "SID1");
         typeBuilder.addDirectMapping("id2", int.class, "SID2");
@@ -46,7 +46,7 @@ public class SimpleTypeCompositeKey extends SimpleType {
         typeBuilder.addDirectMapping("value3", Calendar.class, "VAL_3");
         typeBuilder.addDirectMapping("value4", Character.class, "VAL_4");
 
-        EntityTypeBuilder.addToSession(session, true, false, typeBuilder.getType());
+        helper.addTypes(true, false, typeBuilder.getType());
 
         return typeBuilder.getType();
     }
@@ -68,10 +68,12 @@ public class SimpleTypeCompositeKey extends SimpleType {
 
     public DynamicEntity createSimpleInstance(EntityManagerFactory emf, int id) {
         EntityManager em = emf.createEntityManager();
-        EntityType simpleEntityType = DynamicHelper.getType(JpaHelper.getServerSession(emf), "Simple");
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
+        DynamicType simpleEntityType = helper.getType("Simple");
         Assert.assertNotNull(simpleEntityType);
 
-        DynamicEntity simpleInstance = simpleEntityType.newInstance();
+        DynamicEntity simpleInstance = simpleEntityType.newDynamicEntity();
         simpleInstance.set("id1", id);
         simpleInstance.set("id2", id);
         simpleInstance.set("value2", true);

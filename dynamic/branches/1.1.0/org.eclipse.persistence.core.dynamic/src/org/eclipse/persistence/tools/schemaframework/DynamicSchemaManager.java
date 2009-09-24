@@ -19,7 +19,7 @@
 package org.eclipse.persistence.tools.schemaframework;
 
 //EclipseLink imports
-import org.eclipse.persistence.dynamic.EntityType;
+import org.eclipse.persistence.dynamic.DynamicType;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.sessions.DatabaseSession;
 
@@ -49,11 +49,11 @@ public class DynamicSchemaManager extends SchemaManager {
      * 
      * @param entityTypes
      */
-    public void createTables(EntityType... entityTypes) {
+    public void createTables(DynamicType... entityTypes) {
         createTables(true, entityTypes);
     }
     
-    public void createTables(boolean generateFKConstraints, EntityType... entityTypes) {
+    public void createTables(boolean generateFKConstraints, DynamicType... entityTypes) {
         AbstractSession createSession = getSession();
 
         TableCreator creator = new DefaultTableGenerator(getSession().getProject(), generateFKConstraints).generateFilteredDefaultTableCreator(createSession);

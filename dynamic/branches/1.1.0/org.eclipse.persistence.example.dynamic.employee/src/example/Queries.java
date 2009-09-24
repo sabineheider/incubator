@@ -27,7 +27,7 @@ import javax.persistence.Query;
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.dynamic.EntityType;
+import org.eclipse.persistence.dynamic.DynamicType;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.ReadAllQuery;
@@ -40,7 +40,7 @@ import org.eclipse.persistence.queries.ReadAllQuery;
  */
 public class Queries {
     
-    public DynamicEntity findEmployee(EntityManager em, EntityType type, Object id) {
+    public DynamicEntity findEmployee(EntityManager em, DynamicType type, Object id) {
         return (DynamicEntity) em.find(type.getJavaClass(), id);
     }
     

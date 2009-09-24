@@ -18,28 +18,25 @@
  ******************************************************************************/
 package org.eclipse.persistence.jpa.dynamic;
 
-import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.jpa.JpaHelper;
 
 /**
  * 
  * @author dclarke
- * 
+ * @since EclipseLink 1.2.0
  */
-public class JPAEntityTypeBuilder extends EntityTypeBuilder {
+public class JPADynamicHelper extends DynamicHelper {
 
-    public JPAEntityTypeBuilder(Class<?> dynamicClass, EntityType parentType, String... tableNames) {
-        super(dynamicClass, parentType, tableNames);
+    public JPADynamicHelper(EntityManagerFactory emf) {
+        super(JpaHelper.getServerSession(emf));
     }
-
-    protected void configure(ClassDescriptor descriptor, String... tableNames) {
-        super.configure(descriptor, tableNames);
-
-        if (descriptor.getCMPPolicy() == null) {
-            descriptor.setCMPPolicy(new DynamicIdentityPolicy());
-        }
-
+    
+    public JPADynamicHelper(EntityManager em) {
+        super(JpaHelper.getEntityManager(em).getServerSession());
     }
 
 }

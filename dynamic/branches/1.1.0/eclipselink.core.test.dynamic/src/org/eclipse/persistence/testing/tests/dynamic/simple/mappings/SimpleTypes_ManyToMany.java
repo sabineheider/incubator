@@ -9,35 +9,50 @@ import java.util.List;
 import junit.framework.Assert;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.internal.dynamic.DynamicTypeImpl;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.mappings.ManyToManyMapping;
 import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.queries.ReportQuery;
-import org.eclipse.persistence.sessions.*;
+import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.Session;
+import org.eclipse.persistence.sessions.UnitOfWork;
 import org.eclipse.persistence.testing.tests.dynamic.EclipseLinkORMTest;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Test;
 
 public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
 
-    private EntityType aType;
-    private EntityType bType;
+    private DynamicHelper helper;
+    private DynamicType aType;
+    private DynamicType bType;
 
-    public EntityType getAType() {
+    public DynamicType getAType() {
         if (this.aType == null) {
-            this.aType = DynamicHelper.getType(getSharedSession(), "SimpleA");
+            this.aType = getHelper().getType("SimpleA");
         }
         return aType;
     }
 
-    public EntityType getBType() {
+    public DynamicType getBType() {
         if (this.bType == null) {
-            this.bType = DynamicHelper.getType(getSharedSession(), "SimpleB");
+            this.bType = getHelper().getType("SimpleB");
         }
         return bType;
+    }
+
+    public DynamicHelper getHelper() {
+        if (this.helper == null) {
+            this.helper = new DynamicHelper(getSharedSession());
+        }
+        return this.helper;
     }
 
     @Test
@@ -47,7 +62,7 @@ public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
         ClassDescriptor descriptorA = session.getClassDescriptorForAlias("SimpleA");
         assertNotNull("No descriptor found for alias='SimpleA'", descriptorA);
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) getAType();
+        DynamicTypeImpl simpleTypeA = (DynamicTypeImpl) getAType();
         assertNotNull("'SimpleA' EntityType not found", simpleTypeA);
         assertEquals(descriptorA, simpleTypeA.getDescriptor());
         DirectToFieldMapping a_id = (DirectToFieldMapping) descriptorA.getMappingForAttributeName("id");
@@ -58,7 +73,7 @@ public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
         ClassDescriptor descriptorB = session.getClassDescriptorForAlias("SimpleB");
         assertNotNull("No descriptor found for alias='SimpleB'", descriptorB);
 
-        EntityTypeImpl simpleTypeB = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleB");
+        DynamicTypeImpl simpleTypeB = (DynamicTypeImpl) getHelper().getType("SimpleB");
         assertNotNull("'SimpleB' EntityType not found", simpleTypeB);
         assertEquals(descriptorB, simpleTypeB.getDescriptor());
         DirectToFieldMapping b_id = (DirectToFieldMapping) descriptorB.getMappingForAttributeName("id");
@@ -74,10 +89,10 @@ public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
     public void createSimpleA() {
         Session session = getSession();
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicTypeImpl simpleTypeA = (DynamicTypeImpl) getHelper().getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
 
-        DynamicEntity simpleInstance = simpleTypeA.newInstance();
+        DynamicEntity simpleInstance = simpleTypeA.newDynamicEntity();
         simpleInstance.set("id", 1);
         simpleInstance.set("value1", "A1");
 
@@ -85,7 +100,7 @@ public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
         uow.registerNewObject(simpleInstance);
         uow.commit();
 
-        ReportQuery countQuery = DynamicHelper.newReportQuery(session, "SimpleA", new ExpressionBuilder());
+        ReportQuery countQuery = getHelper().newReportQuery("SimpleA", new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
         int simpleCount = ((Number) session.executeQuery(countQuery)).intValue();
@@ -96,10 +111,10 @@ public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
     public void createSimpleB() {
         Session session = getSession();
 
-        EntityTypeImpl simpleTypeB = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleB");
+        DynamicTypeImpl simpleTypeB = (DynamicTypeImpl) getHelper().getType("SimpleB");
         Assert.assertNotNull(simpleTypeB);
 
-        DynamicEntity simpleInstance = simpleTypeB.newInstance();
+        DynamicEntity simpleInstance = simpleTypeB.newDynamicEntity();
         simpleInstance.set("id", 1);
         simpleInstance.set("value1", "B1");
 
@@ -107,7 +122,7 @@ public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
         uow.registerNewObject(simpleInstance);
         uow.commit();
 
-        ReportQuery countQuery = DynamicHelper.newReportQuery(session, simpleTypeB.getName(), new ExpressionBuilder());
+        ReportQuery countQuery = getHelper().newReportQuery(simpleTypeB.getName(), new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
         int simpleCount = ((Number) session.executeQuery(countQuery)).intValue();
@@ -118,18 +133,18 @@ public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
     public void createAwithB() {
         Session session = getSession();
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicTypeImpl simpleTypeA = (DynamicTypeImpl) getHelper().getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
-        EntityTypeImpl simpleTypeB = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleB");
+        DynamicTypeImpl simpleTypeB = (DynamicTypeImpl) getHelper().getType("SimpleB");
         Assert.assertNotNull(simpleTypeB);
 
         Assert.assertNotNull(session.getDescriptorForAlias("SimpleB"));
 
-        DynamicEntity simpleInstanceB = simpleTypeB.newInstance();
+        DynamicEntity simpleInstanceB = simpleTypeB.newDynamicEntity();
         simpleInstanceB.set("id", 1);
         simpleInstanceB.set("value1", "B2");
 
-        DynamicEntity simpleInstanceA = simpleTypeA.newInstance();
+        DynamicEntity simpleInstanceA = simpleTypeA.newDynamicEntity();
         simpleInstanceA.set("id", 1);
         simpleInstanceA.set("value1", "A2");
         simpleInstanceA.<Collection<DynamicEntity>> get("b").add(simpleInstanceA);
@@ -139,13 +154,13 @@ public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
         uow.registerNewObject(simpleInstanceA);
         uow.commit();
 
-        ReportQuery countQueryB = DynamicHelper.newReportQuery(session, "SimpleB", new ExpressionBuilder());
+        ReportQuery countQueryB = getHelper().newReportQuery("SimpleB", new ExpressionBuilder());
         countQueryB.addCount();
         countQueryB.setShouldReturnSingleValue(true);
         int simpleCountB = ((Number) session.executeQuery(countQueryB)).intValue();
         Assert.assertEquals(1, simpleCountB);
 
-        ReportQuery countQueryA = DynamicHelper.newReportQuery(session, "SimpleA", new ExpressionBuilder());
+        ReportQuery countQueryA = getHelper().newReportQuery("SimpleA", new ExpressionBuilder());
         countQueryA.addCount();
         countQueryA.setShouldReturnSingleValue(true);
         int simpleCountA = ((Number) session.executeQuery(countQueryA)).intValue();
@@ -164,7 +179,7 @@ public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
 
         UnitOfWork uow = session.acquireUnitOfWork();
 
-        ReadObjectQuery roq = DynamicHelper.newReadObjectQuery(session, "SimpleA");
+        ReadObjectQuery roq = getHelper().newReadObjectQuery("SimpleA");
         roq.setSelectionCriteria(roq.getExpressionBuilder().get("id").equal(1));
         DynamicEntity a = (DynamicEntity) session.executeQuery(roq);
         assertNotNull(a);
@@ -185,15 +200,15 @@ public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
     @Override
     protected DatabaseSession createSharedSession() {
         DatabaseSession shared = super.createSharedSession();
-
-        DynamicClassLoader dcl = DynamicClassLoader.lookup(shared);
+        DynamicHelper helper = new DynamicHelper(shared);
+        DynamicClassLoader dcl = helper.getDynamicClassLoader();
 
         Class<?> simpleTypeA = dcl.createDynamicClass("model.SimpleA");
-        EntityTypeBuilder aFactory = new EntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A");
+        DynamicTypeBuilder aFactory = new DynamicTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A");
         aFactory.setPrimaryKeyFields("SID");
 
         Class<?> simpleTypeB = dcl.createDynamicClass("model.SimpleB");
-        EntityTypeBuilder bFactory = new EntityTypeBuilder(simpleTypeB, null, "SIMPLE_TYPE_B");
+        DynamicTypeBuilder bFactory = new DynamicTypeBuilder(simpleTypeB, null, "SIMPLE_TYPE_B");
         bFactory.setPrimaryKeyFields("SID");
 
         bFactory.addDirectMapping("id", int.class, "SID");
@@ -203,7 +218,7 @@ public class SimpleTypes_ManyToMany extends EclipseLinkORMTest {
         aFactory.addDirectMapping("value1", String.class, "VAL_1");
         aFactory.addManyToManyMapping("b", bFactory.getType(), "SIMPLE_A_B");
 
-        EntityTypeBuilder.addToSession(shared, true, true, aFactory.getType(), bFactory.getType());
+        helper.addTypes(true, true, aFactory.getType(), bFactory.getType());
 
         return shared;
     }

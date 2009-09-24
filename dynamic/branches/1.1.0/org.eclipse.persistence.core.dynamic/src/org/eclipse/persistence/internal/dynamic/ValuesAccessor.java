@@ -20,7 +20,7 @@ package org.eclipse.persistence.internal.dynamic;
 
 //EclipseLink imports
 import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.dynamic.EntityType;
+import org.eclipse.persistence.dynamic.DynamicType;
 import org.eclipse.persistence.exceptions.DescriptorException;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.internal.helper.ClassConstants;
@@ -49,9 +49,9 @@ public class ValuesAccessor extends AttributeAccessor {
     protected DatabaseMapping mapping;
 
     /**
-     * {@link EntityType} used to reset Object[] size when needed.
+     * {@link DynamicType} used to reset Object[] size when needed.
      */
-    protected EntityType type;
+    protected DynamicType type;
 
     /**
      * Index in the values Object[] where the owning mapping's value is stored.
@@ -59,7 +59,7 @@ public class ValuesAccessor extends AttributeAccessor {
      */
     protected int index;
 
-    public ValuesAccessor(EntityType type, DatabaseMapping mapping, int index) {
+    public ValuesAccessor(DynamicType type, DatabaseMapping mapping, int index) {
         super();
         this.type = type;
         this.mapping = mapping;
@@ -74,7 +74,7 @@ public class ValuesAccessor extends AttributeAccessor {
         return this.index;
     }
 
-    public EntityType getType() {
+    public DynamicType getType() {
         return this.type;
     }
 

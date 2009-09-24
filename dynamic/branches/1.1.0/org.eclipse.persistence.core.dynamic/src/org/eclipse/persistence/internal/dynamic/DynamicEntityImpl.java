@@ -32,10 +32,11 @@ import org.eclipse.persistence.internal.descriptors.PersistenceEntity;
 import org.eclipse.persistence.internal.helper.Helper;
 import org.eclipse.persistence.internal.identitymaps.CacheKey;
 import org.eclipse.persistence.internal.localization.ExceptionLocalization;
-import org.eclipse.persistence.internal.weaving.PersistenceWeavedLazy;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.mappings.ForeignReferenceMapping;
-import org.eclipse.persistence.queries.*;
+import org.eclipse.persistence.queries.FetchGroup;
+import org.eclipse.persistence.queries.FetchGroupTracker;
+import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.sessions.Session;
 
 /**
@@ -49,16 +50,17 @@ import org.eclipse.persistence.sessions.Session;
  * <b>Type/Property Meta-model</b>: This dynamic entity approach also includes a
  * meta-model facade to simplify access to the types and property information so
  * that clients can more easily understand the model. Each
- * {@link EntityTypeImpl} wraps the underlying EclipseLink relational-descriptor
- * and the {@link EntityPropertyImpl} wraps each mapping. The client application
- * can use these types and properties to facilitate generic access to the entity
- * instances and are required for creating new instances as well as for
- * accessing the Java class needed for JPA and EclipseLink native API calls.
+ * {@link DynamicTypeImpl} wraps the underlying EclipseLink
+ * relational-descriptor and the {@link EntityPropertyImpl} wraps each mapping.
+ * The client application can use these types and properties to facilitate
+ * generic access to the entity instances and are required for creating new
+ * instances as well as for accessing the Java class needed for JPA and
+ * EclipseLink native API calls.
  * 
  * @author dclarke
  * @since EclipseLink 1.2
  */
-public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker, PersistenceEntity, FetchGroupTracker, PersistenceWeavedLazy, Cloneable {
+public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker, PersistenceEntity, FetchGroupTracker, Cloneable {
     /**
      * The persistent values indexed by the descriptor's mappings and the
      * EntityType's corresponding property list.
@@ -68,7 +70,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
     /**
      * Type of this entity
      */
-    protected transient EntityTypeImpl type;
+    protected transient DynamicTypeImpl type;
 
     /**
      * ChangeListener used for attribute change tracking processed in the
@@ -108,7 +110,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
      */
     private Vector<Object> primaryKey;
 
-    protected DynamicEntityImpl(EntityTypeImpl type) {
+    protected DynamicEntityImpl(DynamicTypeImpl type) {
         this.type = type;
         this.values = new Object[type.getNumberOfProperties()];
     }
@@ -119,7 +121,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
      * @return
      * @throws DynamicException
      */
-    public EntityTypeImpl getType() throws DynamicException {
+    public DynamicTypeImpl getType() throws DynamicException {
         if (this.type == null) {
             throw DynamicException.entityHasNullType(this);
         }
@@ -187,7 +189,7 @@ public abstract class DynamicEntityImpl implements DynamicEntity, ChangeTracker,
         if (expectedType != null && expectedType.isPrimitive() && !value.getClass().isPrimitive()) {
             expectedType = Helper.getObjectClass(expectedType);
         }
-        
+
         if (expectedType != null && !expectedType.isAssignableFrom(value.getClass())) {
             throw DynamicException.invalidSetPropertyType(mapping, value);
         }

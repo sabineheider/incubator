@@ -29,8 +29,9 @@ import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
-import org.eclipse.persistence.dynamic.EntityType;
+import org.eclipse.persistence.dynamic.DynamicType;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicHelper;
 
 /**
  * 
@@ -51,29 +52,31 @@ public class Transactions {
      * cascade-all so the associated new entities will also be persisted.
      */
     public DynamicEntity createUsingPersist(EntityManager em) {
-        EntityType empType = DynamicHelper.getType(JpaHelper.getEntityManager(em).getServerSession(), "Employee");
-    EntityType addrType = DynamicHelper.getType(JpaHelper.getEntityManager(em).getServerSession(), "Address");
-    EntityType phoneType = DynamicHelper.getType(JpaHelper.getEntityManager(em).getServerSession(), "PhoneNumber");
+        DynamicHelper helper = new JPADynamicHelper(em);
 
-    DynamicEntity emp = (DynamicEntity) empType.newInstance();
-    emp.set("firstName", "Sample");
-    emp.set("lastName", "Employee");
-    emp.set("gender", "Male");
-    emp.set("salary", 123456);
+        DynamicType empType = helper.getType("Employee");
+        DynamicType addrType = helper.getType("Address");
+        DynamicType phoneType = helper.getType("PhoneNumber");
 
-    DynamicEntity address = (DynamicEntity) addrType.newInstance();
-    emp.set("address", address);
+        DynamicEntity emp = (DynamicEntity) empType.newDynamicEntity();
+        emp.set("firstName", "Sample");
+        emp.set("lastName", "Employee");
+        emp.set("gender", "Male");
+        emp.set("salary", 123456);
 
-    DynamicEntity phone = (DynamicEntity) phoneType.newInstance();
-    phone.set("type", "Mobile");
-    phone.set("areaCode", "613");
-    phone.set("number", "555-1212");
-    phone.set("owner", emp);
-    emp.<Collection<DynamicEntity>>get("phoneNumbers").add( phone);
+        DynamicEntity address = (DynamicEntity) addrType.newDynamicEntity();
+        emp.set("address", address);
 
-    em.getTransaction().begin();
-    em.persist(emp);
-    em.getTransaction().commit();
+        DynamicEntity phone = (DynamicEntity) phoneType.newDynamicEntity();
+        phone.set("type", "Mobile");
+        phone.set("areaCode", "613");
+        phone.set("number", "555-1212");
+        phone.set("owner", emp);
+        emp.<Collection<DynamicEntity>> get("phoneNumbers").add(phone);
+
+        em.getTransaction().begin();
+        em.persist(emp);
+        em.getTransaction().commit();
 
         return emp;
     }
@@ -100,7 +103,7 @@ public class Transactions {
         phone.set("areaCode", "613");
         phone.set("number", "555-1212");
         phone.set("owner", emp);
-        emp.<Collection<DynamicEntity>>get("phoneNumbers").add( phone);
+        emp.<Collection<DynamicEntity>> get("phoneNumbers").add(phone);
 
         em.getTransaction().begin();
         // When merging the managed instance is returned from the call.
@@ -153,7 +156,7 @@ public class Transactions {
         // Lock Employee using query with hint
         DynamicEntity emp = (DynamicEntity) em.createQuery("SELECT e FROM Employee e WHERE e.id = :ID").setParameter("ID", minId).setHint(QueryHints.PESSIMISTIC_LOCK, PessimisticLock.Lock).getSingleResult();
 
-        emp.set("salary", emp.<Integer>get("salary") - 1);
+        emp.set("salary", emp.<Integer> get("salary") - 1);
 
         em.flush();
     }
@@ -171,7 +174,7 @@ public class Transactions {
 
         List<Object[]> emps = em.createQuery("SELECT e, e.address.city FROM Employee e").getResultList();
         DynamicEntity emp = (DynamicEntity) emps.get(0)[0];
-        emp.set("salary", emp.<Integer>get("salary") + 1);
+        emp.set("salary", emp.<Integer> get("salary") + 1);
 
         em.flush();
 

@@ -36,26 +36,26 @@ import org.eclipse.persistence.mappings.ForeignReferenceMapping;
 
 /**
  * Simple {@link InstantiationPolicy} to call
- * {@link EntityTypeImpl#newInstance()}
+ * {@link DynamicTypeImpl#newDynamicEntity()}
  * 
  * @author dclarke
  * @since EclipseLink 1.2
  */
-public class EntityTypeInstantiationPolicy extends InstantiationPolicy {
+public class DynamicTypeInstantiationPolicy extends InstantiationPolicy {
 
-    private EntityTypeImpl type;
+    private DynamicTypeImpl type;
 
     /*
      * Needed since InstantiationPolicy.defaultConstructor is not accessible 
      */
     private transient Constructor<?> constructor = null;
 
-    public EntityTypeInstantiationPolicy(EntityTypeImpl type) {
+    public DynamicTypeInstantiationPolicy(DynamicTypeImpl type) {
         this.type = type;
         this.descriptor = type.getDescriptor();
     }
 
-    public EntityTypeImpl getType() {
+    public DynamicTypeImpl getType() {
         return this.type;
     }
 
@@ -65,7 +65,7 @@ public class EntityTypeInstantiationPolicy extends InstantiationPolicy {
     @Override
     public void initialize(AbstractSession session) throws DescriptorException {
         try {
-            this.constructor = PrivilegedAccessHelper.getDeclaredConstructorFor(getType().getJavaClass(), new Class[] { EntityTypeImpl.class }, true);
+            this.constructor = PrivilegedAccessHelper.getDeclaredConstructorFor(getType().getJavaClass(), new Class[] { DynamicTypeImpl.class }, true);
             this.constructor.setAccessible(true);
         } catch (NoSuchMethodException exception) {
             throw DescriptorException.noSuchMethodWhileInitializingInstantiationPolicy(getType().getName() + ".<Default Constructor>", getDescriptor(), exception);
@@ -74,10 +74,10 @@ public class EntityTypeInstantiationPolicy extends InstantiationPolicy {
 
     /**
      * Using privileged reflection create a new instance of the dynamic type
-     * passing in this {@link EntityTypeImpl} so the dynamic entity can have a
+     * passing in this {@link DynamicTypeImpl} so the dynamic entity can have a
      * reference to its type. After creation initialize all required attributes.
      * 
-     * @see EntityTypeInstantiationPolicy
+     * @see DynamicTypeInstantiationPolicy
      * @return new DynamicEntity with initialized attributes
      */
     /*

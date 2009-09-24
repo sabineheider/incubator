@@ -18,12 +18,12 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.models.dynamic.employee;
 
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.sql.Date;
 import java.util.List;
 
 import junit.framework.Assert;
@@ -698,10 +698,12 @@ public class Sample {
     }
 
     public void resetSalary(UnitOfWork uow) {
+        DynamicHelper helper = new DynamicHelper(this.session);
+
         for (int index = 0; index < this.employees.length; index++) {
             DynamicEntity emp = this.employees[index];
 
-            ReadObjectQuery query = DynamicHelper.newReadObjectQuery(uow, "Employee");
+            ReadObjectQuery query = helper.newReadObjectQuery("Employee");
             ExpressionBuilder eb = query.getExpressionBuilder();
             Expression fnExp = eb.get("firstName").equal(emp.get("firstName"));
             Expression lnExp = eb.get("lastName").equal(emp.get("lastName"));

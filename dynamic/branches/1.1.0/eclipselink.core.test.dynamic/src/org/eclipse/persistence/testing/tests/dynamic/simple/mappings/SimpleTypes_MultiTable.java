@@ -1,29 +1,40 @@
 package org.eclipse.persistence.testing.tests.dynamic.simple.mappings;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
 import junit.framework.Assert;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
-import org.eclipse.persistence.internal.dynamic.*;
+import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.queries.ReportQuery;
-import org.eclipse.persistence.sessions.*;
+import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.Session;
+import org.eclipse.persistence.sessions.UnitOfWork;
 import org.eclipse.persistence.testing.tests.dynamic.EclipseLinkORMTest;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Test;
 
 public class SimpleTypes_MultiTable extends EclipseLinkORMTest {
 
     @Test
     public void verifyConfig() throws Exception {
-        Session session = getSession();
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
 
-        ClassDescriptor descriptorA = session.getClassDescriptorForAlias("SimpleA");
+        ClassDescriptor descriptorA = helper.getSession().getClassDescriptorForAlias("SimpleA");
         assertNotNull("No descriptor found for alias='SimpleA'", descriptorA);
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         assertNotNull("'SimpleA' EntityType not found", simpleTypeA);
         assertEquals(descriptorA, simpleTypeA.getDescriptor());
 
@@ -50,9 +61,9 @@ public class SimpleTypes_MultiTable extends EclipseLinkORMTest {
 
     @Test
     public void verifyProperties() {
-        Session session = getSession();
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
 
         assertEquals(6, simpleTypeA.getNumberOfProperties());
@@ -73,12 +84,12 @@ public class SimpleTypes_MultiTable extends EclipseLinkORMTest {
 
     @Test
     public void createSimpleA() {
-        Session session = getSession();
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
 
-        DynamicEntity a = simpleTypeA.newInstance();
+        DynamicEntity a = simpleTypeA.newDynamicEntity();
 
         assertNotNull(a);
         assertTrue(a.isSet("id"));
@@ -91,12 +102,13 @@ public class SimpleTypes_MultiTable extends EclipseLinkORMTest {
 
     @Test
     public void persistSimpleA() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
 
-        DynamicEntity simpleInstance = simpleTypeA.newInstance();
+        DynamicEntity simpleInstance = simpleTypeA.newDynamicEntity();
         simpleInstance.set("id", 1);
         simpleInstance.set("value1", "A1");
 
@@ -104,7 +116,7 @@ public class SimpleTypes_MultiTable extends EclipseLinkORMTest {
         uow.registerNewObject(simpleInstance);
         uow.commit();
 
-        ReportQuery countQuery = DynamicHelper.newReportQuery(session, "SimpleA", new ExpressionBuilder());
+        ReportQuery countQuery = helper.newReportQuery("SimpleA", new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
         int simpleCount = ((Number) session.executeQuery(countQuery)).intValue();
@@ -117,17 +129,18 @@ public class SimpleTypes_MultiTable extends EclipseLinkORMTest {
     public void verifyChangeTracking() {
         persistSimpleA();
 
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
 
         UnitOfWork uow = session.acquireUnitOfWork();
 
-        ReadObjectQuery findQuery = DynamicHelper.newReadObjectQuery(session, "SimpleA");
+        ReadObjectQuery findQuery = helper.newReadObjectQuery("SimpleA");
         findQuery.setSelectionCriteria(findQuery.getExpressionBuilder().get("id").equal(1));
         DynamicEntityImpl a = (DynamicEntityImpl) uow.executeQuery(findQuery);
-        
+
         assertNotNull(a);
         assertNotNull(a._persistence_getPropertyChangeListener());
 
@@ -138,11 +151,12 @@ public class SimpleTypes_MultiTable extends EclipseLinkORMTest {
     @Override
     protected DatabaseSession createSharedSession() {
         DatabaseSession shared = super.createSharedSession();
+        DynamicHelper helper = new DynamicHelper(shared);
+        DynamicClassLoader dcl = helper.getDynamicClassLoader();
 
-        DynamicClassLoader dcl = DynamicClassLoader.lookup(shared);
         Class<?> simpleTypeA = dcl.createDynamicClass("model.SimpleA");
 
-        EntityTypeBuilder typeBuilder = new EntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A", "SIMPLE_TYPE_B", "SIMPLE_TYPE_C");
+        DynamicTypeBuilder typeBuilder = new DynamicTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A", "SIMPLE_TYPE_B", "SIMPLE_TYPE_C");
         typeBuilder.setPrimaryKeyFields("SIMPLE_TYPE_A.SID");
         typeBuilder.addDirectMapping("id", int.class, "SIMPLE_TYPE_A.SID");
         typeBuilder.addDirectMapping("value1", String.class, "SIMPLE_TYPE_A.VAL_1");
@@ -151,7 +165,8 @@ public class SimpleTypes_MultiTable extends EclipseLinkORMTest {
         typeBuilder.addDirectMapping("value4", double.class, "SIMPLE_TYPE_C.VAL_4");
         typeBuilder.addDirectMapping("value5", String.class, "SIMPLE_TYPE_C.VAL_5");
 
-        typeBuilder.addToSession(shared, true, true);
+        shared.login();
+        helper.addTypes(true, true, typeBuilder.getType());
 
         return shared;
     }

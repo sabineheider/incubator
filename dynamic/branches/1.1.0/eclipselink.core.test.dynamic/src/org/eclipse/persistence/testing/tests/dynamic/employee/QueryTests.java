@@ -20,6 +20,7 @@ import java.util.List;
 import javax.persistence.PersistenceContext;
 
 import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
 import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.testing.models.dynamic.employee.*;
@@ -57,9 +58,10 @@ public class QueryTests extends EclipseLinkORMTest {
      */
     @Test
     public void readAllEmployees() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
-        List<DynamicEntity> emps = getQueries().readAllEmployees(session);
+        List<DynamicEntity> emps = getQueries().readAllEmployees(helper, session);
 
         getSamples().assertSame(emps);
         session.release();
@@ -67,34 +69,38 @@ public class QueryTests extends EclipseLinkORMTest {
 
     @Test
     public void readAllEmployeesWithAddress() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
-        List<DynamicEntity> emps = getQueries().readAllEmployeesWithAddress(session);
+        List<DynamicEntity> emps = getQueries().readAllEmployeesWithAddress(helper, session);
         assertNotNull(emps);
     }
 
     @Test
     public void joinFetchHint() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
-        List<DynamicEntity> emps = getQueries().readAllEmployeesWithAddress(session);
+        List<DynamicEntity> emps = getQueries().readAllEmployeesWithAddress(helper, session);
         assertNotNull(emps);
     }
 
     @Test
     public void minEmployeeId() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
-        int minId = Queries.minimumEmployeeId(session);
+        int minId = Queries.minimumEmployeeId(helper, session);
 
         assertTrue(minId > 0);
     }
 
     @Test
     public void testReadAllExressions() throws Exception {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
-        List<DynamicEntity> emps = getQueries().findUsingNativeReadAllQuery(session);
+        List<DynamicEntity> emps = getQueries().findUsingNativeReadAllQuery(helper, session);
 
         assertNotNull(emps);
     }

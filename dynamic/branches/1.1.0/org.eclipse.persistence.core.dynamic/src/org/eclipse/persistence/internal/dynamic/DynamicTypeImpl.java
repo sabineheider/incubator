@@ -27,7 +27,7 @@ import java.util.Set;
 //EclipseLink imports
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.dynamic.EntityType;
+import org.eclipse.persistence.dynamic.DynamicType;
 import org.eclipse.persistence.exceptions.DynamicException;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 
@@ -39,13 +39,13 @@ import org.eclipse.persistence.mappings.DatabaseMapping;
  * @author dclarke
  * @since EclipseLink 1.2
  */
-public class EntityTypeImpl implements EntityType {
+public class DynamicTypeImpl implements DynamicType {
 
     protected ClassDescriptor descriptor;
 
     protected List<String> propertyNames = new PropertyNameList();
     
-    protected EntityType parentType;
+    protected DynamicType parentType;
 
     /**
      * These properties require initialization when a new instance is created.
@@ -59,7 +59,7 @@ public class EntityTypeImpl implements EntityType {
      * 
      * @param descriptor
      */
-    public EntityTypeImpl(ClassDescriptor descriptor, EntityType parentType) {
+    public DynamicTypeImpl(ClassDescriptor descriptor, DynamicType parentType) {
         this.descriptor = descriptor;
         this.parentType = parentType;
     }
@@ -68,7 +68,7 @@ public class EntityTypeImpl implements EntityType {
         return this.descriptor;
     }
 
-    public EntityType getParentType() {
+    public DynamicType getParentType() {
         return this.parentType;
     }
     
@@ -77,7 +77,7 @@ public class EntityTypeImpl implements EntityType {
     }
 
     /**
-     * @see EntityType#getName()
+     * @see DynamicType#getName()
      */
     public String getName() {
         return getDescriptor().getAlias();
@@ -144,7 +144,7 @@ public class EntityTypeImpl implements EntityType {
         return getMapping(propertyName).getAttributeClassification();
     }
 
-    public DynamicEntity newInstance() {
+    public DynamicEntity newDynamicEntity() {
         return (DynamicEntity) getDescriptor().getInstantiationPolicy().buildNewInstance();
     }
 
@@ -161,11 +161,11 @@ public class EntityTypeImpl implements EntityType {
     private class PropertyNameList extends AbstractList<String> {
 
         public String get(int index) {
-            return EntityTypeImpl.this.getMapping(index).getAttributeName();
+            return DynamicTypeImpl.this.getMapping(index).getAttributeName();
         }
 
         public int size() {
-            return EntityTypeImpl.this.getNumberOfProperties();
+            return DynamicTypeImpl.this.getNumberOfProperties();
         }
 
     }

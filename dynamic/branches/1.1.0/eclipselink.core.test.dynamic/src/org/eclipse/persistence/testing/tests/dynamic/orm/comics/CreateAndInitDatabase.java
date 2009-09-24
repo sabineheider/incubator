@@ -26,7 +26,9 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.DynamicType;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.queries.ReportQuery;
 import org.eclipse.persistence.sessions.Session;
@@ -37,168 +39,172 @@ import org.junit.Test;
 
 public class CreateAndInitDatabase {
 
-	private static final String DATA_HOME = "org/eclipse/persistence/testing/tests/dynamic/orm/comics/";
+    private static final String DATA_HOME = "org/eclipse/persistence/testing/tests/dynamic/orm/comics/";
 
-	@Test
-	public void populate() throws Exception {
-		Server server = null;
-		Session session = null;
-		UnitOfWork uow = null;
+    @Test
+    public void populate() throws Exception {
+        Server server = null;
+        Session session = null;
+        UnitOfWork uow = null;
 
-		try {
-			server = SessionHelper.getComicsSession();
-			session = server.acquireClientSession();
+        try {
+            server = SessionHelper.getComicsSession();
+            DynamicHelper helper = new DynamicHelper(server);
+            session = server.acquireClientSession();
 
-			uow = session.acquireUnitOfWork();
+            uow = session.acquireUnitOfWork();
 
-			URL publisherFileURL = getClass().getClassLoader().getResource(DATA_HOME + "publisher.tab");
-			Map<Integer, DynamicEntity> publishers = loadPublishers(server, publisherFileURL);
-			persist(uow, publishers);
+            URL publisherFileURL = getClass().getClassLoader().getResource(DATA_HOME + "publisher.tab");
+            Map<Integer, DynamicEntity> publishers = loadPublishers(server, publisherFileURL);
+            persist(uow, publishers);
 
-			URL titleFileURL = getClass().getClassLoader().getResource(DATA_HOME + "title.tab");
-			Map<Integer, DynamicEntity> titles = loadTitles(server, titleFileURL, publishers);
-			persist(uow, titles);
+            URL titleFileURL = getClass().getClassLoader().getResource(DATA_HOME + "title.tab");
+            Map<Integer, DynamicEntity> titles = loadTitles(server, titleFileURL, publishers);
+            persist(uow, titles);
 
-			URL issueFileURL = getClass().getClassLoader().getResource(DATA_HOME + "issue.tab");
-			Map<Integer, DynamicEntity> issues = loadIssues(server, issueFileURL, titles);
-			persist(uow, issues);
+            URL issueFileURL = getClass().getClassLoader().getResource(DATA_HOME + "issue.tab");
+            Map<Integer, DynamicEntity> issues = loadIssues(server, issueFileURL, titles);
+            persist(uow, issues);
 
-			SchemaManager sm = new SchemaManager(server);
-			sm.replaceDefaultTables();
-			sm.replaceSequences();
+            SchemaManager sm = new SchemaManager(server);
+            sm.replaceDefaultTables();
+            sm.replaceSequences();
 
-			uow.commit();
+            uow.commit();
 
-			ReportQuery countQuery = new ReportQuery(DynamicHelper.getType(server, "Publisher").getJavaClass(), new ExpressionBuilder());
-			countQuery.addCount();
-			countQuery.setShouldReturnSingleValue(true);
-			assertEquals(publishers.size(), ((Number) session.executeQuery(countQuery)).intValue());
+            ReportQuery countQuery = new ReportQuery(helper.getType("Publisher").getJavaClass(), new ExpressionBuilder());
+            countQuery.addCount();
+            countQuery.setShouldReturnSingleValue(true);
+            assertEquals(publishers.size(), ((Number) session.executeQuery(countQuery)).intValue());
 
-			countQuery = new ReportQuery(DynamicHelper.getType(server, "Title").getJavaClass(), new ExpressionBuilder());
-			countQuery.addCount();
-			countQuery.setShouldReturnSingleValue(true);
-			assertEquals(titles.size(), ((Number) session.executeQuery(countQuery)).intValue());
+            countQuery = new ReportQuery(helper.getType("Title").getJavaClass(), new ExpressionBuilder());
+            countQuery.addCount();
+            countQuery.setShouldReturnSingleValue(true);
+            assertEquals(titles.size(), ((Number) session.executeQuery(countQuery)).intValue());
 
-			countQuery = new ReportQuery(DynamicHelper.getType(server, "Issue").getJavaClass(), new ExpressionBuilder());
-			countQuery.addCount();
-			countQuery.setShouldReturnSingleValue(true);
-			assertEquals(issues.size(), ((Number) session.executeQuery(countQuery)).intValue());
-		} finally {
-			if (uow != null && uow.isActive()) {
-				uow.release();
-			}
-			if (session != null) {
-				session.release();
-			}
-			if (server != null) {
-				server.release();
-			}
-		}
-	}
+            countQuery = new ReportQuery(helper.getType("Issue").getJavaClass(), new ExpressionBuilder());
+            countQuery.addCount();
+            countQuery.setShouldReturnSingleValue(true);
+            assertEquals(issues.size(), ((Number) session.executeQuery(countQuery)).intValue());
+        } finally {
+            if (uow != null && uow.isActive()) {
+                uow.release();
+            }
+            if (session != null) {
+                session.release();
+            }
+            if (server != null) {
+                server.release();
+            }
+        }
+    }
 
-	private static void persist(UnitOfWork uow, Map<Integer, DynamicEntity> entities) {
-		for (DynamicEntity entity : entities.values()) {
-			uow.registerNewObject(entity);
-		}
-	}
+    private static void persist(UnitOfWork uow, Map<Integer, DynamicEntity> entities) {
+        for (DynamicEntity entity : entities.values()) {
+            uow.registerNewObject(entity);
+        }
+    }
 
-	private static Map<Integer, DynamicEntity> loadIssues(Server server, URL fileURL, Map<Integer, DynamicEntity> titles) throws Exception {
-		EntityType type = DynamicHelper.getType(server, "Issue");
-		Map<Integer, DynamicEntity> issues = new HashMap<Integer, DynamicEntity>();
+    private static Map<Integer, DynamicEntity> loadIssues(Server server, URL fileURL, Map<Integer, DynamicEntity> titles) throws Exception {
+        DynamicHelper helper = new DynamicHelper(server);
+        DynamicType type = helper.getType("Issue");
+        Map<Integer, DynamicEntity> issues = new HashMap<Integer, DynamicEntity>();
 
-		BufferedReader reader = null;
+        BufferedReader reader = null;
 
-		try {
-			reader = new BufferedReader(new InputStreamReader(fileURL.openStream()));
-			String nextLine = null;
-			while ((nextLine = reader.readLine()) != null) {
-				DynamicEntity issue = buildIssue(type, nextLine, titles);
-				issues.put(issue.<Integer>get("id"), issue);
-			}
-		} finally {
-			if (reader != null) {
-				reader.close();
-			}
-		}
-		return issues;
-	}
+        try {
+            reader = new BufferedReader(new InputStreamReader(fileURL.openStream()));
+            String nextLine = null;
+            while ((nextLine = reader.readLine()) != null) {
+                DynamicEntity issue = buildIssue(type, nextLine, titles);
+                issues.put(issue.<Integer> get("id"), issue);
+            }
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+        }
+        return issues;
+    }
 
-	private static DynamicEntity buildIssue(EntityType issueType, String line, Map<Integer, DynamicEntity> titles) {
-		// TITLE,ISSUE_NUMBER,STORY_ARC,CONDITION,COMMENTS,COPIES,ID,TITLE_ID
-		String[] columns = line.split("\t");
-		DynamicEntity issue = issueType.newInstance();
-		issue.set("number", Integer.valueOf(columns[1]));
-		issue.set("condition", columns[3]);
-		issue.set("comments", columns[4]);
-		String numCopiesString = columns[5];
-		if (numCopiesString.length() > 0) {
-			issue.set("copies", Integer.valueOf(numCopiesString));
-		}
-		issue.set("id", Integer.valueOf(columns[6]));
-		issue.set("title", titles.get(Integer.valueOf(columns[7])));
-		return issue;
-	}
+    private static DynamicEntity buildIssue(DynamicType issueType, String line, Map<Integer, DynamicEntity> titles) {
+        // TITLE,ISSUE_NUMBER,STORY_ARC,CONDITION,COMMENTS,COPIES,ID,TITLE_ID
+        String[] columns = line.split("\t");
+        DynamicEntity issue = issueType.newDynamicEntity();
+        issue.set("number", Integer.valueOf(columns[1]));
+        issue.set("condition", columns[3]);
+        issue.set("comments", columns[4]);
+        String numCopiesString = columns[5];
+        if (numCopiesString.length() > 0) {
+            issue.set("copies", Integer.valueOf(numCopiesString));
+        }
+        issue.set("id", Integer.valueOf(columns[6]));
+        issue.set("title", titles.get(Integer.valueOf(columns[7])));
+        return issue;
+    }
 
-	private static Map<Integer, DynamicEntity> loadPublishers(Server server, URL fileURL) throws Exception {
-		EntityType type = DynamicHelper.getType(server, "Publisher");
-		Map<Integer, DynamicEntity> publishers = new HashMap<Integer, DynamicEntity>();
+    private static Map<Integer, DynamicEntity> loadPublishers(Server server, URL fileURL) throws Exception {
+        DynamicHelper helper = new DynamicHelper(server);
+        DynamicType type = helper.getType("Publisher");
+        Map<Integer, DynamicEntity> publishers = new HashMap<Integer, DynamicEntity>();
 
-		BufferedReader reader = null;
-		try {
-			reader = new BufferedReader(new InputStreamReader(fileURL.openStream()));
-			String nextLine = null;
-			while ((nextLine = reader.readLine()) != null) {
-				DynamicEntity publisher = buildPublisher(type, nextLine);
-				publishers.put(publisher.<Integer>get("id"), publisher);
-			}
-		} finally {
-			if (reader != null) {
-				reader.close();
-			}
-		}
-		return publishers;
-	}
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new InputStreamReader(fileURL.openStream()));
+            String nextLine = null;
+            while ((nextLine = reader.readLine()) != null) {
+                DynamicEntity publisher = buildPublisher(type, nextLine);
+                publishers.put(publisher.<Integer> get("id"), publisher);
+            }
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+        }
+        return publishers;
+    }
 
-	private static DynamicEntity buildPublisher(EntityType publisherType, String line) {
-		// NAME ID
-		String[] columns = line.split("\t");
-		assert columns.length == 2;
-		DynamicEntity publisher = publisherType.newInstance();
-		publisher.set("name", columns[0]);
-		publisher.set("id", Integer.valueOf(columns[1]));
-		return publisher;
-	}
+    private static DynamicEntity buildPublisher(DynamicType publisherType, String line) {
+        // NAME ID
+        String[] columns = line.split("\t");
+        assert columns.length == 2;
+        DynamicEntity publisher = publisherType.newDynamicEntity();
+        publisher.set("name", columns[0]);
+        publisher.set("id", Integer.valueOf(columns[1]));
+        return publisher;
+    }
 
-	private static Map<Integer, DynamicEntity> loadTitles(Server server, URL fileURL, Map<Integer, DynamicEntity> publishers) throws Exception {
-		EntityType type = DynamicHelper.getType(server, "Title");
-		Map<Integer, DynamicEntity> titles = new HashMap<Integer, DynamicEntity>();
+    private static Map<Integer, DynamicEntity> loadTitles(Server server, URL fileURL, Map<Integer, DynamicEntity> publishers) throws Exception {
+        DynamicHelper helper = new DynamicHelper(server);
+        DynamicType type = helper.getType("Title");
+        Map<Integer, DynamicEntity> titles = new HashMap<Integer, DynamicEntity>();
 
-		BufferedReader reader = null;
-		try {
-			reader = new BufferedReader(new InputStreamReader(fileURL.openStream()));
-			String nextLine = null;
-			while ((nextLine = reader.readLine()) != null) {
-				DynamicEntity title = buildTitle(type, nextLine, publishers);
-				titles.put(title.<Integer>get("id"), title);
-			}
-		} finally {
-			if (reader != null) {
-				reader.close();
-			}
-		}
-		return titles;
-	}
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new InputStreamReader(fileURL.openStream()));
+            String nextLine = null;
+            while ((nextLine = reader.readLine()) != null) {
+                DynamicEntity title = buildTitle(type, nextLine, publishers);
+                titles.put(title.<Integer> get("id"), title);
+            }
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+        }
+        return titles;
+    }
 
-	private static DynamicEntity buildTitle(EntityType type, String line, Map<Integer, DynamicEntity> publishers) {
-		// NAME,PUBLISHER,FORMAT,SUBSCRIBED,ID,PUBLISHER_ID
-		String[] columns = line.split("\t");
+    private static DynamicEntity buildTitle(DynamicType type, String line, Map<Integer, DynamicEntity> publishers) {
+        // NAME,PUBLISHER,FORMAT,SUBSCRIBED,ID,PUBLISHER_ID
+        String[] columns = line.split("\t");
 
-		DynamicEntity title = type.newInstance();
-		title.set("name", columns[0]);
-		title.set("format", columns[2]);
-		title.set("id", Integer.valueOf(columns[4]));
-		title.set("publisher", publishers.get(Integer.valueOf(columns[5])));
-		return title;
-	}
+        DynamicEntity title = type.newDynamicEntity();
+        title.set("name", columns[0]);
+        title.set("format", columns[2]);
+        title.set("id", Integer.valueOf(columns[4]));
+        title.set("publisher", publishers.get(Integer.valueOf(columns[5])));
+        return title;
+    }
 
 }

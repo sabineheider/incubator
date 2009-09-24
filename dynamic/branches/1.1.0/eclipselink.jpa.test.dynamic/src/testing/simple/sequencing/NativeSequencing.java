@@ -1,21 +1,32 @@
 package testing.simple.sequencing;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
 
-import javax.persistence.*;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.sessions.AbstractSession;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
+import org.eclipse.persistence.internal.dynamic.DynamicTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicHelper;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicTypeBuilder;
 import org.eclipse.persistence.sequencing.NativeSequence;
 import org.eclipse.persistence.sessions.IdentityMapAccessor;
 import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class NativeSequencing {
 
@@ -32,7 +43,7 @@ public class NativeSequencing {
         ClassDescriptor descriptor = session.getClassDescriptorForAlias(ENTITY_TYPE);
         assertNotNull("No descriptor found for alias: " + ENTITY_TYPE, descriptor);
 
-        EntityTypeImpl simpleType = (EntityTypeImpl) DynamicHelper.getType(session, ENTITY_TYPE);
+        DynamicTypeImpl simpleType = (DynamicTypeImpl) new JPADynamicHelper(emf).getType(ENTITY_TYPE);
         assertNotNull("EntityType not found for alias: " + ENTITY_TYPE, simpleType);
 
         assertEquals(descriptor, simpleType.getDescriptor());
@@ -40,8 +51,8 @@ public class NativeSequencing {
 
     @Test
     public void createSingleInstances() {
-        Server session = JpaHelper.getServerSession(emf);
-        EntityTypeImpl simpleType = (EntityTypeImpl) DynamicHelper.getType(session, ENTITY_TYPE);
+        DynamicHelper helper = new JPADynamicHelper(emf);
+        DynamicTypeImpl simpleType = (DynamicTypeImpl) helper.getType(ENTITY_TYPE);
 
         EntityManager em = emf.createEntityManager();
 
@@ -50,7 +61,7 @@ public class NativeSequencing {
         int simpleCount = ((Number) em.createQuery("SELECT COUNT(o) FROM " + ENTITY_TYPE + " o").getSingleResult()).intValue();
         assertEquals(1, simpleCount);
 
-        IdentityMapAccessor cache = session.getIdentityMapAccessor();
+        IdentityMapAccessor cache = helper.getSession().getIdentityMapAccessor();
         assertTrue(cache.containsObjectInIdentityMap(simpleInstance));
 
         em.clear();
@@ -67,8 +78,8 @@ public class NativeSequencing {
 
     @Test
     public void createTwoInstances() {
-        Server session = JpaHelper.getServerSession(emf);
-        EntityTypeImpl simpleType = (EntityTypeImpl) DynamicHelper.getType(session, ENTITY_TYPE);
+        DynamicHelper helper = new JPADynamicHelper(emf);
+        DynamicTypeImpl simpleType = (DynamicTypeImpl) helper.getType(ENTITY_TYPE);
 
         EntityManager em = emf.createEntityManager();
 
@@ -78,7 +89,7 @@ public class NativeSequencing {
         int simpleCount = ((Number) em.createQuery("SELECT COUNT(o) FROM " + ENTITY_TYPE + " o").getSingleResult()).intValue();
         assertEquals(2, simpleCount);
 
-        IdentityMapAccessor cache = session.getIdentityMapAccessor();
+        IdentityMapAccessor cache = helper.getSession().getIdentityMapAccessor();
         assertTrue(cache.containsObjectInIdentityMap(simpleInstance1));
         assertTrue(cache.containsObjectInIdentityMap(simpleInstance2));
 
@@ -97,11 +108,13 @@ public class NativeSequencing {
     }
 
     public DynamicEntity createSimpleInstance(EntityManagerFactory emf, int expectedId) {
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
         EntityManager em = emf.createEntityManager();
-        EntityType simpleEntityType = DynamicHelper.getType(JpaHelper.getServerSession(emf), ENTITY_TYPE);
+        DynamicType simpleEntityType = helper.getType(ENTITY_TYPE);
         Assert.assertNotNull(simpleEntityType);
 
-        DynamicEntity simpleInstance = simpleEntityType.newInstance();
+        DynamicEntity simpleInstance = simpleEntityType.newDynamicEntity();
         simpleInstance.set("value1", TABLE_NAME);
 
         em.getTransaction().begin();
@@ -117,22 +130,23 @@ public class NativeSequencing {
     @BeforeClass
     public static void setUp() {
         emf = Persistence.createEntityManagerFactory("empty");
-        Server session = JpaHelper.getServerSession(emf);
-        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+        DynamicHelper helper = new JPADynamicHelper(emf);
+        DynamicClassLoader dcl = helper.getDynamicClassLoader();
+
         Class<?> javaType = dcl.createDynamicClass("model.sequencing." + ENTITY_TYPE);
 
-        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(javaType, null, TABLE_NAME);
+        DynamicTypeBuilder typeBuilder = new JPADynamicTypeBuilder(javaType, null, TABLE_NAME);
         typeBuilder.setPrimaryKeyFields("SID");
         typeBuilder.addDirectMapping("id", int.class, "SID");
         typeBuilder.addDirectMapping("value1", String.class, "VAL_1");
 
         NativeSequence sequence = new NativeSequence();
         sequence.setPreallocationSize(5);
-        ((AbstractSession) session).getProject().getLogin().setDefaultSequence(sequence);
-        sequence.onConnect(session.getPlatform());
+        helper.getSession().getProject().getLogin().setDefaultSequence(sequence);
+        sequence.onConnect(helper.getSession().getPlatform());
         typeBuilder.configureSequencing(sequence, ENTITY_TYPE + "_SEQ", "SID");
 
-        EntityTypeBuilder.addToSession(session, true, true, typeBuilder.getType());
+        helper.addTypes(true, true, typeBuilder.getType());
     }
 
     @Before

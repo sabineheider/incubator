@@ -4,5 +4,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/org.eclipse.persistence.jpa"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/org.eclipse.persistence.core.dynamic"/>
 	<classpathentry excluding="**/.svn/**" kind="src" path="src"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/javax.persistence 1.99"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

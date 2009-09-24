@@ -22,21 +22,21 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.exceptions.XMLMarshalException;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.sessions.DatabaseLogin;
 import org.junit.Test;
 
 /**
  * Test cases verifying invalid args passed to
- * {@link EntityTypeBuilder#loadDynamicProject(String, DatabaseLogin)}
+ * {@link DynamicTypeBuilder#loadDynamicProject(String, DatabaseLogin)}
  */
 public class InvalidConfig {
 
     @Test(expected=NullPointerException.class)
     public void nullResource() throws Exception {
-        EntityTypeBuilder.loadDynamicProject((String)null, null, null);
+        DynamicTypeBuilder.loadDynamicProject((String)null, null, null);
     }
     
     @Test(expected=NullPointerException.class)
@@ -44,7 +44,7 @@ public class InvalidConfig {
         File temp = File.createTempFile("foo",".txt");
         temp.deleteOnExit();
         FileInputStream fis = new FileInputStream(temp);
-        EntityTypeBuilder.loadDynamicProject(fis, new DatabaseLogin(), null);
+        DynamicTypeBuilder.loadDynamicProject(fis, new DatabaseLogin(), null);
     }
 
     @Test(expected=XMLMarshalException.class)
@@ -53,7 +53,7 @@ public class InvalidConfig {
             InvalidConfig.class.getClassLoader());
         InputStream is = dynamicClassLoader.getResourceAsStream(
             "org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/bar.xml");
-        EntityTypeBuilder.loadDynamicProject(is, new DatabaseLogin(),
+        DynamicTypeBuilder.loadDynamicProject(is, new DatabaseLogin(),
             dynamicClassLoader);
     }
 }

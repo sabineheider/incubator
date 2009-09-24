@@ -23,13 +23,12 @@ import java.util.Calendar;
 import javax.persistence.EntityManagerFactory;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicHelper;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicTypeBuilder;
 import org.eclipse.persistence.mappings.OneToManyMapping;
 import org.eclipse.persistence.mappings.OneToOneMapping;
-import org.eclipse.persistence.sessions.server.Server;
 
 /**
  * Factory for the creation of the dynamic mappings for the Employee demo.
@@ -41,8 +40,9 @@ public class EmployeeDynamicMappings {
 
     public static void createTypes(EntityManagerFactory emf, String packageName, boolean createMissingTables) {
         String packagePrefix = packageName.endsWith(".") ? packageName : packageName + ".";
-        Server session = JpaHelper.getServerSession(emf);
-        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+
+        DynamicHelper helper = new JPADynamicHelper(emf);
+        DynamicClassLoader dcl = helper.getDynamicClassLoader();
 
         Class<?> employeeClass = dcl.createDynamicClass(packagePrefix + "Employee");
         Class<?> addressClass = dcl.createDynamicClass(packagePrefix + "Address");
@@ -52,13 +52,13 @@ public class EmployeeDynamicMappings {
         Class<?> smallProjectClass = dcl.createDynamicClass(packagePrefix + "SmallProject", projectClass);
         Class<?> largeProjectClass = dcl.createDynamicClass(packagePrefix + "LargeProject", projectClass);
 
-        JPAEntityTypeBuilder employee = new JPAEntityTypeBuilder(employeeClass, null, "D_EMPLOYEE", "D_SALARY");
-        JPAEntityTypeBuilder address = new JPAEntityTypeBuilder(addressClass, null, "D_ADDRESS");
-        JPAEntityTypeBuilder phone = new JPAEntityTypeBuilder(phoneClass, null, "D_PHONE");
-        JPAEntityTypeBuilder period = new JPAEntityTypeBuilder(periodClass, null);
-        JPAEntityTypeBuilder project = new JPAEntityTypeBuilder(projectClass, null, "D_PROJECT");
-        JPAEntityTypeBuilder smallProject = new JPAEntityTypeBuilder(smallProjectClass, project.getType(), "D_PROJECT");
-        JPAEntityTypeBuilder largeProject = new JPAEntityTypeBuilder(largeProjectClass, project.getType(), "D_LPROJECT");
+        JPADynamicTypeBuilder employee = new JPADynamicTypeBuilder(employeeClass, null, "D_EMPLOYEE", "D_SALARY");
+        JPADynamicTypeBuilder address = new JPADynamicTypeBuilder(addressClass, null, "D_ADDRESS");
+        JPADynamicTypeBuilder phone = new JPADynamicTypeBuilder(phoneClass, null, "D_PHONE");
+        JPADynamicTypeBuilder period = new JPADynamicTypeBuilder(periodClass, null);
+        JPADynamicTypeBuilder project = new JPADynamicTypeBuilder(projectClass, null, "D_PROJECT");
+        JPADynamicTypeBuilder smallProject = new JPADynamicTypeBuilder(smallProjectClass, project.getType(), "D_PROJECT");
+        JPADynamicTypeBuilder largeProject = new JPADynamicTypeBuilder(largeProjectClass, project.getType(), "D_LPROJECT");
 
         configureAddress(address);
         configureEmployee(employee, address, phone, period, project);
@@ -72,10 +72,10 @@ public class EmployeeDynamicMappings {
         // and Project
         employee.addManyToManyMapping("projects", project.getType(), "D_PROJ_EMP");
 
-        EntityTypeBuilder.addToSession(session, true, true, employee.getType(), address.getType(), phone.getType(), period.getType(), project.getType(), smallProject.getType(), largeProject.getType());
+        helper.addTypes(true, true, employee.getType(), address.getType(), phone.getType(), period.getType(), project.getType(), smallProject.getType(), largeProject.getType());
     }
 
-    private static void configurePhone(JPAEntityTypeBuilder phone, JPAEntityTypeBuilder employee) {
+    private static void configurePhone(JPADynamicTypeBuilder phone, JPADynamicTypeBuilder employee) {
         phone.setPrimaryKeyFields("PHONE_TYPE", "EMP_ID");
 
         phone.addDirectMapping("type", String.class, "PHONE_TYPE");
@@ -86,7 +86,7 @@ public class EmployeeDynamicMappings {
         phone.addOneToOneMapping("owner", employee.getType(), "EMP_ID");
     }
 
-    private static void configureAddress(JPAEntityTypeBuilder address) {
+    private static void configureAddress(JPADynamicTypeBuilder address) {
         address.setPrimaryKeyFields("ADDR_ID");
 
         address.addDirectMapping("id", int.class, "ADDR_ID");
@@ -99,7 +99,7 @@ public class EmployeeDynamicMappings {
         address.configureSequencing("ADDR_SEQ", "ADDR_ID");
     }
 
-    private static void configureEmployee(JPAEntityTypeBuilder employee, JPAEntityTypeBuilder address, JPAEntityTypeBuilder phone, JPAEntityTypeBuilder period, JPAEntityTypeBuilder project) {
+    private static void configureEmployee(JPADynamicTypeBuilder employee, JPADynamicTypeBuilder address, JPADynamicTypeBuilder phone, JPADynamicTypeBuilder period, JPADynamicTypeBuilder project) {
         employee.setPrimaryKeyFields("EMP_ID");
 
         employee.addDirectMapping("id", int.class, "D_EMPLOYEE.EMP_ID");
@@ -126,12 +126,12 @@ public class EmployeeDynamicMappings {
         employee.configureSequencing("EMP_SEQ", "EMP_ID");
     }
 
-    private static void configurePeriod(JPAEntityTypeBuilder period) {
+    private static void configurePeriod(JPADynamicTypeBuilder period) {
         period.addDirectMapping("startDate", Calendar.class, "START_DATE");
         period.addDirectMapping("endDate", Calendar.class, "END_DATE");
     }
 
-    private static void configureProject(JPAEntityTypeBuilder project, JPAEntityTypeBuilder smallProject, JPAEntityTypeBuilder largeProject, JPAEntityTypeBuilder employee) {
+    private static void configureProject(JPADynamicTypeBuilder project, JPADynamicTypeBuilder smallProject, JPADynamicTypeBuilder largeProject, JPADynamicTypeBuilder employee) {
         project.setPrimaryKeyFields("PROJ_ID");
 
         project.addDirectMapping("id", int.class, "PROJ_ID");
@@ -150,7 +150,7 @@ public class EmployeeDynamicMappings {
         project.configureSequencing("PROJ_SEQ", "PROJ_ID");
     }
 
-    private static void configureLargeProject(JPAEntityTypeBuilder largeProject, JPAEntityTypeBuilder project) {
+    private static void configureLargeProject(JPADynamicTypeBuilder largeProject, JPADynamicTypeBuilder project) {
         largeProject.setPrimaryKeyFields("PROJ_ID");
 
         ClassDescriptor descriptor = largeProject.getType().getDescriptor();
@@ -161,7 +161,7 @@ public class EmployeeDynamicMappings {
         largeProject.addDirectMapping("milestone", Calendar.class, "MILESTONE");
     }
 
-    private static void configureSmallProject(JPAEntityTypeBuilder smallProject, JPAEntityTypeBuilder project) {
+    private static void configureSmallProject(JPADynamicTypeBuilder smallProject, JPADynamicTypeBuilder project) {
         smallProject.setPrimaryKeyFields("PROJ_ID");
 
         ClassDescriptor descriptor = smallProject.getType().getDescriptor();

@@ -9,13 +9,13 @@ import static junit.framework.Assert.fail;
 import java.util.Calendar;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
-import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.internal.dynamic.DynamicTypeImpl;
 import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.queries.ReportQuery;
 import org.eclipse.persistence.sessions.DatabaseSession;
@@ -31,11 +31,11 @@ import org.junit.Test;
 
 public class SimpleType extends EclipseLinkORMTest {
 
-    protected EntityType simpleType;
+    protected DynamicType simpleType;
 
-    protected EntityType getSimpleType() {
+    protected DynamicType getSimpleType() {
         if (simpleType == null) {
-            this.simpleType = DynamicHelper.getType(getSharedSession(), "Simple");
+            this.simpleType = new DynamicHelper(getSharedSession()).getType("Simple");
 
             if (this.simpleType == null) {
                 createSimpleType();
@@ -44,13 +44,12 @@ public class SimpleType extends EclipseLinkORMTest {
         return this.simpleType;
     }
 
-    protected EntityType createSimpleType() {
-        DatabaseSession session = getSharedSession();
-
-        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+    protected DynamicType createSimpleType() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
+        DynamicClassLoader dcl = helper.getDynamicClassLoader();
         Class<?> javaType = dcl.createDynamicClass("model.Simple");
 
-        EntityTypeBuilder typeBuilder = new EntityTypeBuilder(javaType, null, "SIMPLE_TYPE");
+        DynamicTypeBuilder typeBuilder = new DynamicTypeBuilder(javaType, null, "SIMPLE_TYPE");
         typeBuilder.setPrimaryKeyFields("SID");
         typeBuilder.addDirectMapping("id", int.class, "SID");
         typeBuilder.addDirectMapping("value1", String.class, "VAL_1");
@@ -58,16 +57,16 @@ public class SimpleType extends EclipseLinkORMTest {
         typeBuilder.addDirectMapping("value3", Calendar.class, "VAL_3");
         typeBuilder.addDirectMapping("value4", Character.class, "VAL_4");
 
-        typeBuilder.addToSession(session, true, true);
+        helper.addTypes(true, true, typeBuilder.getType());
 
         return typeBuilder.getType();
     }
 
     @Test
     public void invalidDirectMappingSet_id() throws Exception {
-        EntityType type = DynamicHelper.getType(getSharedSession(), "Simple");
+        DynamicType type = new DynamicHelper(getSharedSession()).getType("Simple");
 
-        DynamicEntity entity = type.newInstance();
+        DynamicEntity entity = type.newDynamicEntity();
 
         try {
             entity.set("id", 1l);
@@ -84,7 +83,7 @@ public class SimpleType extends EclipseLinkORMTest {
         ClassDescriptor descriptor = session.getClassDescriptorForAlias("Simple");
         assertNotNull("No descriptor found for alias='Simple'", descriptor);
 
-        EntityTypeImpl simpleType = (EntityTypeImpl) DynamicHelper.getType(session, "Simple");
+        DynamicTypeImpl simpleType = (DynamicTypeImpl) new DynamicHelper(session).getType("Simple");
         assertNotNull("'Simple' EntityType not found", simpleType);
 
         assertEquals(1 + descriptor.getPrimaryKeyFields().size(), simpleType.getMappingsRequiringInitialization().size());
@@ -94,14 +93,15 @@ public class SimpleType extends EclipseLinkORMTest {
 
     @Test
     public void find() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
         createSimpleInstance(session, 1);
 
-        DynamicEntity simpleInstance = find(session, 1);
+        DynamicEntity simpleInstance = find(helper, session, 1);
         assertNotNull("Could not find simple instance with id = 1", simpleInstance);
 
-        simpleInstance = find(session, new Integer(1));
+        simpleInstance = find(helper, session, new Integer(1));
         assertNotNull("Could not find simple instance with id = Integer(1)", simpleInstance);
     }
 
@@ -122,17 +122,17 @@ public class SimpleType extends EclipseLinkORMTest {
 
     @Test
     public void verifyDefaultValuesFromEntityType() throws Exception {
-        EntityType simpleType = DynamicHelper.getType(getSharedSession(), "Simple");
+        DynamicType simpleType = new DynamicHelper(getSharedSession()).getType("Simple");
 
         assertNotNull(simpleType);
 
-        DynamicEntity simpleInstance = simpleType.newInstance();
+        DynamicEntity simpleInstance = simpleType.newDynamicEntity();
         assertDefaultValues(simpleInstance);
     }
 
     @Test
     public void verifyDefaultValuesFromDescriptor() throws Exception {
-        EntityTypeImpl simpleType = (EntityTypeImpl) DynamicHelper.getType(getSharedSession(), "Simple");
+        DynamicTypeImpl simpleType = (DynamicTypeImpl) new DynamicHelper(getSharedSession()).getType("Simple");
         assertNotNull(simpleType);
 
         DynamicEntity simpleInstance = (DynamicEntity) simpleType.getDescriptor().getObjectBuilder().buildNewInstance();
@@ -152,14 +152,16 @@ public class SimpleType extends EclipseLinkORMTest {
     }
 
     public DynamicEntity createSimpleInstance(Session session, int id) {
-        EntityType simpleEntityType = DynamicHelper.getType(session, "Simple");
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
+
+        DynamicType simpleEntityType = helper.getType("Simple");
         Assert.assertNotNull(simpleEntityType);
 
-        DynamicEntity simpleInstance = simpleEntityType.newInstance();
+        DynamicEntity simpleInstance = simpleEntityType.newDynamicEntity();
         simpleInstance.set("id", id);
         simpleInstance.set("value2", true);
 
-        ReportQuery countQuery = DynamicHelper.newReportQuery(session, "Simple", new ExpressionBuilder());
+        ReportQuery countQuery = helper.newReportQuery("Simple", new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
         assertEquals(0, ((Number) session.executeQuery(countQuery)).intValue());
@@ -170,7 +172,7 @@ public class SimpleType extends EclipseLinkORMTest {
 
         assertEquals(1, ((Number) session.executeQuery(countQuery)).intValue());
 
-        DynamicEntity foundEntity = find(session, 1);
+        DynamicEntity foundEntity = find(helper, session, 1);
 
         assertNotNull(foundEntity);
         assertEquals(simpleInstance.get("id"), foundEntity.get("id"));
@@ -182,8 +184,8 @@ public class SimpleType extends EclipseLinkORMTest {
         return simpleInstance;
     }
 
-    protected DynamicEntity find(Session session, Object id) {
-        ReadObjectQuery findQuery = DynamicHelper.newReadObjectQuery(session, "Simple");
+    protected DynamicEntity find(DynamicHelper helper, Session session, Object id) {
+        ReadObjectQuery findQuery = helper.newReadObjectQuery("Simple");
         findQuery.setSelectionCriteria(findQuery.getExpressionBuilder().get("id").equal(id));
         return (DynamicEntity) session.executeQuery(findQuery);
     }

@@ -24,6 +24,8 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicClassWriter;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.exceptions.DynamicException;
 import org.eclipse.persistence.internal.dynamic.*;
@@ -80,11 +82,11 @@ public class DynamicClassLoaderTests {
         Constructor[] constructors = dynamicClass.getConstructors();
         assertEquals(1, constructors.length);
         assertEquals(1, constructors[0].getParameterTypes().length);
-        assertEquals(EntityTypeImpl.class, constructors[0].getParameterTypes()[0]);
+        assertEquals(DynamicTypeImpl.class, constructors[0].getParameterTypes()[0]);
 
-        Constructor<DynamicEntity> constructor = dynamicClass.getDeclaredConstructor(new Class[] { EntityTypeImpl.class });
+        Constructor<DynamicEntity> constructor = dynamicClass.getDeclaredConstructor(new Class[] { DynamicTypeImpl.class });
         assertNotNull(constructor);
-        constructor = dynamicClass.getConstructor(new Class[] { EntityTypeImpl.class });
+        constructor = dynamicClass.getConstructor(new Class[] { DynamicTypeImpl.class });
         assertNotNull(constructor);
     }
 
@@ -118,11 +120,11 @@ public class DynamicClassLoaderTests {
         Constructor[] constructors = dynamicClass.getConstructors();
         assertEquals(1, constructors.length);
         assertEquals(1, constructors[0].getParameterTypes().length);
-        assertEquals(EntityTypeImpl.class, constructors[0].getParameterTypes()[0]);
+        assertEquals(DynamicTypeImpl.class, constructors[0].getParameterTypes()[0]);
 
-        Constructor<DynamicEntity> constructor = dynamicClass.getDeclaredConstructor(new Class[] { EntityTypeImpl.class });
+        Constructor<DynamicEntity> constructor = dynamicClass.getDeclaredConstructor(new Class[] { DynamicTypeImpl.class });
         assertNotNull(constructor);
-        constructor = dynamicClass.getConstructor(new Class[] { EntityTypeImpl.class });
+        constructor = dynamicClass.getConstructor(new Class[] { DynamicTypeImpl.class });
         assertNotNull(constructor);
     }
 

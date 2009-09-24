@@ -19,11 +19,11 @@
 package org.eclipse.persistence.exceptions;
 
 //EclipseLink imports
-import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.internal.dynamic.DynamicClassWriter;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicClassWriter;
+import org.eclipse.persistence.dynamic.DynamicType;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.internal.dynamic.DynamicTypeImpl;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 
 /**
@@ -52,7 +52,7 @@ public class DynamicException extends EclipseLinkException {
      * 
      * @see DynamicEntityImpl#get(String)
      * */
-    public static DynamicException invalidPropertyName(EntityType type, String propertyName) {
+    public static DynamicException invalidPropertyName(DynamicType type, String propertyName) {
         return new DynamicException("Invalid DynamicEntity[" + type + "] property name: " + propertyName);
     }
 
@@ -81,11 +81,11 @@ public class DynamicException extends EclipseLinkException {
     /**
      * Exception throw when attempting to access a dynamic property by index
      * which does not have an associated mapping. Make sure the index used is
-     * less then {@link EntityType#getNumberOfProperties()}.
+     * less then {@link DynamicType#getNumberOfProperties()}.
      * 
-     * @see EntityTypeImpl#getMapping(int)
+     * @see DynamicTypeImpl#getMapping(int)
      */
-    public static DynamicException invalidPropertyIndex(EntityType type, int propertyIndex) {
+    public static DynamicException invalidPropertyIndex(DynamicType type, int propertyIndex) {
         return new DynamicException("Invalid DynamicEntity[" + type + "] property index: " + propertyIndex);
     }
 

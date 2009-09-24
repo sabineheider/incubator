@@ -28,7 +28,6 @@ import java.util.List;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.queries.ReadObjectQuery;
@@ -54,7 +53,7 @@ public class SimpleMapProject extends EclipseLinkORMTest {
         DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
         Project project = null;
         try {
-            project = EntityTypeBuilder.loadDynamicProject(getProjectLocation(), login, dcl);
+            project = DynamicTypeBuilder.loadDynamicProject(getProjectLocation(), login, dcl);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -63,7 +62,7 @@ public class SimpleMapProject extends EclipseLinkORMTest {
         ds.setLogLevel(SessionLog.FINE);
         ds.login();
 
-        new DynamicSchemaManager(ds).createTables(new EntityType[0]);
+        new DynamicSchemaManager(ds).createTables(new DynamicType[0]);
 
         return ds;
     }
@@ -96,16 +95,17 @@ public class SimpleMapProject extends EclipseLinkORMTest {
     @SuppressWarnings("deprecation")
     @Test
     public void createInstance() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
-        EntityType type = DynamicHelper.getType(session, "simpletableType");
+        DynamicType type = helper.getType("simpletableType");
 
-        ReportQuery countQuery = DynamicHelper.newReportQuery(session, "simpletableType", new ExpressionBuilder());
+        ReportQuery countQuery = helper.newReportQuery("simpletableType", new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
         assertEquals(0, ((Number) session.executeQuery(countQuery)).intValue());
 
-        DynamicEntity entity = type.newInstance();
+        DynamicEntity entity = type.newDynamicEntity();
         entity.set("id", new BigInteger("1"));
         entity.set("name", "Example");
         entity.set("since", new Date(100, 06, 06));
@@ -120,10 +120,11 @@ public class SimpleMapProject extends EclipseLinkORMTest {
 
     @Test
     public void readAll() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
         createInstance();
-        EntityType type = DynamicHelper.getType(session, "simpletableType");
+        DynamicType type = helper.getType("simpletableType");
 
         List<DynamicEntity> allObjects = session.readAllObjects(type.getJavaClass());
         assertEquals(1, allObjects.size());
@@ -131,11 +132,12 @@ public class SimpleMapProject extends EclipseLinkORMTest {
 
     @Test
     public void readById() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
         createInstance();
 
-        ReadObjectQuery query = DynamicHelper.newReadObjectQuery(session, "simpletableType");
+        ReadObjectQuery query = helper.newReadObjectQuery( "simpletableType");
         query.setSelectionCriteria(query.getExpressionBuilder().get("id").equal(1));
 
         DynamicEntity entity = (DynamicEntity) session.executeQuery(query);
@@ -145,11 +147,12 @@ public class SimpleMapProject extends EclipseLinkORMTest {
 
     @Test
     public void delete() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
         createInstance();
 
-        ReadObjectQuery query = DynamicHelper.newReadObjectQuery(session, "simpletableType");
+        ReadObjectQuery query = helper.newReadObjectQuery( "simpletableType");
         query.setSelectionCriteria(query.getExpressionBuilder().get("id").equal(1));
 
         UnitOfWork uow = session.acquireUnitOfWork();
@@ -160,7 +163,7 @@ public class SimpleMapProject extends EclipseLinkORMTest {
         uow.deleteObject(entity);
         uow.commit();
 
-        ReportQuery countQuery = DynamicHelper.newReportQuery(session, "simpletableType", new ExpressionBuilder());
+        ReportQuery countQuery = helper.newReportQuery("simpletableType", new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
         assertEquals(0, ((Number) session.executeQuery(countQuery)).intValue());

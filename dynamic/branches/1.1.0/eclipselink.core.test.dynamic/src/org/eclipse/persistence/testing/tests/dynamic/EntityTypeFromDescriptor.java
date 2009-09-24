@@ -22,8 +22,9 @@ import static junit.framework.Assert.*;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.exceptions.DescriptorException;
 import org.eclipse.persistence.exceptions.IntegrityException;
 import org.eclipse.persistence.internal.dynamic.*;
@@ -51,7 +52,7 @@ public class EntityTypeFromDescriptor {
         ClassDescriptor descriptor = buildMyEntityDescriptor();
         assertFalse(descriptor.isAggregateDescriptor());
 
-        EntityTypeImpl entityType = (EntityTypeImpl) new EntityTypeBuilder(dcl, descriptor, null).getType();
+        DynamicTypeImpl entityType = (DynamicTypeImpl) new DynamicTypeBuilder(dcl, descriptor, null).getType();
 
         assertFalse(descriptor.isAggregateDescriptor());
         assertEquals(MyEntity.class, entityType.getJavaClass());
@@ -59,7 +60,7 @@ public class EntityTypeFromDescriptor {
         session.addDescriptor(entityType.getDescriptor());
         new SchemaManager(session).replaceDefaultTables();
 
-        DynamicEntity entity = entityType.newInstance();
+        DynamicEntity entity = entityType.newDynamicEntity();
         entity.set("id", 1);
         entity.set("name", "Name");
 
@@ -139,7 +140,7 @@ public class EntityTypeFromDescriptor {
      */
     public static class MyEntity extends DynamicEntityImpl {
 
-        protected MyEntity(EntityTypeImpl type) {
+        protected MyEntity(DynamicTypeImpl type) {
             super(type);
         }
 

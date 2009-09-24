@@ -18,24 +18,33 @@
  ******************************************************************************/
 package org.eclipse.persistence.testing.tests.dynamic.simple.sequencing;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.queries.ReportQuery;
-import org.eclipse.persistence.sessions.*;
+import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.IdentityMapAccessor;
+import org.eclipse.persistence.sessions.Session;
+import org.eclipse.persistence.sessions.UnitOfWork;
 import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.testing.tests.dynamic.DynamicTestHelper;
-import org.junit.*;
+import org.eclipse.persistence.testing.tests.dynamic.EclipseLinkORMTest;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Test;
 
-public abstract class BaseSequencingTest {
-
-    protected static DatabaseSession sharedSession;
+public abstract class BaseSequencingTest extends EclipseLinkORMTest {
 
     public static final String TABLE_NAME = "SIMPLE_TABLE_SEQ";
 
@@ -43,41 +52,40 @@ public abstract class BaseSequencingTest {
 
     @Test
     public void verifyConfig() throws Exception {
-        Session session = acquireSession();
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
 
-        ClassDescriptor descriptor = session.getClassDescriptorForAlias(ENTITY_TYPE);
+        ClassDescriptor descriptor = helper.getSession().getClassDescriptorForAlias(ENTITY_TYPE);
         assertNotNull("No descriptor found for alias: " + ENTITY_TYPE, descriptor);
 
-        EntityTypeImpl simpleType = (EntityTypeImpl) DynamicHelper.getType(session, ENTITY_TYPE);
+        DynamicType simpleType = helper.getType(ENTITY_TYPE);
         assertNotNull("EntityType not found for alias: " + ENTITY_TYPE, simpleType);
 
         assertEquals(descriptor, simpleType.getDescriptor());
-        
-        assertTrue("Descriptor does not use sequencing", descriptor.usesSequenceNumbers());
-        verifySequencingConfig(session, descriptor);
 
-        session.release();
+        assertTrue("Descriptor does not use sequencing", descriptor.usesSequenceNumbers());
+        verifySequencingConfig(helper.getSession(), descriptor);
     }
-    
+
     protected abstract void verifySequencingConfig(Session session, ClassDescriptor descriptor);
 
     @Test
     public void createSingleInstances() throws Exception {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = acquireSession();
 
-        DynamicEntity simpleInstance = createSimpleInstance(session, 1);
+        DynamicEntity simpleInstance = createSimpleInstance(helper, session, 1);
 
-        ReportQuery countQuery = DynamicHelper.newReportQuery(session, ENTITY_TYPE, new ExpressionBuilder());
+        ReportQuery countQuery = helper.newReportQuery(ENTITY_TYPE, new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
 
-        assertEquals(1, count(session));
+        assertEquals(1, count(helper, session));
 
         IdentityMapAccessor cache = session.getIdentityMapAccessor();
         assertTrue(cache.containsObjectInIdentityMap(simpleInstance));
         cache.initializeAllIdentityMaps();
 
-        DynamicEntity findResult = find(session, 1);
+        DynamicEntity findResult = find(helper, session, 1);
 
         assertNotNull(findResult);
         assertEquals(simpleInstance.get("id"), findResult.get("id"));
@@ -88,16 +96,17 @@ public abstract class BaseSequencingTest {
 
     @Test
     public void createTwoInstances() throws DatabaseException, Exception {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = acquireSession();
 
-        DynamicEntity simpleInstance1 = createSimpleInstance(session, 1);
-        DynamicEntity simpleInstance2 = createSimpleInstance(session, 2);
+        DynamicEntity simpleInstance1 = createSimpleInstance(helper, session, 1);
+        DynamicEntity simpleInstance2 = createSimpleInstance(helper, session, 2);
 
-        ReportQuery countQuery = DynamicHelper.newReportQuery(session, ENTITY_TYPE, new ExpressionBuilder());
+        ReportQuery countQuery = helper.newReportQuery(ENTITY_TYPE, new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
 
-        assertEquals(2, count(session));
+        assertEquals(2, count(helper, session));
 
         IdentityMapAccessor cache = session.getIdentityMapAccessor();
         assertTrue(cache.containsObjectInIdentityMap(simpleInstance1));
@@ -105,8 +114,8 @@ public abstract class BaseSequencingTest {
 
         cache.initializeAllIdentityMaps();
 
-        DynamicEntity findResult1 = find(session, 1);
-        DynamicEntity findResult2 = find(session, 2);
+        DynamicEntity findResult1 = find(helper, session, 1);
+        DynamicEntity findResult2 = find(helper, session, 2);
 
         assertNotNull(findResult1);
         assertNotNull(findResult2);
@@ -123,25 +132,25 @@ public abstract class BaseSequencingTest {
         return getSharedSession();
     }
 
-    protected DynamicEntity find(Session session, int id) {
-        ReadObjectQuery findQuery = DynamicHelper.newReadObjectQuery(session, ENTITY_TYPE);
+    protected DynamicEntity find(DynamicHelper helper, Session session, int id) {
+        ReadObjectQuery findQuery = helper.newReadObjectQuery(ENTITY_TYPE);
         findQuery.setSelectionCriteria(findQuery.getExpressionBuilder().get("id").equal(id));
         return (DynamicEntity) session.executeQuery(findQuery);
     }
 
-    protected int count(Session session) {
-        ReportQuery countQuery = DynamicHelper.newReportQuery(session, ENTITY_TYPE, new ExpressionBuilder());
+    protected int count(DynamicHelper helper, Session session) {
+        ReportQuery countQuery = helper.newReportQuery(ENTITY_TYPE, new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
 
         return ((Number) session.executeQuery(countQuery)).intValue();
     }
 
-    protected DynamicEntity createSimpleInstance(Session session, int expectedId) {
-        EntityType simpleEntityType = DynamicHelper.getType(session, ENTITY_TYPE);
+    protected DynamicEntity createSimpleInstance(DynamicHelper helper, Session session, int expectedId) {
+        DynamicType simpleEntityType = helper.getType(ENTITY_TYPE);
         Assert.assertNotNull(simpleEntityType);
 
-        DynamicEntity simpleInstance = simpleEntityType.newInstance();
+        DynamicEntity simpleInstance = simpleEntityType.newDynamicEntity();
         simpleInstance.set("value1", TABLE_NAME);
 
         UnitOfWork uow = session.acquireUnitOfWork();
@@ -158,41 +167,42 @@ public abstract class BaseSequencingTest {
         return simpleInstance;
     }
 
-    protected DatabaseSession getSharedSession() throws Exception {
+    @Override
+    protected DatabaseSession createSharedSession() {
         if (sharedSession == null) {
             sharedSession = DynamicTestHelper.createEmptySession();
-
+            sharedSession.login();
+            
+            DynamicHelper helper = new DynamicHelper(sharedSession);
             DynamicClassLoader dcl = DynamicClassLoader.lookup(getSharedSession());
 
             Class<?> dynamicType = dcl.createDynamicClass("model.sequencing." + ENTITY_TYPE);
-            EntityTypeBuilder typeBuilder = new EntityTypeBuilder(dynamicType, null, TABLE_NAME);
+            DynamicTypeBuilder typeBuilder = new DynamicTypeBuilder(dynamicType, null, TABLE_NAME);
             typeBuilder.setPrimaryKeyFields("SID");
             typeBuilder.addDirectMapping("id", int.class, "SID");
             typeBuilder.addDirectMapping("value1", String.class, "VAL_1");
 
-            configureSequencing(getSharedSession(), typeBuilder);
+            configureSequencing(sharedSession, typeBuilder);
 
-            typeBuilder.addToSession(getSharedSession(), true, true);
+            helper.addTypes(true, true, typeBuilder.getType());
         }
 
         return sharedSession;
     }
 
-    protected abstract void configureSequencing(DatabaseSession session, EntityTypeBuilder typeBuilder);
+    protected abstract void configureSequencing(DatabaseSession session, DynamicTypeBuilder typeBuilder);
 
-    @Before
+    @After
     public void clearSimpleTypeInstances() throws Exception {
         getSharedSession().executeNonSelectingSQL("DELETE FROM " + TABLE_NAME);
         resetSequence(getSharedSession());
         getSharedSession().getSequencingControl().initializePreallocated();
     }
-    
+
     protected abstract void resetSequence(DatabaseSession session);
 
+    @AfterClass
     public static void shutdown() {
         sharedSession.executeNonSelectingSQL("DROP TABLE " + TABLE_NAME + " CASCADE CONSTRAINTS");
-
-        sharedSession.logout();
-        sharedSession = null;
     }
 }

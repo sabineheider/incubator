@@ -1,30 +1,45 @@
 package testing.simple;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
 
 import java.util.Calendar;
 
-import javax.persistence.*;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
+import org.eclipse.persistence.internal.dynamic.DynamicTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicHelper;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicTypeBuilder;
 import org.eclipse.persistence.sessions.IdentityMapAccessor;
 import org.eclipse.persistence.sessions.server.Server;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class SimpleType {
 
     protected static EntityManagerFactory emf;
 
-    protected EntityType simpleType;
+    protected DynamicType simpleType;
 
-    protected EntityType getSimpleType() {
+    protected DynamicType getSimpleType() {
         if (simpleType == null) {
-            this.simpleType = DynamicHelper.getType(JpaHelper.getServerSession(emf), "Simple");
+            DynamicHelper helper = new JPADynamicHelper(emf);
+            this.simpleType = helper.getType("Simple");
 
             if (this.simpleType == null) {
                 this.simpleType = createSimpleType();
@@ -33,12 +48,12 @@ public class SimpleType {
         return this.simpleType;
     }
 
-    protected EntityType createSimpleType() {
-        Server session = JpaHelper.getServerSession(emf);
-        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+    protected DynamicType createSimpleType() {
+        DynamicHelper helper = new JPADynamicHelper(emf);
+        DynamicClassLoader dcl = helper.getDynamicClassLoader();
         Class<?> javaType = dcl.createDynamicClass("model.Simple");
 
-        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(javaType, null, "SIMPLE_TYPE");
+        DynamicTypeBuilder typeBuilder = new JPADynamicTypeBuilder(javaType, null, "SIMPLE_TYPE");
         typeBuilder.setPrimaryKeyFields("SID");
         typeBuilder.addDirectMapping("id", int.class, "SID");
         typeBuilder.addDirectMapping("value1", String.class, "VAL_1");
@@ -46,19 +61,19 @@ public class SimpleType {
         typeBuilder.addDirectMapping("value3", Calendar.class, "VAL_3");
         typeBuilder.addDirectMapping("value4", Character.class, "VAL_4");
 
-        typeBuilder.addToSession(session, true, true);
+        helper.addTypes(true, true, typeBuilder.getType());
 
         return typeBuilder.getType();
     }
 
     @Test
     public void verifyConfig() throws Exception {
-        Server session = JpaHelper.getServerSession(emf);
+        DynamicHelper helper = new JPADynamicHelper(emf);
 
-        ClassDescriptor descriptor = session.getClassDescriptorForAlias("Simple");
+        ClassDescriptor descriptor = helper.getSession().getClassDescriptorForAlias("Simple");
         assertNotNull("No descriptor found for alias='Simple'", descriptor);
 
-        EntityTypeImpl simpleType = (EntityTypeImpl) DynamicHelper.getType(session, "Simple");
+        DynamicTypeImpl simpleType = (DynamicTypeImpl) helper.getType("Simple");
         assertNotNull("'Simple' EntityType not found", simpleType);
 
         assertEquals(1 + descriptor.getPrimaryKeyFields().size(), simpleType.getMappingsRequiringInitialization().size());
@@ -105,17 +120,20 @@ public class SimpleType {
 
     @Test
     public void verifyDefaultValuesFromEntityType() throws Exception {
-        EntityType simpleType = DynamicHelper.getType(JpaHelper.getServerSession(emf), "Simple");
+        DynamicHelper helper = new JPADynamicHelper(emf);
+        DynamicType simpleType = helper.getType("Simple");
 
         assertNotNull(simpleType);
 
-        DynamicEntity simpleInstance = simpleType.newInstance();
+        DynamicEntity simpleInstance = simpleType.newDynamicEntity();
         assertDefaultValues(simpleInstance);
     }
 
     @Test
     public void verifyDefaultValuesFromDescriptor() throws Exception {
-        EntityTypeImpl simpleType = (EntityTypeImpl) DynamicHelper.getType(JpaHelper.getServerSession(emf), "Simple");
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
+        DynamicTypeImpl simpleType = (DynamicTypeImpl) helper.getType("Simple");
         assertNotNull(simpleType);
 
         DynamicEntity simpleInstance = (DynamicEntity) simpleType.getDescriptor().getObjectBuilder().buildNewInstance();
@@ -135,11 +153,13 @@ public class SimpleType {
     }
 
     public DynamicEntity createSimpleInstance(EntityManagerFactory emf, int id) {
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
         EntityManager em = emf.createEntityManager();
-        EntityType simpleEntityType = DynamicHelper.getType(JpaHelper.getServerSession(emf), "Simple");
+        DynamicType simpleEntityType = helper.getType("Simple");
         Assert.assertNotNull(simpleEntityType);
 
-        DynamicEntity simpleInstance = simpleEntityType.newInstance();
+        DynamicEntity simpleInstance = simpleEntityType.newDynamicEntity();
         simpleInstance.set("id", id);
         simpleInstance.set("value2", true);
 

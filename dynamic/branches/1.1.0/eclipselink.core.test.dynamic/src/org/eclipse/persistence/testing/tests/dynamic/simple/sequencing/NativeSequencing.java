@@ -19,7 +19,7 @@
 package org.eclipse.persistence.testing.tests.dynamic.simple.sequencing;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.sequencing.NativeSequence;
 import org.eclipse.persistence.sessions.DatabaseSession;
@@ -29,7 +29,7 @@ import org.junit.AfterClass;
 public class NativeSequencing extends BaseSequencingTest {
 
     @Override
-    protected void configureSequencing(DatabaseSession session, EntityTypeBuilder typeBuilder) {
+    protected void configureSequencing(DatabaseSession session, DynamicTypeBuilder typeBuilder) {
         NativeSequence sequence = new NativeSequence();
         sequence.setPreallocationSize(5);
         ((AbstractSession) session).getProject().getLogin().setDefaultSequence(sequence);
@@ -52,8 +52,6 @@ public class NativeSequencing extends BaseSequencingTest {
     @AfterClass
     public static void shutdown() {
         sharedSession.executeNonSelectingSQL("DROP SEQUENCE " + ENTITY_TYPE + "_SEQ");
-        BaseSequencingTest.shutdown();
-
     }
 
 }

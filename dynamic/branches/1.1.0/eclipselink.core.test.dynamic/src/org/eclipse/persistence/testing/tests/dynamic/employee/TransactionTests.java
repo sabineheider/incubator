@@ -17,6 +17,7 @@ import static junit.framework.Assert.*;
 import javax.persistence.PersistenceContext;
 
 import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
 import org.eclipse.persistence.sessions.*;
 import org.eclipse.persistence.testing.models.dynamic.employee.*;
 import org.eclipse.persistence.testing.tests.dynamic.EclipseLinkORMTest;
@@ -32,14 +33,16 @@ public class TransactionTests extends EclipseLinkORMTest {
 
     @Test
     public void pessimisticLocking() throws Exception {
-        transactions.pessimisticLocking(getSession());
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
+        transactions.pessimisticLocking(helper, getSession());
     }
 
     @Test
     public void createUsingPersist() throws Exception {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
-        DynamicEntity emp = transactions.createUsingPersist(session);
+        DynamicEntity emp = transactions.createUsingPersist(helper, session);
 
         assertNotNull(emp);
         assertTrue(emp.<Integer> get("id") > 0);
@@ -55,9 +58,10 @@ public class TransactionTests extends EclipseLinkORMTest {
 
     @Test
     public void createUsingMerge() throws Exception {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
-        DynamicEntity emp = transactions.createUsingMerge(session);
+        DynamicEntity emp = transactions.createUsingMerge(helper, session);
 
         assertNotNull(emp);
         assertTrue(emp.<Integer> get("id") > 0);
@@ -73,10 +77,11 @@ public class TransactionTests extends EclipseLinkORMTest {
 
     @Test
     public void mergeDetached_UOW() throws Exception {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
         // get shared copy
-        DynamicEntity emp = this.queries.minimumEmployee(session);
+        DynamicEntity emp = this.queries.minimumEmployee(helper, session);
         assertNotNull(emp);
 
         // Create detached copy using separate UOW
@@ -99,10 +104,11 @@ public class TransactionTests extends EclipseLinkORMTest {
 
     @Test
     public void mergeDetached_Copy() throws Exception {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
         // get shared copy
-        DynamicEntity emp = this.queries.minimumEmployee(session);
+        DynamicEntity emp = this.queries.minimumEmployee(helper, session);
         assertNotNull(emp);
 
         // Create detached copy using session.copyObject

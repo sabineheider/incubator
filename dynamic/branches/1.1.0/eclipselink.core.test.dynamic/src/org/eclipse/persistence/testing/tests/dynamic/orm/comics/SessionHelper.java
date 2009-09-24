@@ -1,7 +1,7 @@
 package org.eclipse.persistence.testing.tests.dynamic.orm.comics;
 
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.sessions.factories.SessionManager;
 import org.eclipse.persistence.sessions.factories.XMLSessionConfigLoader;
 import org.eclipse.persistence.sessions.server.Server;
@@ -15,9 +15,9 @@ public class SessionHelper {
 
             DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
 
-            new EntityTypeBuilder(dcl.createDynamicClass("model.Issue"), null);
-            new EntityTypeBuilder(dcl.createDynamicClass("model.Publisher"), null);
-            new EntityTypeBuilder(dcl.createDynamicClass("model.Title"), null);
+            new DynamicTypeBuilder(dcl.createDynamicClass("model.Issue"), null);
+            new DynamicTypeBuilder(dcl.createDynamicClass("model.Publisher"), null);
+            new DynamicTypeBuilder(dcl.createDynamicClass("model.Title"), null);
 
             XMLSessionConfigLoader loader = new XMLSessionConfigLoader();
             loader.setClassLoader(dcl);

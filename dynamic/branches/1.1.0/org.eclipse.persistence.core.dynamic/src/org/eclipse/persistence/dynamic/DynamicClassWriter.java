@@ -16,7 +16,7 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package org.eclipse.persistence.internal.dynamic;
+package org.eclipse.persistence.dynamic;
 
 //javase imports
 import java.io.ObjectStreamException;
@@ -27,6 +27,7 @@ import java.lang.reflect.Modifier;
 
 //EclipseLink imports
 import org.eclipse.persistence.exceptions.DynamicException;
+import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.internal.helper.Helper;
 import org.eclipse.persistence.internal.libraries.asm.ClassWriter;
 import org.eclipse.persistence.internal.libraries.asm.CodeVisitor;

@@ -9,14 +9,15 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
-import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
+import org.eclipse.persistence.internal.dynamic.DynamicTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicHelper;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicTypeBuilder;
 import org.eclipse.persistence.sequencing.TableSequence;
 import org.eclipse.persistence.sessions.IdentityMapAccessor;
 import org.eclipse.persistence.sessions.server.Server;
@@ -41,7 +42,8 @@ public class DefaultSequencing {
         ClassDescriptor descriptor = session.getClassDescriptorForAlias(ENTITY_TYPE);
         assertNotNull("No descriptor found for alias: " + ENTITY_TYPE, descriptor);
 
-        EntityTypeImpl simpleType = (EntityTypeImpl) DynamicHelper.getType(session, ENTITY_TYPE);
+        DynamicHelper helper = new DynamicHelper(session);
+        DynamicTypeImpl simpleType = (DynamicTypeImpl) helper.getType(ENTITY_TYPE);
         assertNotNull("EntityType not found for alias: " + ENTITY_TYPE, simpleType);
 
         assertEquals(descriptor, simpleType.getDescriptor());
@@ -50,7 +52,8 @@ public class DefaultSequencing {
     @Test
     public void createSingleInstances() {
         Server session = JpaHelper.getServerSession(emf);
-        EntityTypeImpl simpleType = (EntityTypeImpl) DynamicHelper.getType(session, ENTITY_TYPE);
+        DynamicHelper helper = new DynamicHelper(session);
+        DynamicTypeImpl simpleType = (DynamicTypeImpl) helper.getType(ENTITY_TYPE);
 
         EntityManager em = emf.createEntityManager();
 
@@ -76,10 +79,9 @@ public class DefaultSequencing {
 
     @Test
     public void createTwoInstances() {
-        Server session = JpaHelper.getServerSession(emf);
-        EntityTypeImpl simpleType = (EntityTypeImpl) DynamicHelper.getType(session, ENTITY_TYPE);
-
         EntityManager em = emf.createEntityManager();
+        DynamicHelper helper = new JPADynamicHelper(em);
+        DynamicTypeImpl simpleType = (DynamicTypeImpl) helper.getType(ENTITY_TYPE);
 
         DynamicEntity simpleInstance1 = createSimpleInstance(emf, 1);
         DynamicEntity simpleInstance2 = createSimpleInstance(emf, 2);
@@ -87,7 +89,7 @@ public class DefaultSequencing {
         int simpleCount = ((Number) em.createQuery("SELECT COUNT(o) FROM " + ENTITY_TYPE + " o").getSingleResult()).intValue();
         assertEquals(2, simpleCount);
 
-        IdentityMapAccessor cache = session.getIdentityMapAccessor();
+        IdentityMapAccessor cache = helper.getSession().getIdentityMapAccessor();
         assertTrue(cache.containsObjectInIdentityMap(simpleInstance1));
         assertTrue(cache.containsObjectInIdentityMap(simpleInstance2));
 
@@ -107,10 +109,12 @@ public class DefaultSequencing {
 
     public DynamicEntity createSimpleInstance(EntityManagerFactory emf, int expectedId) {
         EntityManager em = emf.createEntityManager();
-        EntityType simpleEntityType = DynamicHelper.getType(JpaHelper.getServerSession(emf), ENTITY_TYPE);
+        DynamicHelper helper = new JPADynamicHelper(em);
+
+        DynamicType simpleEntityType = helper.getType(ENTITY_TYPE);
         Assert.assertNotNull(simpleEntityType);
 
-        DynamicEntity simpleInstance = simpleEntityType.newInstance();
+        DynamicEntity simpleInstance = simpleEntityType.newDynamicEntity();
         simpleInstance.set("value1", TABLE_NAME);
 
         em.getTransaction().begin();
@@ -126,20 +130,21 @@ public class DefaultSequencing {
     @BeforeClass
     public static void setUp() {
         emf = Persistence.createEntityManagerFactory("empty");
-        Server session = JpaHelper.getServerSession(emf);
-        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
+        DynamicClassLoader dcl = helper.getDynamicClassLoader();
         Class<?> javaType = dcl.createDynamicClass("model.sequencing." + ENTITY_TYPE);
-        
-        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(javaType, null, TABLE_NAME);
+
+        DynamicTypeBuilder typeBuilder = new JPADynamicTypeBuilder(javaType, null, TABLE_NAME);
         typeBuilder.setPrimaryKeyFields("SID");
         typeBuilder.addDirectMapping("id", int.class, "SID");
         typeBuilder.addDirectMapping("value1", String.class, "VAL_1");
 
-        TableSequence defaultSequence = (TableSequence) session.getLogin().getDefaultSequence();
+        TableSequence defaultSequence = (TableSequence) helper.getSession().getLogin().getDefaultSequence();
         defaultSequence.setTableName("TEST_SEQ");
         typeBuilder.configureSequencing(ENTITY_TYPE + "_SEQ", "SID");
 
-        EntityTypeBuilder.addToSession(session, true, true, typeBuilder.getType());
+        helper.addTypes(true, true, typeBuilder.getType());
     }
 
     @Before

@@ -21,8 +21,8 @@ package org.eclipse.persistence.testing.models.dynamic.employee;
 import java.util.Collection;
 import java.util.List;
 
-import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
 import org.eclipse.persistence.queries.ObjectLevelReadQuery;
 import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.sessions.Session;
@@ -42,21 +42,17 @@ public class Transactions {
      * Employee has its relationship to Address and PhoneNumber configured with
      * cascade-all so the associated new entities will also be persisted.
      */
-    public DynamicEntity createUsingPersist(Session session) {
-        EntityType empType = DynamicHelper.getType(session, "Employee");
-        EntityType addrType = DynamicHelper.getType(session, "Address");
-        EntityType phoneType = DynamicHelper.getType(session, "PhoneNumber");
-
-        DynamicEntity emp = (DynamicEntity) empType.newInstance();
+    public DynamicEntity createUsingPersist(DynamicHelper helper, Session session) {
+        DynamicEntity emp = helper.newDynamicEntity("Employee");
         emp.set("firstName", "Sample");
         emp.set("lastName", "Employee");
         emp.set("gender", "Male");
         emp.set("salary", 123456);
 
-        DynamicEntity address = (DynamicEntity) addrType.newInstance();
+        DynamicEntity address = helper.newDynamicEntity("Address");
         emp.set("address", address);
 
-        DynamicEntity phone = (DynamicEntity) phoneType.newInstance();
+        DynamicEntity phone = helper.newDynamicEntity("PhoneNumber");
         phone.set("type", "Mobile");
         phone.set("areaCode", "613");
         phone.set("number", "555-1212");
@@ -73,21 +69,18 @@ public class Transactions {
     /**
 	 * 
 	 */
-    public DynamicEntity createUsingMerge(Session session) {
-        ClassDescriptor empDescriptor = DynamicHelper.getType(session, "Employee").getDescriptor();
-        ClassDescriptor addrDescriptor = DynamicHelper.getType(session, "Address").getDescriptor();
-        ClassDescriptor phoneDescriptor = DynamicHelper.getType(session, "PhoneNumber").getDescriptor();
+    public DynamicEntity createUsingMerge(DynamicHelper helper, Session session) {
 
-        DynamicEntity emp = (DynamicEntity) empDescriptor.getInstantiationPolicy().buildNewInstance();
+        DynamicEntity emp = helper.newDynamicEntity("Employee");
         emp.set("firstName", "Sample");
         emp.set("lastName", "Employee");
         emp.set("gender", "Male");
         emp.set("salary", 123456);
 
-        DynamicEntity address = (DynamicEntity) addrDescriptor.getInstantiationPolicy().buildNewInstance();
+        DynamicEntity address = helper.newDynamicEntity("Address");
         emp.set("address", address);
 
-        DynamicEntity phone = (DynamicEntity) phoneDescriptor.getInstantiationPolicy().buildNewInstance();
+        DynamicEntity phone = helper.newDynamicEntity("PhoneNumber");
         phone.set("type", "Mobile");
         phone.set("areaCode", "613");
         phone.set("number", "555-1212");
@@ -109,15 +102,15 @@ public class Transactions {
      * @param em
      * @throws Exception
      */
-    public void pessimisticLocking(Session session) throws Exception {
+    public void pessimisticLocking(DynamicHelper helper, Session session) throws Exception {
 
         // Find the Employee with the minimum ID
-        int minId = Queries.minimumEmployeeId(session);
+        int minId = Queries.minimumEmployeeId(helper, session);
 
         UnitOfWork uow = session.acquireUnitOfWork();
 
         // Lock Employee
-        ReadObjectQuery query = DynamicHelper.newReadObjectQuery(session, "Employee");
+        ReadObjectQuery query = helper.newReadObjectQuery("Employee");
         query.setSelectionCriteria(query.getExpressionBuilder().get("id").equal(minId));
         query.setLockMode(ObjectLevelReadQuery.LOCK);
 
@@ -136,10 +129,10 @@ public class Transactions {
      * @param em
      * @throws Exception
      */
-    public void updateEmployeeWithCity(Session session) throws Exception {
+    public void updateEmployeeWithCity(DynamicHelper helper, Session session) throws Exception {
         UnitOfWork uow = session.acquireUnitOfWork();
 
-        List<DynamicEntity> emps = new Queries().readAllEmployeesWithAddress(uow);
+        List<DynamicEntity> emps = new Queries().readAllEmployeesWithAddress(helper, uow);
         DynamicEntity emp = emps.get(0);
         emp.set("salary", emp.<Integer> get("salary") + 1);
 

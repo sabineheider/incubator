@@ -23,10 +23,15 @@ import static junit.framework.Assert.fail;
 
 import java.util.List;
 
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.queries.*;
+import org.eclipse.persistence.queries.ReadAllQuery;
+import org.eclipse.persistence.queries.ReadObjectQuery;
+import org.eclipse.persistence.queries.ReportQuery;
 import org.eclipse.persistence.sessions.DatabaseSession;
 import org.junit.Test;
 
@@ -39,7 +44,7 @@ public class DynamicHelperTests {
     public void createQuery_ValidReadAllQuery() throws Exception {
         DatabaseSession session = createEmployeeSession();
 
-        ReadAllQuery query = DynamicHelper.newReadAllQuery(session, "Employee");
+        ReadAllQuery query = new DynamicHelper(session).newReadAllQuery("Employee");
 
         assertNotNull(query);
 
@@ -52,13 +57,13 @@ public class DynamicHelperTests {
     public void createQuery_ValidReadObjectQuery() throws Exception {
         DatabaseSession session = createEmployeeSession();
 
-        ReadObjectQuery query = DynamicHelper.newReadObjectQuery(session, "Employee");
+        ReadObjectQuery query = new DynamicHelper(session).newReadObjectQuery("Employee");
 
         assertNotNull(query);
 
         DynamicEntity emp = (DynamicEntity) session.executeQuery(query);
         assertNotNull(emp);
-        
+
         session.logout();
     }
 
@@ -66,7 +71,7 @@ public class DynamicHelperTests {
     public void createQuery_ValidReportQuery() throws Exception {
         DatabaseSession session = createEmployeeSession();
 
-        ReportQuery query = DynamicHelper.newReportQuery(session, "Employee", new ExpressionBuilder());
+        ReportQuery query = new DynamicHelper(session).newReportQuery("Employee", new ExpressionBuilder());
         query.addCount();
         query.setShouldReturnSingleValue(true);
 
@@ -79,7 +84,7 @@ public class DynamicHelperTests {
     @Test
     public void nullArgs() {
         try {
-            DynamicHelper.newReadAllQuery(null, null);
+            new DynamicHelper(null).newReadAllQuery(null);
         } catch (NullPointerException e) {
             return;
         }
@@ -89,19 +94,20 @@ public class DynamicHelperTests {
 
     protected DatabaseSession createEmployeeSession() throws Exception {
         DatabaseSession session = DynamicTestHelper.createEmptySession();
-
-        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+        DynamicHelper helper = new DynamicHelper(session);
+        DynamicClassLoader dcl = helper.getDynamicClassLoader();
+        
         Class<?> empClass = dcl.createDynamicClass(getClass().getName() + ".Employee");
 
-        EntityTypeBuilder typeBuilder = new EntityTypeBuilder(empClass, null, "D_EMPLOYEE");
+        DynamicTypeBuilder typeBuilder = new DynamicTypeBuilder(empClass, null, "D_EMPLOYEE");
         typeBuilder.setPrimaryKeyFields("EMP_ID");
         typeBuilder.addDirectMapping("id", int.class, "EMP_ID");
         typeBuilder.addDirectMapping("firstName", String.class, "F_NAME");
         typeBuilder.addDirectMapping("lastName", String.class, "L_NAME");
 
-        typeBuilder.addToSession(session, true, true);
+        helper.addTypes(true, true, typeBuilder.getType());
 
-        EntityType empType = DynamicHelper.getType(session, "Employee");
+        DynamicType empType = new DynamicHelper(session).getType("Employee");
         assertNotNull("No type found for Employee", empType);
 
         return session;

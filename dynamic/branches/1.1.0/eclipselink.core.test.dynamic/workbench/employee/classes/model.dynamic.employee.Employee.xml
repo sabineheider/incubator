@@ -11,9 +11,12 @@
          <modifier>1</modifier>
          <type-declaration>
             <type-handle>
-               <type-name>model.dynamic.employee.Address</type-name>
+               <type-name>org.eclipse.persistence.indirection.ValueHolderInterface</type-name>
             </type-handle>
          </type-declaration>
+         <value-type-handle>
+            <type-name>model.dynamic.employee.Address</type-name>
+         </value-type-handle>
       </class-attribute>
       <class-attribute>
          <name>firstName</name>

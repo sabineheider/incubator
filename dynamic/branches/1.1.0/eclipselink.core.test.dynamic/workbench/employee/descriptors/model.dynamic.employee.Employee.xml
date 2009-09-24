@@ -29,6 +29,7 @@
          <reference-descriptor-handle>
             <descriptor-name>model.dynamic.employee.Address</descriptor-name>
          </reference-descriptor-handle>
+         <indirection-type>value-holder-indirection</indirection-type>
          <reference-handle>
             <reference-table-name>DX_EMPLOYEE</reference-table-name>
             <reference-name>DX_EMPLOYEE_DX_ADDRESS</reference-name>

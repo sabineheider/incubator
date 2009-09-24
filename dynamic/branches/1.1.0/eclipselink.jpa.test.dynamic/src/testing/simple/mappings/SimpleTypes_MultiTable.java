@@ -12,14 +12,15 @@ import javax.persistence.Persistence;
 import junit.framework.Assert;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
-import org.eclipse.persistence.internal.dynamic.*;
-import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
+import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
+import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicHelper;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicTypeBuilder;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
-import org.eclipse.persistence.sessions.server.Server;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -31,12 +32,12 @@ public class SimpleTypes_MultiTable {
 
     @Test
     public void verifyConfig() throws Exception {
-        Server session = JpaHelper.getServerSession(emf);
+        DynamicHelper helper = new JPADynamicHelper(emf);
 
-        ClassDescriptor descriptorA = session.getClassDescriptorForAlias("SimpleA");
+        ClassDescriptor descriptorA = helper.getSession().getClassDescriptorForAlias("SimpleA");
         assertNotNull("No descriptor found for alias='SimpleA'", descriptorA);
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         assertNotNull("'SimpleA' EntityType not found", simpleTypeA);
         assertEquals(descriptorA, simpleTypeA.getDescriptor());
 
@@ -63,8 +64,9 @@ public class SimpleTypes_MultiTable {
 
     @Test
     public void verifyProperties() {
-        Server session = JpaHelper.getServerSession(emf);
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
 
         assertEquals(6, simpleTypeA.getNumberOfProperties());
@@ -85,11 +87,12 @@ public class SimpleTypes_MultiTable {
 
     @Test
     public void createSimpleA() {
-        Server session = JpaHelper.getServerSession(emf);
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
 
-        DynamicEntity a = simpleTypeA.newInstance();
+        DynamicEntity a = simpleTypeA.newDynamicEntity();
 
         assertNotNull(a);
         assertTrue(a.isSet("id"));
@@ -102,13 +105,14 @@ public class SimpleTypes_MultiTable {
 
     @Test
     public void persistSimpleA() {
-        Server session = JpaHelper.getServerSession(emf);
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
 
         EntityManager em = emf.createEntityManager();
 
-        DynamicEntity simpleInstance = simpleTypeA.newInstance();
+        DynamicEntity simpleInstance = simpleTypeA.newDynamicEntity();
         simpleInstance.set("id", 1);
         simpleInstance.set("value1", "A1");
 
@@ -126,8 +130,9 @@ public class SimpleTypes_MultiTable {
     public void verifyChangeTracking() {
         persistSimpleA();
 
-        Server session = JpaHelper.getServerSession(emf);
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
 
         EntityManager em = emf.createEntityManager();
@@ -144,11 +149,12 @@ public class SimpleTypes_MultiTable {
     @BeforeClass
     public static void setUp() {
         emf = Persistence.createEntityManagerFactory("empty");
-        Server session = JpaHelper.getServerSession(emf);
-        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
+        DynamicClassLoader dcl = helper.getDynamicClassLoader();
         Class<?> simpleTypeA = dcl.createDynamicClass("model.SimpleA");
 
-        EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A", "SIMPLE_TYPE_B", "SIMPLE_TYPE_C");
+        DynamicTypeBuilder typeBuilder = new JPADynamicTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A", "SIMPLE_TYPE_B", "SIMPLE_TYPE_C");
         typeBuilder.setPrimaryKeyFields("SIMPLE_TYPE_A.SID");
         typeBuilder.addDirectMapping("id", int.class, "SIMPLE_TYPE_A.SID");
         typeBuilder.addDirectMapping("value1", String.class, "SIMPLE_TYPE_A.VAL_1");
@@ -156,8 +162,8 @@ public class SimpleTypes_MultiTable {
         typeBuilder.addDirectMapping("value3", String.class, "SIMPLE_TYPE_B.VAL_3");
         typeBuilder.addDirectMapping("value4", double.class, "SIMPLE_TYPE_C.VAL_4");
         typeBuilder.addDirectMapping("value5", String.class, "SIMPLE_TYPE_C.VAL_5");
-        
-        EntityTypeBuilder.addToSession(session, true, true, typeBuilder.getType());
+
+        helper.addTypes(true, true, typeBuilder.getType());
     }
 
     @After

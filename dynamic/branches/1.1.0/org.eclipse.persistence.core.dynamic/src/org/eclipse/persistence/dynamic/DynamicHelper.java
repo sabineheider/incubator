@@ -18,19 +18,20 @@
  ******************************************************************************/
 package org.eclipse.persistence.dynamic;
 
-//javase imports
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 
-//EclipseLink imports
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
+import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.queries.ReadAllQuery;
 import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.queries.ReportQuery;
 import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.sessions.Session;
+import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 
 /**
  * A DynamicHelper provides some utility methods to simplify application
@@ -44,14 +45,24 @@ import org.eclipse.persistence.sessions.Session;
  */
 public class DynamicHelper {
 
+    private DatabaseSession session;
+
+    public DynamicHelper(DatabaseSession session) {
+        this.session = session;
+    }
+
+    public DatabaseSession getSession() {
+        return this.session;
+    }
+
     /**
      * Lookup the dynamic type for an alias. This is required to get the type
      * for factory creation but can also be used to provide the application with
      * access to the meta model (type and properties) allowing for dynamic use
      * as well as optimized data value retrieval from an entity.
      */
-    public static EntityType getType(Session session, String typeName) {
-        ClassDescriptor cd = session.getClassDescriptorForAlias(typeName);
+    public DynamicType getType(String typeName) {
+        ClassDescriptor cd = getSession().getClassDescriptorForAlias(typeName);
 
         if (cd == null) {
             return null;
@@ -59,8 +70,8 @@ public class DynamicHelper {
         return getType(cd);
     }
 
-    public static EntityType getType(ClassDescriptor descriptor) {
-        return (EntityType) descriptor.getProperty(EntityType.DESCRIPTOR_PROPERTY);
+    public static DynamicType getType(ClassDescriptor descriptor) {
+        return (DynamicType) descriptor.getProperty(DynamicType.DESCRIPTOR_PROPERTY);
     }
 
     /**
@@ -71,12 +82,8 @@ public class DynamicHelper {
      * @throws ClassCastException
      *             if entity is not an instance of {@link DynamicEntityImpl}
      */
-    public static EntityType getType(DynamicEntity entity) throws ClassCastException {
+    public static DynamicType getType(DynamicEntity entity) throws ClassCastException {
         return ((DynamicEntityImpl) entity).getType();
-    }
-
-    public static boolean isDynamicType(ClassDescriptor descriptor) {
-        return descriptor.getProperties().containsKey(EntityType.DESCRIPTOR_PROPERTY);
     }
 
     /**
@@ -90,25 +97,38 @@ public class DynamicHelper {
      * @param session
      * @param typeName
      */
-    public static void removeType(DatabaseSession session, String typeName) {
-        EntityType type = getType(session, typeName);
+    public void removeType(String typeName) {
+        DynamicType type = getType(typeName);
 
         if (type != null) {
-            session.getIdentityMapAccessor().initializeIdentityMap(type.getJavaClass());
+            getSession().getIdentityMapAccessor().initializeIdentityMap(type.getJavaClass());
 
             ClassDescriptor descriptor = type.getDescriptor();
 
-            session.getProject().getOrderedDescriptors().remove(descriptor);
-            session.getProject().getDescriptors().remove(type.getJavaClass());
+            getSession().getProject().getOrderedDescriptors().remove(descriptor);
+            getSession().getProject().getDescriptors().remove(type.getJavaClass());
         }
+    }
+
+    /**
+     * 
+     */
+    public DynamicEntity newDynamicEntity(String typeName) {
+        DynamicType type = getType(typeName);
+
+        if (type == null) {
+            throw new IllegalArgumentException("DynamicHelper.createQuery: Dynamic type not found: " + typeName);
+        }
+
+        return type.newDynamicEntity();
     }
 
     /**
      * Helper method to simplify creating a native ReadAllQuery using the entity
      * type name (descriptor alias)
      */
-    public static ReadAllQuery newReadAllQuery(Session session, String typeName) {
-        EntityType type = getType(session, typeName);
+    public ReadAllQuery newReadAllQuery(String typeName) {
+        DynamicType type = getType(typeName);
 
         if (type == null) {
             throw new IllegalArgumentException("DynamicHelper.createQuery: Dynamic type not found: " + typeName);
@@ -121,8 +141,8 @@ public class DynamicHelper {
      * Helper method to simplify creating a native ReadObjectQuery using the
      * entity type name (descriptor alias)
      */
-    public static ReadObjectQuery newReadObjectQuery(Session session, String typeName) {
-        EntityType type = getType(session, typeName);
+    public ReadObjectQuery newReadObjectQuery(String typeName) {
+        DynamicType type = getType(typeName);
 
         if (type == null) {
             throw new IllegalArgumentException("DynamicHelper.createQuery: Dynamic type not found: " + typeName);
@@ -135,8 +155,8 @@ public class DynamicHelper {
      * Helper method to simplify creating a native ReportQuery using the entity
      * type name (descriptor alias)
      */
-    public static ReportQuery newReportQuery(Session session, String typeName, ExpressionBuilder builder) {
-        EntityType type = getType(session, typeName);
+    public ReportQuery newReportQuery(String typeName, ExpressionBuilder builder) {
+        DynamicType type = getType(typeName);
 
         if (type == null) {
             throw new IllegalArgumentException("DynamicHelper.createQuery: Dynamic type not found: " + typeName);
@@ -145,9 +165,47 @@ public class DynamicHelper {
         return new ReportQuery(type.getJavaClass(), builder);
     }
 
+    public DynamicClassLoader getDynamicClassLoader() {
+        return DynamicClassLoader.lookup(getSession());
+    }
+
     /**
-     * {@link SessionCustomizer} which configures all descriptors as dynamic
-     * entity types.
+     * Add one or more EntityType instances to a session and optionally generate
+     * needed tables with or without FK constraints.
+     * 
+     * @param session
+     * @param createMissingTables
+     * @param generateFKConstraints
+     * @param types
+     */
+    public void addTypes(boolean createMissingTables, boolean generateFKConstraints, DynamicType... types) {
+        if (types == null || types.length == 0) {
+            throw new IllegalArgumentException("No types provided");
+        }
+
+        Collection<ClassDescriptor> descriptors = new ArrayList<ClassDescriptor>(types.length);
+
+        for (int index = 0; index < types.length; index++) {
+            descriptors.add(types[index].getDescriptor());
+
+            if (!types[index].getDescriptor().requiresInitialization()) {
+                types[index].getDescriptor().getInstantiationPolicy().initialize((AbstractSession) session);
+            }
+        }
+
+        session.addDescriptors(descriptors);
+
+        if (createMissingTables) {
+            if (!getSession().isConnected()) {
+                getSession().login();
+            }
+            new DynamicSchemaManager(session).createTables(generateFKConstraints, types);
+        }
+    }
+
+    /**
+     * A SessionCustomizer which configures all descriptors as dynamic entity
+     * types.
      */
     public static class SessionCustomizer implements org.eclipse.persistence.config.SessionCustomizer {
 
@@ -155,7 +213,7 @@ public class DynamicHelper {
             DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
 
             for (Iterator<?> i = session.getProject().getDescriptors().values().iterator(); i.hasNext();) {
-                new EntityTypeBuilder(dcl, (ClassDescriptor) i.next(), null);
+                new DynamicTypeBuilder(dcl, (ClassDescriptor) i.next(), null);
             }
         }
     }

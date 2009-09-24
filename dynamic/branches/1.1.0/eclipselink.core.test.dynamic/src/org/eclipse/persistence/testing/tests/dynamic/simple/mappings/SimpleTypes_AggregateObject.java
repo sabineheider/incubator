@@ -1,31 +1,44 @@
 package org.eclipse.persistence.testing.tests.dynamic.simple.mappings;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
+import static junit.framework.Assert.assertSame;
+import static junit.framework.Assert.assertTrue;
 import junit.framework.Assert;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.internal.descriptors.changetracking.AggregateAttributeChangeListener;
-import org.eclipse.persistence.internal.dynamic.*;
+import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.mappings.AggregateObjectMapping;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.queries.ReportQuery;
-import org.eclipse.persistence.sessions.*;
+import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.Session;
+import org.eclipse.persistence.sessions.UnitOfWork;
 import org.eclipse.persistence.testing.tests.dynamic.EclipseLinkORMTest;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Test;
 
 public class SimpleTypes_AggregateObject extends EclipseLinkORMTest {
 
     @Test
     public void verifyConfig() throws Exception {
-        Session session = getSession();
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
 
-        ClassDescriptor descriptorA = session.getClassDescriptorForAlias("SimpleA");
+        ClassDescriptor descriptorA = helper.getSession().getClassDescriptorForAlias("SimpleA");
         assertNotNull("No descriptor found for alias='SimpleA'", descriptorA);
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         assertNotNull("'SimpleA' EntityType not found", simpleTypeA);
         assertEquals(descriptorA, simpleTypeA.getDescriptor());
         DirectToFieldMapping a_id = (DirectToFieldMapping) descriptorA.getMappingForAttributeName("id");
@@ -33,10 +46,10 @@ public class SimpleTypes_AggregateObject extends EclipseLinkORMTest {
         DirectToFieldMapping a_value1 = (DirectToFieldMapping) descriptorA.getMappingForAttributeName("value1");
         assertEquals(String.class, a_value1.getAttributeClassification());
 
-        ClassDescriptor descriptorB = session.getClassDescriptorForAlias("SimpleB");
+        ClassDescriptor descriptorB = helper.getSession().getClassDescriptorForAlias("SimpleB");
         assertNotNull("No descriptor found for alias='SimpleB'", descriptorB);
 
-        EntityTypeImpl simpleTypeB = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleB");
+        DynamicType simpleTypeB = helper.getType("SimpleB");
         assertNotNull("'SimpleB' EntityType not found", simpleTypeB);
         assertEquals(descriptorB, simpleTypeB.getDescriptor());
         DirectToFieldMapping b_value2 = (DirectToFieldMapping) descriptorB.getMappingForAttributeName("value2");
@@ -49,10 +62,10 @@ public class SimpleTypes_AggregateObject extends EclipseLinkORMTest {
         assertSame(descriptorB.getJavaClass(), a_b.getReferenceDescriptor().getJavaClass());
         assertTrue(a_b.isNullAllowed());
 
-        ClassDescriptor descriptorC = session.getClassDescriptorForAlias("SimpleC");
+        ClassDescriptor descriptorC = helper.getSession().getClassDescriptorForAlias("SimpleC");
         assertNotNull("No descriptor found for alias='SimpleB'", descriptorB);
 
-        EntityTypeImpl simpleTypeC = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleC");
+        DynamicType simpleTypeC = helper.getType("SimpleC");
         assertNotNull("'SimpleC' EntityType not found", simpleTypeC);
         assertEquals(descriptorB, simpleTypeB.getDescriptor());
         DirectToFieldMapping c_value4 = (DirectToFieldMapping) descriptorC.getMappingForAttributeName("value4");
@@ -68,9 +81,9 @@ public class SimpleTypes_AggregateObject extends EclipseLinkORMTest {
 
     @Test
     public void verifyProperties() {
-        Session session = getSession();
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
 
         assertEquals(4, simpleTypeA.getNumberOfProperties());
@@ -82,12 +95,12 @@ public class SimpleTypes_AggregateObject extends EclipseLinkORMTest {
 
     @Test
     public void createSimpleA() {
-        Session session = getSession();
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
 
-        DynamicEntity a = simpleTypeA.newInstance();
+        DynamicEntity a = simpleTypeA.newDynamicEntity();
 
         assertNotNull(a);
         assertTrue(a.isSet("id"));
@@ -103,12 +116,13 @@ public class SimpleTypes_AggregateObject extends EclipseLinkORMTest {
 
     @Test
     public void persistSimpleA() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
 
-        DynamicEntity simpleInstance = simpleTypeA.newInstance();
+        DynamicEntity simpleInstance = simpleTypeA.newDynamicEntity();
         simpleInstance.set("id", 1);
         simpleInstance.set("value1", "A1");
 
@@ -116,7 +130,7 @@ public class SimpleTypes_AggregateObject extends EclipseLinkORMTest {
         uow.registerNewObject(simpleInstance);
         uow.commit();
 
-        ReportQuery countQuery = DynamicHelper.newReportQuery(session, "SimpleA", new ExpressionBuilder());
+        ReportQuery countQuery = helper.newReportQuery("SimpleA", new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
         int simpleCount = ((Number) session.executeQuery(countQuery)).intValue();
@@ -125,16 +139,17 @@ public class SimpleTypes_AggregateObject extends EclipseLinkORMTest {
 
     @Test
     public void verifyChangTracking() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
         persistSimpleA();
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
 
         UnitOfWork uow = session.acquireUnitOfWork();
 
-        ReadObjectQuery roq = DynamicHelper.newReadObjectQuery(session, "SimpleA");
+        ReadObjectQuery roq = helper.newReadObjectQuery("SimpleA");
         roq.setSelectionCriteria(roq.getExpressionBuilder().get("id").equal(1));
 
         DynamicEntityImpl sharedA = (DynamicEntityImpl) session.executeQuery(roq);
@@ -155,20 +170,21 @@ public class SimpleTypes_AggregateObject extends EclipseLinkORMTest {
 
     @Test
     public void createSimpleAwithSimpleB() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
-        EntityTypeImpl simpleTypeB = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleB");
+        DynamicType simpleTypeB = helper.getType("SimpleB");
         Assert.assertNotNull(simpleTypeB);
 
         Assert.assertNotNull(session.getDescriptorForAlias("SimpleB"));
 
-        DynamicEntity simpleInstanceB = simpleTypeB.newInstance();
+        DynamicEntity simpleInstanceB = simpleTypeB.newDynamicEntity();
         simpleInstanceB.set("value2", true);
         simpleInstanceB.set("value3", "B2");
 
-        DynamicEntity simpleInstanceA = simpleTypeA.newInstance();
+        DynamicEntity simpleInstanceA = simpleTypeA.newDynamicEntity();
         simpleInstanceA.set("id", 2);
         simpleInstanceA.set("value1", "A2");
         simpleInstanceA.set("b", simpleInstanceB);
@@ -177,7 +193,7 @@ public class SimpleTypes_AggregateObject extends EclipseLinkORMTest {
         uow.registerNewObject(simpleInstanceA);
         uow.commit();
 
-        ReportQuery countQuery = DynamicHelper.newReportQuery(session, "SimpleA", new ExpressionBuilder());
+        ReportQuery countQuery = helper.newReportQuery("SimpleA", new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
 
@@ -189,27 +205,29 @@ public class SimpleTypes_AggregateObject extends EclipseLinkORMTest {
     @Override
     protected DatabaseSession getSharedSession() {
         DatabaseSession shared = super.getSharedSession();
-        DynamicClassLoader dcl = DynamicClassLoader.lookup(shared);
+
+        DynamicHelper helper = new DynamicHelper(shared);
+        DynamicClassLoader dcl = helper.getDynamicClassLoader();
 
         Class<?> simpleTypeB = dcl.createDynamicClass("model.SimpleB");
-        EntityTypeBuilder bTypeBuilder = new EntityTypeBuilder(simpleTypeB, null);
+        DynamicTypeBuilder bTypeBuilder = new DynamicTypeBuilder(simpleTypeB, null);
         bTypeBuilder.addDirectMapping("value2", boolean.class, "VAL_2");
         bTypeBuilder.addDirectMapping("value3", String.class, "VAL_3");
 
         Class<?> simpleTypeC = dcl.createDynamicClass("model.SimpleC");
-        EntityTypeBuilder cTypeBuilder = new EntityTypeBuilder(simpleTypeC, null);
+        DynamicTypeBuilder cTypeBuilder = new DynamicTypeBuilder(simpleTypeC, null);
         cTypeBuilder.addDirectMapping("value4", double.class, "VAL_4");
         cTypeBuilder.addDirectMapping("value5", String.class, "VAL_5");
 
         Class<?> simpleTypeA = dcl.createDynamicClass("model.SimpleA");
-        EntityTypeBuilder aTypeBuilder = new EntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A");
+        DynamicTypeBuilder aTypeBuilder = new DynamicTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A");
         aTypeBuilder.setPrimaryKeyFields("SID");
         aTypeBuilder.addDirectMapping("id", int.class, "SID");
         aTypeBuilder.addDirectMapping("value1", String.class, "VAL_1");
         aTypeBuilder.addAggregateObjectMapping("b", bTypeBuilder.getType(), true);
         aTypeBuilder.addAggregateObjectMapping("c", cTypeBuilder.getType(), false);
 
-        EntityTypeBuilder.addToSession(shared, true, true, aTypeBuilder.getType(), bTypeBuilder.getType(), cTypeBuilder.getType());
+        helper.addTypes(true, true, aTypeBuilder.getType(), bTypeBuilder.getType(), cTypeBuilder.getType());
         return shared;
     }
 

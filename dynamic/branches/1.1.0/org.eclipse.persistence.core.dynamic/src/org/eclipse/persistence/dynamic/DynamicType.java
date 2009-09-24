@@ -18,10 +18,8 @@
  ******************************************************************************/
 package org.eclipse.persistence.dynamic;
 
-//javase imports
 import java.util.List;
 
-//EclipseLink imports
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 
 /**
@@ -30,9 +28,9 @@ import org.eclipse.persistence.descriptors.ClassDescriptor;
  * of the entity types being dynamic.
  * 
  * @author dclarke
- * @since EclipseLink 1.2
+ * @since EclipseLink 1.2.0
  */
-public interface EntityType {
+public interface DynamicType {
 
     /**
      * Return the entity type's name. This is the short name of the class or the
@@ -49,7 +47,7 @@ public interface EntityType {
      * @return The parent type or null if this type does not have a persistent
      *         superclass
      */
-    public EntityType getParentType();
+    public DynamicType getParentType();
 
     /**
      * The current number of properties.
@@ -73,7 +71,7 @@ public interface EntityType {
 
     public Class<?> getJavaClass();
 
-    public DynamicEntity newInstance();
+    public DynamicEntity newDynamicEntity();
 
     public Class<?> getPropertyType(int propertyIndex);
 
@@ -87,7 +85,7 @@ public interface EntityType {
     /**
      * Property name used to store the EntityTypeImpl on each descriptor in its
      * {@link ClassDescriptor#properties}. The EntityType instance is generally
-     * populated by the {@link EntityTypeBuilder} and should only be done when
+     * populated by the {@link DynamicTypeBuilder} and should only be done when
      * properly initialized.
      */
     public static final String DESCRIPTOR_PROPERTY = "ENTITY_TYPE";

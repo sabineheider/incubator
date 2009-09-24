@@ -16,38 +16,30 @@
  * may never be included in the product. Please provide feedback through mailing 
  * lists or the bug database.
  ******************************************************************************/
-package org.eclipse.persistence.testing.tests.dynamic.simple.sequencing;
+package org.eclipse.persistence.jpa.dynamic;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.dynamic.DynamicType;
 import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
-import org.eclipse.persistence.sequencing.TableSequence;
-import org.eclipse.persistence.sessions.DatabaseSession;
-import org.eclipse.persistence.sessions.Session;
-import org.junit.AfterClass;
 
-public class DefaultSequencing extends BaseSequencingTest {
+/**
+ * 
+ * @author dclarke
+ * @since EclipseLink 1.2.0
+ */
+public class JPADynamicTypeBuilder extends DynamicTypeBuilder {
 
-    @Override
-    protected void configureSequencing(DatabaseSession session, DynamicTypeBuilder typeBuilder) {
-        TableSequence defaultSequence = (TableSequence) session.getLogin().getDefaultSequence();
-        defaultSequence.setTableName("TEST_SEQ");
-        typeBuilder.configureSequencing(ENTITY_TYPE + "_SEQ", "SID");
+    public JPADynamicTypeBuilder(Class<?> dynamicClass, DynamicType parentType, String... tableNames) {
+        super(dynamicClass, parentType, tableNames);
     }
 
-    @Override
-    protected void verifySequencingConfig(Session session, ClassDescriptor descriptor) {
-        // TODO Auto-generated method stub
-    }
+    protected void configure(ClassDescriptor descriptor, String... tableNames) {
+        super.configure(descriptor, tableNames);
 
-    @Override
-    protected void resetSequence(DatabaseSession session) {
-        session.executeNonSelectingSQL("UPDATE TEST_SEQ SET SEQ_COUNT = 0");
-    }
+        if (descriptor.getCMPPolicy() == null) {
+            descriptor.setCMPPolicy(new DynamicIdentityPolicy());
+        }
 
-    @AfterClass
-    public static void shutdown() {
-        sharedSession.executeNonSelectingSQL("DROP TABLE TEST_SEQ CASCADE CONSTRAINTS");
-        BaseSequencingTest.shutdown();
     }
 
 }

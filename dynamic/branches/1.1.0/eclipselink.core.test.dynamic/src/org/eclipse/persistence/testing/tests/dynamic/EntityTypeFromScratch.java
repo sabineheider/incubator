@@ -20,11 +20,11 @@ package org.eclipse.persistence.testing.tests.dynamic;
 
 import static junit.framework.Assert.assertEquals;
 
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
+import org.eclipse.persistence.internal.dynamic.DynamicTypeImpl;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.sessions.DatabaseLogin;
 import org.eclipse.persistence.sessions.DatabaseSession;
@@ -41,7 +41,7 @@ public class EntityTypeFromScratch {
 
     @Test
 public void entityTypeFromDescriptor() throws Exception {
-    EntityTypeImpl entityType = buildMyEntityType();
+    DynamicTypeImpl entityType = buildMyEntityType();
 
     assertEquals(MyEntity.class, entityType.getJavaClass());
 
@@ -52,7 +52,7 @@ public void entityTypeFromDescriptor() throws Exception {
     session.addDescriptor(entityType.getDescriptor());
     new SchemaManager(session).replaceDefaultTables();
 
-    DynamicEntity entity = entityType.newInstance();
+    DynamicEntity entity = entityType.newDynamicEntity();
     entity.set("id", 1);
     entity.set("name", "Name");
 
@@ -62,13 +62,13 @@ public void entityTypeFromDescriptor() throws Exception {
 
 }
 
-private EntityTypeImpl buildMyEntityType() {
-    EntityTypeBuilder factory = new EntityTypeBuilder(MyEntity.class, null, "MY_ENTITY");
+private DynamicTypeImpl buildMyEntityType() {
+    DynamicTypeBuilder factory = new DynamicTypeBuilder(MyEntity.class, null, "MY_ENTITY");
     factory.setPrimaryKeyFields("ID");
     factory.addDirectMapping("id", int.class, "ID");
     factory.addDirectMapping("name", String.class, "NAME");
 
-    return (EntityTypeImpl) factory.getType();
+    return (DynamicTypeImpl) factory.getType();
 }
 
     /**
@@ -94,7 +94,7 @@ private EntityTypeImpl buildMyEntityType() {
      */
     public static class MyEntity extends DynamicEntityImpl {
 
-        protected MyEntity(EntityTypeImpl type) {
+        protected MyEntity(DynamicTypeImpl type) {
             super(type);
         }
 

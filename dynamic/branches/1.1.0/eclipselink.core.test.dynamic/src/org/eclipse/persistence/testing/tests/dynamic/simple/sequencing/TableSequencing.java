@@ -19,7 +19,7 @@
 package org.eclipse.persistence.testing.tests.dynamic.simple.sequencing;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.sequencing.TableSequence;
 import org.eclipse.persistence.sessions.DatabaseSession;
@@ -29,7 +29,7 @@ import org.junit.AfterClass;
 public class TableSequencing extends BaseSequencingTest {
 
     @Override
-    protected void configureSequencing(DatabaseSession session, EntityTypeBuilder typeBuilder) {
+    protected void configureSequencing(DatabaseSession session, DynamicTypeBuilder typeBuilder) {
         TableSequence sequence = new TableSequence();
         sequence.setTableName("TEST_SEQ");
         sequence.setCounterFieldName("SEQ_VALUE");

@@ -21,24 +21,17 @@ package org.eclipse.persistence.dynamic;
 //javase imports
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 
-import org.w3c.dom.Document;
-
-//EclipseLink imports
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.descriptors.changetracking.AttributeChangeTrackingPolicy;
 import org.eclipse.persistence.exceptions.ValidationException;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.internal.dynamic.DynamicClassWriter;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
-import org.eclipse.persistence.internal.dynamic.EntityTypeInstantiationPolicy;
+import org.eclipse.persistence.internal.dynamic.DynamicTypeImpl;
+import org.eclipse.persistence.internal.dynamic.DynamicTypeInstantiationPolicy;
 import org.eclipse.persistence.internal.dynamic.ValuesAccessor;
-import org.eclipse.persistence.internal.helper.*;
-import org.eclipse.persistence.internal.sessions.AbstractSession;
+import org.eclipse.persistence.internal.helper.ConversionManager;
+import org.eclipse.persistence.internal.helper.DatabaseField;
 import org.eclipse.persistence.internal.sessions.factories.ObjectPersistenceWorkbenchXMLProject;
 import org.eclipse.persistence.mappings.AggregateObjectMapping;
 import org.eclipse.persistence.mappings.DatabaseMapping;
@@ -54,11 +47,10 @@ import org.eclipse.persistence.platform.xml.XMLParser;
 import org.eclipse.persistence.platform.xml.XMLPlatformFactory;
 import org.eclipse.persistence.sequencing.Sequence;
 import org.eclipse.persistence.sessions.DatabaseLogin;
-import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.sessions.Project;
 import org.eclipse.persistence.sessions.factories.XMLProjectReader;
-import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
+import org.w3c.dom.Document;
 
 /**
  * The EntityTypeBuilder is a factory class for creating and extending dynamic
@@ -68,14 +60,14 @@ import org.eclipse.persistence.tools.schemaframework.SchemaManager;
  * @author dclarke
  * @since EclipseLink 1.2
  */
-public class EntityTypeBuilder {
+public class DynamicTypeBuilder {
 
     static XMLParser xmlParser = XMLPlatformFactory.getInstance().getXMLPlatform().newXMLParser();
 
     /**
      * The type being configured for dynamic use or being created/extended
      */
-    protected EntityTypeImpl entityType;
+    protected DynamicTypeImpl entityType;
 
     /**
      * Create an EntityType for a new dynamic type. The contained EntityType and
@@ -83,10 +75,12 @@ public class EntityTypeBuilder {
      * must be done by the application after the type's is fully configured.
      * <p>
      * <b>Creating new type Example</b>: <code>
-     *  DynamicClassLoader dcl = DynamicClassLoader.lookup(session);<br>
+     *  DynamicHelper helper = new DynamicHelper(session);
+     *  DynamicClassLoader dcl = helper.getDynamicClassLoader();<br>
+     *  <br>
      *  Class<?> javaType = dcl.creatDynamicClass("model.Simple");<br>
      *  <br>
-     *  EntityTypeBuilder typeBuilder = new JPAEntityTypeBuilder(javaType, null, "SIMPLE_TYPE");<br>
+     *  DynamicTypeBuilder typeBuilder = new JPADynamicTypeBuilder(javaType, null, "SIMPLE_TYPE");<br>
      *  typeBuilder.setPrimaryKeyFields("SID");<br>
      *  typeBuilder.addDirectMapping("id", int.class, "SID");<br>
      *  typeBuilder.addDirectMapping("value1", String.class, "VAL_1");<br>
@@ -94,17 +88,17 @@ public class EntityTypeBuilder {
      *  typeBuilder.addDirectMapping("value3", Calendar.class, "VAL_3");<br>
      *  typeBuilder.addDirectMapping("value4", Character.class, "VAL_4");<br>
      *  <br>
-     *  typeBuilder.addToSession(session, true, true);<br>
+     *  helper.addTypes(true, true, typeBuilder.getType());<br>
      * </code>
      * 
      * @param dynamicClass
      * @param parentType
      * @param tableNames
      */
-    public EntityTypeBuilder(Class<?> dynamicClass, EntityType parentType, String... tableNames) {
+    public DynamicTypeBuilder(Class<?> dynamicClass, DynamicType parentType, String... tableNames) {
         RelationalDescriptor descriptor = new RelationalDescriptor();
         descriptor.setJavaClass(dynamicClass);
-        this.entityType = new EntityTypeImpl(descriptor, parentType);
+        this.entityType = new DynamicTypeImpl(descriptor, parentType);
 
         configure(descriptor, tableNames);
     }
@@ -118,8 +112,8 @@ public class EntityTypeBuilder {
      *            provided since the InheritancePolicy on the descriptor may not
      *            have its parent descriptor initialized.
      */
-    public EntityTypeBuilder(DynamicClassLoader dcl, ClassDescriptor descriptor, EntityType parentType) {
-        this.entityType = new EntityTypeImpl(descriptor, parentType);
+    public DynamicTypeBuilder(DynamicClassLoader dcl, ClassDescriptor descriptor, DynamicType parentType) {
+        this.entityType = new DynamicTypeImpl(descriptor, parentType);
 
         if (descriptor.getJavaClass() == null) {
             addDynamicClasses(dcl, descriptor.getJavaClassName(), parentType);
@@ -133,7 +127,7 @@ public class EntityTypeBuilder {
      * {@link DynamicClassLoader} so that a dynamic class can be generated when
      * needed.
      */
-    protected void addDynamicClasses(DynamicClassLoader dcl, String className, EntityType parentType) {
+    protected void addDynamicClasses(DynamicClassLoader dcl, String className, DynamicType parentType) {
         if (parentType == null) {
             dcl.addClass(className);
         } else {
@@ -165,16 +159,16 @@ public class EntityTypeBuilder {
         }
 
         descriptor.setObjectChangePolicy(new AttributeChangeTrackingPolicy());
-        descriptor.setInstantiationPolicy(new EntityTypeInstantiationPolicy((EntityTypeImpl) getType()));
+        descriptor.setInstantiationPolicy(new DynamicTypeInstantiationPolicy((DynamicTypeImpl) getType()));
 
         for (int index = 0; index < descriptor.getMappings().size(); index++) {
             addMapping((DatabaseMapping) descriptor.getMappings().get(index));
         }
 
-        descriptor.setProperty(EntityTypeImpl.DESCRIPTOR_PROPERTY, entityType);
+        descriptor.setProperty(DynamicTypeImpl.DESCRIPTOR_PROPERTY, entityType);
     }
 
-    public EntityType getType() {
+    public DynamicType getType() {
         return this.entityType;
     }
 
@@ -187,7 +181,7 @@ public class EntityTypeBuilder {
      * <li>basic indirection references
      * </ul>
      * 
-     * @see #newInstance() for creation and initialization
+     * @see #newDynamicEntity() for creation and initialization
      */
     private boolean requiresInitialization(DatabaseMapping mapping) {
         if (mapping.isDirectToFieldMapping() && mapping.getAttributeClassification() != null && mapping.getAttributeClassification().isPrimitive()) {
@@ -225,9 +219,9 @@ public class EntityTypeBuilder {
     /**
      * Allows {@link DirectToFieldMapping} (@Basic) mapping to be added to a
      * dynamic type through API. This method can be used on a new
-     * {@link EntityTypeImpl} that has yet to be added to a session and have its
-     * descriptor initialized, or it can be called on an active (initialized)
-     * descriptor.
+     * {@link DynamicTypeImpl} that has yet to be added to a session and have
+     * its descriptor initialized, or it can be called on an active
+     * (initialized) descriptor.
      * <p>
      * There is no support currently for having the EclipseLink
      * {@link SchemaManager} generate ALTER TABLE calls so any new columns
@@ -251,9 +245,9 @@ public class EntityTypeBuilder {
     /**
      * Allows {@link OneToOneMapping} (@OneToOne and @ManyToOne) mappings to be
      * added to a dynamic type through API. This method can be used on a new
-     * {@link EntityTypeImpl} that has yet to be added to a session and have its
-     * descriptor initialized, or it can be called on an active (initialized)
-     * descriptor.
+     * {@link DynamicTypeImpl} that has yet to be added to a session and have
+     * its descriptor initialized, or it can be called on an active
+     * (initialized) descriptor.
      * <p>
      * There is no support currently for having the EclipseLink
      * {@link SchemaManager} generate ALTER TABLE calls so any new columns
@@ -261,7 +255,7 @@ public class EntityTypeBuilder {
      * {@link SchemaManager#replaceObject(org.eclipse.persistence.tools.schemaframework.DatabaseObjectDefinition)}
      * to DROP and CREATE the table. WARNING: This will cause data loss.
      */
-    public OneToOneMapping addOneToOneMapping(String name, EntityType refType, String... fkFieldNames) {
+    public OneToOneMapping addOneToOneMapping(String name, DynamicType refType, String... fkFieldNames) {
         if (fkFieldNames == null || refType.getDescriptor().getPrimaryKeyFields().size() != fkFieldNames.length) {
             throw new IllegalArgumentException("Invalid FK field names: " + fkFieldNames + " for target: " + refType);
         }
@@ -286,7 +280,7 @@ public class EntityTypeBuilder {
      * @param fkFieldNames
      * @return
      */
-    public OneToManyMapping addOneToManyMapping(String name, EntityType refType, String... fkFieldNames) {
+    public OneToManyMapping addOneToManyMapping(String name, DynamicType refType, String... fkFieldNames) {
         if (fkFieldNames == null || getType().getDescriptor().getPrimaryKeyFields().size() != fkFieldNames.length) {
             throw new IllegalArgumentException("Invalid FK field names: " + fkFieldNames + " for target: " + refType);
         }
@@ -345,7 +339,7 @@ public class EntityTypeBuilder {
      * @param allowsNull
      * @return
      */
-    public AggregateObjectMapping addAggregateObjectMapping(String name, EntityType refType, boolean allowsNull) {
+    public AggregateObjectMapping addAggregateObjectMapping(String name, DynamicType refType, boolean allowsNull) {
         AggregateObjectMapping mapping = new AggregateObjectMapping();
         mapping.setAttributeName(name);
         mapping.setReferenceClass(refType.getJavaClass());
@@ -361,7 +355,7 @@ public class EntityTypeBuilder {
      * @param refType
      * @param relationshipTableName
      */
-    public void addManyToManyMapping(String name, EntityType refType, String relationshipTableName) {
+    public void addManyToManyMapping(String name, DynamicType refType, String relationshipTableName) {
         ManyToManyMapping mapping = new ManyToManyMapping();
         mapping.setAttributeName(name);
         mapping.setReferenceClass(refType.getJavaClass());
@@ -400,7 +394,7 @@ public class EntityTypeBuilder {
         // descriptor has all of its parent mappings added ahead of its
         // mappings. This adds the necessary offset.
         if (getType().getParentType() != null) {
-            EntityType current = getType();
+            DynamicType current = getType();
             while (current.getParentType() != null) {
                 index += current.getParentType().getDescriptor().getMappings().size();
                 current = current.getParentType();
@@ -435,37 +429,6 @@ public class EntityTypeBuilder {
     public void configureSequencing(Sequence sequence, String numberName, String numberFieldName) {
         configureSequencing(numberName, numberFieldName);
         getType().getDescriptor().setSequence(sequence);
-    }
-
-    public void addToSession(DatabaseSession session, boolean createMissingTables, boolean generateFKConstraints) {
-        addToSession(session, createMissingTables, generateFKConstraints, getType());
-    }
-
-    /**
-     * Add one or more EntityType instances to a session and optionally generate
-     * needed tables with or without FK constraints.
-     * 
-     * @param session
-     * @param createMissingTables
-     * @param generateFKConstraints
-     * @param types
-     */
-    public static void addToSession(DatabaseSession session, boolean createMissingTables, boolean generateFKConstraints, EntityType... types) {
-        Collection<ClassDescriptor> descriptors = new ArrayList<ClassDescriptor>(types.length);
-
-        for (int index = 0; index < types.length; index++) {
-            descriptors.add(types[index].getDescriptor());
-
-            if (!types[index].getDescriptor().requiresInitialization()) {
-                types[index].getDescriptor().getInstantiationPolicy().initialize((AbstractSession) session);
-            }
-        }
-
-        session.addDescriptors(descriptors);
-
-        if (createMissingTables) {
-            new DynamicSchemaManager(session).createTables(generateFKConstraints, types);
-        }
     }
 
     /**
@@ -557,7 +520,7 @@ public class EntityTypeBuilder {
      * dynamic type. This method needs to handle inheritance where the parent
      * type needs to be defined before this type.
      */
-    private static EntityType createType(DynamicClassLoader dcl, ClassDescriptor descriptor, Project project) {
+    private static DynamicType createType(DynamicClassLoader dcl, ClassDescriptor descriptor, Project project) {
         Class<?> javaClass = null;
         try {
             javaClass = dcl.loadClass(descriptor.getJavaClassName());
@@ -568,7 +531,7 @@ public class EntityTypeBuilder {
             descriptor.setJavaClass(javaClass);
         }
 
-        EntityType parent = null;
+        DynamicType parent = null;
 
         if (descriptor.hasInheritance() && descriptor.getInheritancePolicy().getParentClassName() != null) {
             ClassDescriptor parentDesc = null;
@@ -589,9 +552,9 @@ public class EntityTypeBuilder {
             }
         }
 
-        EntityType type = DynamicHelper.getType(descriptor);
+        DynamicType type = DynamicHelper.getType(descriptor);
         if (type == null) {
-            type = new EntityTypeBuilder(dcl, descriptor, parent).getType();
+            type = new DynamicTypeBuilder(dcl, descriptor, parent).getType();
         }
 
         return type;

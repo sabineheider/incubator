@@ -23,9 +23,8 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
 import org.eclipse.persistence.dynamic.DynamicHelper;
-import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.sessions.server.Server;
+import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicHelper;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 
 public class Main {
@@ -35,13 +34,14 @@ public class Main {
      */
     public static void main(String[] args) throws Exception {
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("empty");
+        DynamicHelper helper = new JPADynamicHelper(emf);
 
         // Add dynamic types
         EmployeeDynamicMappings.createTypes(emf, "example.jpa.dynamic.model.employee", false);
 
         // Create database and populate
-        Server session = JpaHelper.getServerSession(emf);
-        new SchemaManager(session).replaceDefaultTables();
+        new SchemaManager(helper.getSession()).replaceDefaultTables();
+
         EntityManager em = emf.createEntityManager();
         em.getTransaction().begin();
         new Samples(emf).persistAll(em);
@@ -49,7 +49,7 @@ public class Main {
         em.clear();
 
         // Lookup types
-        EntityType empType = DynamicHelper.getType(session, "Employee");
+        DynamicType empType = helper.getType("Employee");
 
         // Run Queries
         Queries queries = new Queries();

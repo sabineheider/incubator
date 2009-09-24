@@ -24,8 +24,9 @@ import javax.persistence.PersistenceContext;
 
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
-import org.eclipse.persistence.dynamic.EntityType;
+import org.eclipse.persistence.dynamic.DynamicType;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicHelper;
 import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.tools.schemaframework.DynamicSchemaManager;
 import org.junit.Test;
@@ -86,8 +87,9 @@ public class TransactionTests extends EclipseLinkJPATest {
     @Test
     public void mergeDetached() throws Exception {
         EntityManager em = getEntityManager();
+        DynamicHelper helper = new JPADynamicHelper(em);
 
-        EntityType empType = DynamicHelper.getType(JpaHelper.getServerSession(getEMF()), "Employee");
+        DynamicType empType = helper.getType("Employee");
 
         int minId = Queries.minimumEmployeeId(em);
         DynamicEntity emp = (DynamicEntity) em.find(empType.getJavaClass(), minId);

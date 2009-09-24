@@ -6,51 +6,41 @@ import static junit.framework.Assert.assertNotNull;
 import java.util.Collection;
 import java.util.List;
 
-import javax.persistence.*;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 
 import junit.framework.Assert;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.*;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicHelper;
+import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.exceptions.DatabaseException;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.internal.dynamic.EntityTypeImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.jpa.dynamic.JPAEntityTypeBuilder;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicHelper;
+import org.eclipse.persistence.jpa.dynamic.JPADynamicTypeBuilder;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
 import org.eclipse.persistence.mappings.ManyToManyMapping;
-import org.eclipse.persistence.sessions.server.Server;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class SimpleTypes_ManyToMany {
 
     private static EntityManagerFactory emf;
 
-    private EntityType aType;
-    private EntityType bType;
-
-    public EntityType getAType() {
-        if (this.aType == null) {
-            this.aType = DynamicHelper.getType(JpaHelper.getServerSession(emf), "SimpleA");
-        }
-        return aType;
-    }
-
-    public EntityType getBType() {
-        if (this.bType == null) {
-            this.bType = DynamicHelper.getType(JpaHelper.getServerSession(emf), "SimpleB");
-        }
-        return bType;
-    }
-
     @Test
     public void verifyConfig() throws Exception {
-        Server session = JpaHelper.getServerSession(emf);
+        DynamicHelper helper = new JPADynamicHelper(emf);
 
-        ClassDescriptor descriptorA = session.getClassDescriptorForAlias("SimpleA");
+        ClassDescriptor descriptorA = helper.getSession().getClassDescriptorForAlias("SimpleA");
         assertNotNull("No descriptor found for alias='SimpleA'", descriptorA);
 
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) getAType();
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         assertNotNull("'SimpleA' EntityType not found", simpleTypeA);
         assertEquals(descriptorA, simpleTypeA.getDescriptor());
         DirectToFieldMapping a_id = (DirectToFieldMapping) descriptorA.getMappingForAttributeName("id");
@@ -58,10 +48,10 @@ public class SimpleTypes_ManyToMany {
         DirectToFieldMapping a_value1 = (DirectToFieldMapping) descriptorA.getMappingForAttributeName("value1");
         assertEquals(String.class, a_value1.getAttributeClassification());
 
-        ClassDescriptor descriptorB = session.getClassDescriptorForAlias("SimpleB");
+        ClassDescriptor descriptorB = helper.getSession().getClassDescriptorForAlias("SimpleB");
         assertNotNull("No descriptor found for alias='SimpleB'", descriptorB);
 
-        EntityTypeImpl simpleTypeB = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleB");
+        DynamicType simpleTypeB = helper.getType("SimpleB");
         assertNotNull("'SimpleB' EntityType not found", simpleTypeB);
         assertEquals(descriptorB, simpleTypeB.getDescriptor());
         DirectToFieldMapping b_id = (DirectToFieldMapping) descriptorB.getMappingForAttributeName("id");
@@ -75,13 +65,14 @@ public class SimpleTypes_ManyToMany {
 
     @Test
     public void createSimpleA() {
-        Server session = JpaHelper.getServerSession(emf);
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
 
         EntityManager em = emf.createEntityManager();
 
-        DynamicEntity simpleInstance = simpleTypeA.newInstance();
+        DynamicEntity simpleInstance = simpleTypeA.newDynamicEntity();
         simpleInstance.set("id", 1);
         simpleInstance.set("value1", "A1");
 
@@ -97,13 +88,14 @@ public class SimpleTypes_ManyToMany {
 
     @Test
     public void createSimpleB() {
-        Server session = JpaHelper.getServerSession(emf);
-        EntityTypeImpl simpleTypeB = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleB");
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
+        DynamicType simpleTypeB = helper.getType("SimpleB");
         Assert.assertNotNull(simpleTypeB);
 
         EntityManager em = emf.createEntityManager();
 
-        DynamicEntity simpleInstance = simpleTypeB.newInstance();
+        DynamicEntity simpleInstance = simpleTypeB.newDynamicEntity();
         simpleInstance.set("id", 1);
         simpleInstance.set("value1", "B1");
 
@@ -119,24 +111,25 @@ public class SimpleTypes_ManyToMany {
 
     @Test
     public void createAwithB() {
-        Server session = JpaHelper.getServerSession(emf);
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         Assert.assertNotNull(simpleTypeA);
-        EntityTypeImpl simpleTypeB = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleB");
+        DynamicType simpleTypeB = helper.getType("SimpleB");
         Assert.assertNotNull(simpleTypeB);
 
         EntityManager em = emf.createEntityManager();
 
         Assert.assertNotNull(JpaHelper.getServerSession(emf).getDescriptorForAlias("SimpleB"));
 
-        DynamicEntity simpleInstanceB = simpleTypeB.newInstance();
+        DynamicEntity simpleInstanceB = simpleTypeB.newDynamicEntity();
         simpleInstanceB.set("id", 1);
         simpleInstanceB.set("value1", "B2");
 
-        DynamicEntity simpleInstanceA = simpleTypeA.newInstance();
+        DynamicEntity simpleInstanceA = simpleTypeA.newDynamicEntity();
         simpleInstanceA.set("id", 1);
         simpleInstanceA.set("value1", "A2");
-        simpleInstanceA.<Collection<DynamicEntity>>get("b").add(simpleInstanceB);
+        simpleInstanceA.<Collection<DynamicEntity>> get("b").add(simpleInstanceB);
 
         simpleInstanceB.set("a", simpleInstanceA);
 
@@ -160,8 +153,9 @@ public class SimpleTypes_ManyToMany {
 
     @Test
     public void removeRelationshop() {
-        Server session = JpaHelper.getServerSession(emf);
-        EntityTypeImpl simpleTypeA = (EntityTypeImpl) DynamicHelper.getType(session, "SimpleA");
+        DynamicHelper helper = new JPADynamicHelper(emf);
+
+        DynamicType simpleTypeA = helper.getType("SimpleA");
         createAwithB();
 
         EntityManager em = emf.createEntityManager();
@@ -169,7 +163,7 @@ public class SimpleTypes_ManyToMany {
 
         DynamicEntity a = (DynamicEntity) em.find(simpleTypeA.getJavaClass(), 1);
         assertNotNull(a);
-        List<DynamicEntity> bs = a.<List<DynamicEntity>>get("b");
+        List<DynamicEntity> bs = a.<List<DynamicEntity>> get("b");
         assertNotNull(bs);
         assertEquals(1, bs.size());
         bs.remove(0);
@@ -185,15 +179,15 @@ public class SimpleTypes_ManyToMany {
     @BeforeClass
     public static void setUp() {
         emf = Persistence.createEntityManagerFactory("empty");
-        Server session = JpaHelper.getServerSession(emf);
-        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
+        DynamicHelper helper = new JPADynamicHelper(emf);
+        DynamicClassLoader dcl = helper.getDynamicClassLoader();
 
         Class<?> simpleTypeA = dcl.createDynamicClass("model.SimpleA");
-        EntityTypeBuilder aFactory = new JPAEntityTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A");
+        DynamicTypeBuilder aFactory = new JPADynamicTypeBuilder(simpleTypeA, null, "SIMPLE_TYPE_A");
         aFactory.setPrimaryKeyFields("SID");
-        
+
         Class<?> simpleTypeB = dcl.createDynamicClass("model.SimpleB");
-        EntityTypeBuilder bFactory = new JPAEntityTypeBuilder(simpleTypeB, null, "SIMPLE_TYPE_B");
+        DynamicTypeBuilder bFactory = new JPADynamicTypeBuilder(simpleTypeB, null, "SIMPLE_TYPE_B");
         bFactory.setPrimaryKeyFields("SID");
 
         bFactory.addDirectMapping("id", int.class, "SID");
@@ -204,7 +198,7 @@ public class SimpleTypes_ManyToMany {
         aFactory.addDirectMapping("value1", String.class, "VAL_1");
         aFactory.addManyToManyMapping("b", bFactory.getType(), "SIMPLE_A_B");
 
-        EntityTypeBuilder.addToSession(session, true, true, aFactory.getType(), bFactory.getType());
+        helper.addTypes(true, true, aFactory.getType(), bFactory.getType());
     }
 
     @After

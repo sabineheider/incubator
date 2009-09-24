@@ -64,6 +64,7 @@
                <foreign-key-fields>
                   <field table="DX_EMPLOYEE" name="ADDR_FK" xsi:type="column"/>
                </foreign-key-fields>
+               <indirection xsi:type="value-holder-indirection-policy"/>
                <selection-query xsi:type="read-object-query"/>
             </attribute-mapping>
             <attribute-mapping xsi:type="direct-mapping">

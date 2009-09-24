@@ -24,12 +24,12 @@ import java.io.IOException;
 import java.util.Calendar;
 import java.util.List;
 
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicHelper;
-import org.eclipse.persistence.dynamic.EntityType;
-import org.eclipse.persistence.dynamic.EntityTypeBuilder;
+import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.queries.ReportQuery;
 import org.eclipse.persistence.sessions.DatabaseLogin;
 import org.eclipse.persistence.sessions.DatabaseSession;
@@ -53,7 +53,7 @@ public class EmployeeProject extends EclipseLinkORMTest {
         DatabaseLogin login = DynamicTestHelper.getTestLogin();
         Project project = null;
         try {
-            project = EntityTypeBuilder.loadDynamicProject("org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/employee-project.xml", login, new DynamicClassLoader(EmployeeProject.class.getClassLoader()));
+            project = DynamicTypeBuilder.loadDynamicProject("org/eclipse/persistence/testing/tests/dynamic/orm/projectxml/employee-project.xml", login, new DynamicClassLoader(EmployeeProject.class.getClassLoader()));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -67,18 +67,19 @@ public class EmployeeProject extends EclipseLinkORMTest {
 
     @Test
     public void createNewInstance() throws Exception {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
-        EntityType employeeType = DynamicHelper.getType(session, "Employee");
-        EntityType periodType = DynamicHelper.getType(session, "EmploymentPeriod");
+        DynamicType employeeType = helper.getType("Employee");
+        DynamicType periodType = helper.getType("EmploymentPeriod");
 
-        DynamicEntity entity = employeeType.newInstance();
+        DynamicEntity entity = employeeType.newDynamicEntity();
         // entity.set("id", 1);
         entity.set("firstName", "First");
         entity.set("lastName", "Last");
         entity.set("salary", 12345);
 
-        DynamicEntity period = periodType.newInstance();
+        DynamicEntity period = periodType.newDynamicEntity();
         period.set("startDate", Calendar.getInstance());
 
         entity.set("period", period);
@@ -87,7 +88,7 @@ public class EmployeeProject extends EclipseLinkORMTest {
         uow.registerNewObject(entity);
         uow.commit();
 
-        ReportQuery countQuery = DynamicHelper.newReportQuery(session, "Employee", new ExpressionBuilder());
+        ReportQuery countQuery = helper.newReportQuery("Employee", new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
         assertEquals(1, ((Number) session.executeQuery(countQuery)).intValue());
@@ -97,10 +98,11 @@ public class EmployeeProject extends EclipseLinkORMTest {
 
     @Test
     public void readAll() throws Exception {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
         Session session = getSession();
 
         createNewInstance();
-        EntityType type = DynamicHelper.getType(session, "Employee");
+        DynamicType type = helper.getType("Employee");
 
         List<DynamicEntity> allObjects = session.readAllObjects(type.getJavaClass());
         assertEquals(1, allObjects.size());

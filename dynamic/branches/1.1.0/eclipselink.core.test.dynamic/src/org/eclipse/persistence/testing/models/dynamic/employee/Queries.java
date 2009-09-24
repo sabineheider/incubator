@@ -40,22 +40,22 @@ public class Queries {
      * Simple example using dynamic JP QL to retrieve all Employee instances
      * sorted by lastName and firstName.
      */
-    public List<DynamicEntity> readAllEmployees(Session session) {
-        ReadAllQuery query = DynamicHelper.newReadAllQuery(session, "Employee");
+    public List<DynamicEntity> readAllEmployees(DynamicHelper helper, Session session) {
+        ReadAllQuery query = helper.newReadAllQuery("Employee");
         query.addAscendingOrdering("id");
         return (List<DynamicEntity>) session.executeQuery(query);
     }
 
-    public List<DynamicEntity> readAllEmployeesWithAddress(Session session) {
-        ReadAllQuery query = DynamicHelper.newReadAllQuery(session, "Employee");
+    public List<DynamicEntity> readAllEmployeesWithAddress(DynamicHelper helper, Session session) {
+        ReadAllQuery query = helper.newReadAllQuery("Employee");
         query.addJoinedAttribute("address");
         query.addAscendingOrdering("lastName");
         query.addAscendingOrdering("firstName");
         return (List<DynamicEntity>) session.executeQuery(query);
     }
 
-    public List<DynamicEntity> readAllEmployeesWithAddressAndPhones(Session session) {
-        ReadAllQuery query = DynamicHelper.newReadAllQuery(session, "Employee");
+    public List<DynamicEntity> readAllEmployeesWithAddressAndPhones(DynamicHelper helper, Session session) {
+        ReadAllQuery query = helper.newReadAllQuery( "Employee");
         ExpressionBuilder eb = query.getExpressionBuilder();
         query.addJoinedAttribute("address");
         Expression managerExp = eb.get("manager");
@@ -74,26 +74,26 @@ public class Queries {
         return emps;
     }
 
-    public static int minimumEmployeeId(Session session) {
-        ReportQuery query = DynamicHelper.newReportQuery(session, "Employee", new ExpressionBuilder());
+    public static int minimumEmployeeId(DynamicHelper helper, Session session) {
+        ReportQuery query = helper.newReportQuery("Employee", new ExpressionBuilder());
         query.addMinimum("id");
         query.setShouldReturnSingleValue(true);
         return ((Number) session.executeQuery(query)).intValue();
     }
 
-    public DynamicEntity minimumEmployee(Session session) {
-        ReportQuery minIdQuery = DynamicHelper.newReportQuery(session, "Employee", new ExpressionBuilder());
+    public DynamicEntity minimumEmployee(DynamicHelper helper, Session session) {
+        ReportQuery minIdQuery = helper.newReportQuery("Employee", new ExpressionBuilder());
         minIdQuery.addMinimum("id");
 
-        ReadObjectQuery query = DynamicHelper.newReadObjectQuery(session, "Employee");
+        ReadObjectQuery query = helper.newReadObjectQuery( "Employee");
         ExpressionBuilder eb = query.getExpressionBuilder();
         query.setSelectionCriteria(eb.get("id").in(minIdQuery));
 
         return (DynamicEntity) session.executeQuery(query);
     }
 
-    public List<DynamicEntity> findUsingNativeReadAllQuery(Session session) {
-        ReadAllQuery query = DynamicHelper.newReadAllQuery(session, "Employee");
+    public List<DynamicEntity> findUsingNativeReadAllQuery(DynamicHelper helper, Session session) {
+        ReadAllQuery query = helper.newReadAllQuery("Employee");
         ExpressionBuilder eb = query.getExpressionBuilder();
         query.setSelectionCriteria(eb.get("gender").equal("Male"));
 

@@ -6,7 +6,6 @@ import java.util.Calendar;
 
 import org.eclipse.persistence.dynamic.*;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
-import org.eclipse.persistence.internal.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.queries.ReportQuery;
 import org.eclipse.persistence.sessions.*;
@@ -15,13 +14,14 @@ import org.junit.Assert;
 public class SimpleTypeCompositeKey extends SimpleType {
 
     @Override
-    protected EntityType createSimpleType() {
+    protected DynamicType createSimpleType() {
         DatabaseSession session = getSharedSession();
+        DynamicHelper helper = new DynamicHelper(session);
+        DynamicClassLoader dcl = helper.getDynamicClassLoader();
 
-        DynamicClassLoader dcl = DynamicClassLoader.lookup(session);
         Class<?> javaType = dcl.createDynamicClass("model.Simple");
 
-        EntityTypeBuilder typeBuilder = new EntityTypeBuilder(javaType, null, "SIMPLE_TYPE");
+        DynamicTypeBuilder typeBuilder = new DynamicTypeBuilder(javaType, null, "SIMPLE_TYPE");
         typeBuilder.setPrimaryKeyFields("SID1", "SID2");
         typeBuilder.addDirectMapping("id1", int.class, "SID1");
         typeBuilder.addDirectMapping("id2", int.class, "SID2");
@@ -30,7 +30,7 @@ public class SimpleTypeCompositeKey extends SimpleType {
         typeBuilder.addDirectMapping("value3", Calendar.class, "VAL_3");
         typeBuilder.addDirectMapping("value4", Character.class, "VAL_4");
 
-        typeBuilder.addToSession(session, true, false);
+        helper.addTypes(true, false, typeBuilder.getType());
 
         return typeBuilder.getType();
     }
@@ -51,15 +51,17 @@ public class SimpleTypeCompositeKey extends SimpleType {
     }
 
     public DynamicEntity createSimpleInstance(Session session, int id) {
-        EntityType simpleEntityType = DynamicHelper.getType(session, "Simple");
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
+
+        DynamicType simpleEntityType = helper.getType("Simple");
         Assert.assertNotNull(simpleEntityType);
 
-        DynamicEntity simpleInstance = simpleEntityType.newInstance();
+        DynamicEntity simpleInstance = simpleEntityType.newDynamicEntity();
         simpleInstance.set("id1", id);
         simpleInstance.set("id2", id);
         simpleInstance.set("value2", true);
 
-        ReportQuery countQuery = DynamicHelper.newReportQuery(session, "Simple", new ExpressionBuilder());
+        ReportQuery countQuery = helper.newReportQuery("Simple", new ExpressionBuilder());
         countQuery.addCount();
         countQuery.setShouldReturnSingleValue(true);
         assertEquals(0, ((Number) session.executeQuery(countQuery)).intValue());
@@ -70,7 +72,7 @@ public class SimpleTypeCompositeKey extends SimpleType {
 
         assertEquals(1, ((Number) session.executeQuery(countQuery)).intValue());
 
-        DynamicEntity foundEntity = find(session, 1);
+        DynamicEntity foundEntity = find(helper, session, 1);
 
         assertNotNull(foundEntity);
         assertEquals(simpleInstance.get("id1"), foundEntity.get("id1"));
@@ -82,8 +84,8 @@ public class SimpleTypeCompositeKey extends SimpleType {
     }
 
     @Override
-    protected DynamicEntity find(Session session, Object id) {
-        ReadObjectQuery findQuery = DynamicHelper.newReadObjectQuery(session, "Simple");
+    protected DynamicEntity find(DynamicHelper helper, Session session, Object id) {
+        ReadObjectQuery findQuery = helper.newReadObjectQuery( "Simple");
         ExpressionBuilder eb = findQuery.getExpressionBuilder();
         findQuery.setSelectionCriteria(eb.get("id1").equal(id).and(eb.get("id2").equal(id)));
         return (DynamicEntity) session.executeQuery(findQuery);
