@@ -2,6 +2,7 @@ package org.eclipse.persistence.testing.tests.dynamic.simple.mappings;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.fail;
 import junit.framework.Assert;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
@@ -11,6 +12,7 @@ import org.eclipse.persistence.dynamic.DynamicHelper;
 import org.eclipse.persistence.dynamic.DynamicType;
 import org.eclipse.persistence.dynamic.DynamicTypeBuilder;
 import org.eclipse.persistence.exceptions.DatabaseException;
+import org.eclipse.persistence.exceptions.DynamicException;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.mappings.DirectToFieldMapping;
@@ -144,6 +146,33 @@ public class SimpleTypes_OneToOne extends EclipseLinkORMTest {
         countQuery.setShouldReturnSingleValue(true);
         Assert.assertEquals(1, ((Number) session.executeQuery(countQuery)).intValue());
 
+    }
+
+    /*
+     * Invalid relationship set
+     */
+    @Test
+    public void createSimpleAwithSimpleA() {
+        DynamicHelper helper = new DynamicHelper(getSharedSession());
+
+        DynamicType simpleTypeA = helper.getType("SimpleA");
+        Assert.assertNotNull(simpleTypeA);
+
+        DynamicEntity simpleInstanceA1 = simpleTypeA.newDynamicEntity();
+        simpleInstanceA1.set("id", 1);
+        simpleInstanceA1.set("value1", "A1");
+
+        DynamicEntity simpleInstanceA2 = simpleTypeA.newDynamicEntity();
+        simpleInstanceA2.set("id", 2);
+        simpleInstanceA2.set("value1", "A2");
+        
+        try {
+        simpleInstanceA2.set("b", simpleInstanceA1);
+        } catch (DynamicException e){
+            return;
+        }
+
+        fail("DynamicException expected for invalid set of 'b'");        
     }
 
     @Override

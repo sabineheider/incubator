@@ -19,6 +19,7 @@
 package org.eclipse.persistence.testing.tests.dynamic;
 
 import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
 import java.util.List;
@@ -33,6 +34,7 @@ import org.eclipse.persistence.queries.ReadAllQuery;
 import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.eclipse.persistence.queries.ReportQuery;
 import org.eclipse.persistence.sessions.DatabaseSession;
+import org.eclipse.persistence.sessions.UnitOfWork;
 import org.junit.Test;
 
 /**
@@ -79,6 +81,7 @@ public class DynamicHelperTests {
 
         Number count = (Number) session.executeQuery(query);
         assertNotNull(count);
+        assertTrue(count.intValue() > 0);
     }
 
     @Test
@@ -96,7 +99,7 @@ public class DynamicHelperTests {
         DatabaseSession session = DynamicTestHelper.createEmptySession();
         DynamicHelper helper = new DynamicHelper(session);
         DynamicClassLoader dcl = helper.getDynamicClassLoader();
-        
+
         Class<?> empClass = dcl.createDynamicClass(getClass().getName() + ".Employee");
 
         DynamicTypeBuilder typeBuilder = new DynamicTypeBuilder(empClass, null, "D_EMPLOYEE");
@@ -107,8 +110,23 @@ public class DynamicHelperTests {
 
         helper.addTypes(true, true, typeBuilder.getType());
 
-        DynamicType empType = new DynamicHelper(session).getType("Employee");
+        DynamicType empType = helper.getType("Employee");
         assertNotNull("No type found for Employee", empType);
+
+        ReportQuery countQuery = helper.newReportQuery("Employee", new ExpressionBuilder());
+        countQuery.addCount();
+        countQuery.setShouldReturnSingleValue(true);
+        int empCount = ((Number) session.executeQuery(countQuery)).intValue();
+
+        if (empCount == 0) {
+            UnitOfWork uow = session.acquireUnitOfWork();
+            DynamicEntity emp = empType.newDynamicEntity();
+            emp.set("id", 1);
+            emp.set("firstName", "John");
+            emp.set("lastName", "Doe");
+            uow.registerNewObject(emp);
+            uow.commit();
+        }
 
         return session;
     }
