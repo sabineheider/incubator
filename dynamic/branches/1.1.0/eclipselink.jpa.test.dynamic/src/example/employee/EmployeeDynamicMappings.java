@@ -19,6 +19,7 @@
 package example.employee;
 
 import java.util.Calendar;
+import java.util.Date;
 
 import javax.persistence.EntityManagerFactory;
 
@@ -125,8 +126,8 @@ public class EmployeeDynamicMappings {
     }
 
     private static void configurePeriod(JPADynamicTypeBuilder period) {
-        period.addDirectMapping("startDate", Calendar.class, "START_DATE");
-        period.addDirectMapping("endDate", Calendar.class, "END_DATE");
+        period.addDirectMapping("startDate", Date.class, "START_DATE");
+        period.addDirectMapping("endDate", Date.class, "END_DATE");
     }
 
     private static void configureProject(JPADynamicTypeBuilder project, JPADynamicTypeBuilder smallProject, JPADynamicTypeBuilder largeProject, JPADynamicTypeBuilder employee) {

@@ -93,8 +93,6 @@ public class SimpleType {
         simpleInstance = find(em, new Integer(1));
         assertNotNull("Could not find simple instance with id = Integer(1)", simpleInstance);
 
-        simpleInstance = find(em, 1l);
-        assertNotNull("Could not find simple instance with id = Integer(1)", simpleInstance);
     }
 
     @Test
