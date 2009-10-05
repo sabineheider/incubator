@@ -1,9 +1,10 @@
 package org.eclipse.persistence.testing.tests.dynamic.simple.mappings;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -67,79 +68,79 @@ public class SimpleTypes_OneToMany extends EclipseLinkORMTest {
     @Test
     public void verifyNewSimpleA() throws Exception {
         DynamicHelper helper = new DynamicHelper(getSharedSession());
-        
+
         DynamicEntity newA = helper.getType("SimpleA").newDynamicEntity();
-        
+
         assertNotNull(newA);
         assertTrue(newA.isSet("id"));
         assertFalse(newA.isSet("value1"));
         assertTrue(newA.isSet("b"));
-        
+
         Object b = newA.get("b");
         assertNotNull(b);
         assertTrue(b instanceof Collection);
     }
-    
+
     @Test
     public void verifyNewSimpleA_InvalidB_Map() throws Exception {
         DynamicHelper helper = new DynamicHelper(getSharedSession());
-        
+
         DynamicEntity newA = helper.getType("SimpleA").newDynamicEntity();
 
         try {
-        newA.set("b", new HashMap());
+            newA.set("b", new HashMap());
         } catch (DynamicException e) {
             return;
         }
-       fail("DynamicException expected putting Map in 'b'");
+        fail("DynamicException expected putting Map in 'b'");
     }
 
     @Test
     public void verifyNewSimpleA_InvalidB_Object() throws Exception {
         DynamicHelper helper = new DynamicHelper(getSharedSession());
-        
+
         DynamicEntity newA = helper.getType("SimpleA").newDynamicEntity();
 
         try {
-        newA.set("b", new Object());
+            newA.set("b", new Object());
         } catch (DynamicException e) {
             return;
         }
-       fail("DynamicException expected putting Object in 'b'");
+        fail("DynamicException expected putting Object in 'b'");
     }
 
     @Test
     public void verifyNewSimpleA_InvalidB_A() throws Exception {
         DynamicHelper helper = new DynamicHelper(getSharedSession());
-        
+
         DynamicEntity newA = helper.getType("SimpleA").newDynamicEntity();
 
         try {
-        newA.set("b", helper.getType("SimpleA").newDynamicEntity());
+            newA.set("b", helper.getType("SimpleA").newDynamicEntity());
         } catch (DynamicException e) {
             return;
         }
-       fail("DynamicException expected putting A in 'b'");
+        fail("DynamicException expected putting A in 'b'");
     }
 
     @Test
     public void verifyNewSimpleA_InvalidB_B() throws Exception {
         DynamicHelper helper = new DynamicHelper(getSharedSession());
-        
+
         DynamicEntity newA = helper.getType("SimpleA").newDynamicEntity();
 
         try {
-        newA.set("b", helper.getType("SimpleB").newDynamicEntity());
+            newA.set("b", helper.getType("SimpleB").newDynamicEntity());
         } catch (DynamicException e) {
             return;
         }
-       fail("DynamicException expected putting B in 'b'");
+        fail("DynamicException expected putting B in 'b'");
     }
 
     @Test
     public void verifyNewSimpleA_InvalidB_NULL() throws Exception {
         DynamicHelper helper = new DynamicHelper(getSharedSession());
-        
+
         DynamicEntity newA = helper.getType("SimpleA").newDynamicEntity();
 
         try {
@@ -147,7 +148,7 @@ public class SimpleTypes_OneToMany extends EclipseLinkORMTest {
         } catch (DynamicException e) {
             return;
         }
-       fail("DynamicException expected putting NULL in 'b'");
+        fail("DynamicException expected putting NULL in 'b'");
     }
 
     @Test
@@ -261,7 +262,7 @@ public class SimpleTypes_OneToMany extends EclipseLinkORMTest {
         DynamicEntity simpleInstanceA = simpleTypeA.newDynamicEntity();
         simpleInstanceA.set("id", 1);
         simpleInstanceA.set("value1", "A2");
-        
+
         Collection<DynamicEntity> bs = new ArrayList<DynamicEntity>();
         bs.add(simpleInstanceB);
         simpleInstanceA.set("b", bs);
