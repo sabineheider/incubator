@@ -66,23 +66,31 @@ public class FetchPlan implements Serializable {
 
     /**
      * Add an item to be fetched
+     * <p>
+     * If a single string is supplied then it is assumed to either be an
+     * attribute name for the only entity type being returned from the query or
+     * it is a path expression with attribute names separated by '.' and the
+     * first part represents the alias or item name in the select of the query.
+     * <p>
+     * If multiple strings are provided it is assumed that they are all mapped
+     * attribute names and the query is returning a single entity type.
      * 
      * @param attributePath
      * @return
      */
-    public FetchPlan addFetchItem(String attributePath) {
-        if (attributePath == null || attributePath.length() < 1) {
-            throw new IllegalArgumentException("FetchPlan.addItem: " + attributePath);
+    public FetchPlan addFetchItem(String ... attributePaths) {
+        if (attributePaths == null || attributePaths.length < 1) {
+            throw new IllegalArgumentException("FetchPlan.addItem: " + attributePaths);
         }
 
         FetchItem fetchItem = null;
 
         if (getQuery().isReportQuery()) {
-            fetchItem = new ReportItemFetchItem((ReportQuery) query, attributePath);
+            fetchItem = new ReportItemFetchItem((ReportQuery) query, attributePaths);
         } else if (getQuery().isReadAllQuery()) {
-            fetchItem = new ReadAllFetchItem((ReadAllQuery) query, attributePath);
+            fetchItem = new ReadAllFetchItem((ReadAllQuery) query, attributePaths);
         } else {
-            fetchItem = new FetchItem(attributePath);
+            fetchItem = new FetchItem(attributePaths);
         }
 
         getItems().add(fetchItem);

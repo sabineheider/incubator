@@ -19,8 +19,8 @@ import org.eclipse.persistence.queries.ReadAllQuery;
 
 public class ReadAllFetchItem extends FetchItem {
 
-    protected ReadAllFetchItem(ReadAllQuery query, String attributePath) {
-        super(attributePath);
+    protected ReadAllFetchItem(ReadAllQuery query, String ... attributePaths) {
+        super(attributePaths);
     }
 
     @SuppressWarnings("unchecked")

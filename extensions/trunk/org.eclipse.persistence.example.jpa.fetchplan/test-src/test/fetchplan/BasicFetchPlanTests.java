@@ -14,17 +14,22 @@ package test.fetchplan;
 
 import java.util.List;
 
-import javax.persistence.*;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 
 import junit.framework.Assert;
 import model.Employee;
+import model.PhoneNumber;
 
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.ReadAllQuery;
+import org.junit.Before;
 import org.junit.Test;
 
+import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 
 @SuppressWarnings("unchecked")
@@ -38,15 +43,78 @@ public class BasicFetchPlanTests extends EclipseLinkJPATest {
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
 
         FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
-        // fetchPlan.addItem("address");
-        // fetchPlan.addItem("phoneNumbers");
-        fetchPlan.addFetchItem("e.manager.address");
-        fetchPlan.addFetchItem("e.manager.phoneNumbers");
-        // fetchPlan.addItem("responsibilities");
+        fetchPlan.addFetchItem("e.address");
+        fetchPlan.addFetchItem("e.phoneNumbers");
 
         List<Employee> emps = query.getResultList();
 
         Assert.assertNotNull(emps);
+        int expectedSelects = (emps.size() * 2) + 1;
+        Assert.assertEquals(expectedSelects, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        
+        for (Employee emp: emps) {
+            emp.getAddress();
+            for (PhoneNumber phone: emp.getPhoneNumbers()) {
+                phone.getOwner();
+            }
+        }
+        Assert.assertEquals(expectedSelects, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+    }
+
+    @Test
+    public void employeeAddressPhones_Batching() throws Exception {
+        EntityManager em = getEntityManager();
+
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+        
+        query.setHint(QueryHints.BATCH, "e.address");
+        query.setHint(QueryHints.BATCH, "e.phoneNumbers");
+
+        FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
+        fetchPlan.addFetchItem("e.address");
+        fetchPlan.addFetchItem("e.phoneNumbers");
+
+        List<Employee> emps = query.getResultList();
+
+        Assert.assertNotNull(emps);
+        int expectedSelects = 3;
+        Assert.assertEquals(expectedSelects, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        
+        for (Employee emp: emps) {
+            emp.getAddress();
+            for (PhoneNumber phone: emp.getPhoneNumbers()) {
+                phone.getOwner();
+            }
+        }
+        Assert.assertEquals(expectedSelects, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+    }
+
+    @Test
+    public void employeeAddressPhones_Joining() throws Exception {
+        EntityManager em = getEntityManager();
+
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+        
+        query.setHint(QueryHints.FETCH, "e.address");
+        query.setHint(QueryHints.FETCH, "e.phoneNumbers");
+
+        FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
+        fetchPlan.addFetchItem("e.address");
+        fetchPlan.addFetchItem("e.phoneNumbers");
+
+        List<Employee> emps = query.getResultList();
+
+        Assert.assertNotNull(emps);
+        int expectedSelects = 1;
+        Assert.assertEquals(expectedSelects, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        
+        for (Employee emp: emps) {
+            emp.getAddress();
+            for (PhoneNumber phone: emp.getPhoneNumbers()) {
+                phone.getOwner();
+            }
+        }
+        Assert.assertEquals(expectedSelects, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
     @Test
@@ -121,5 +189,13 @@ public class BasicFetchPlanTests extends EclipseLinkJPATest {
         List<Employee> emps = query.getResultList();
 
         Assert.assertNotNull(emps);
+    }
+    
+    @Before
+    public void verifyConfig() {
+        EclipseLinkJPAAssert.assertIsWoven(getEMF(), "Employee");
+        EclipseLinkJPAAssert.assertIsWoven(getEMF(), "PhoneNumber");
+        JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
+        getQuerySQLTracker(getEMF()).reset();
     }
 }

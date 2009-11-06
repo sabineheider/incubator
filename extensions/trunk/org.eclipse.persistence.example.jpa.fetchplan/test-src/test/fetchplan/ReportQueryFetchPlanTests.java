@@ -48,7 +48,7 @@ public class ReportQueryFetchPlanTests extends EclipseLinkJPATest {
     public void employeeManager() throws Exception {
         EntityManager em = getEntityManager();
 
-        Query query = em.createQuery("SELECT e, e.manager.address FROM Employee e");
+        Query query = em.createQuery("SELECT e, e.manager FROM Employee e");
 
         FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
         fetchPlan.addFetchItem("e.manager.address");

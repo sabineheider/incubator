@@ -33,10 +33,14 @@ import org.eclipse.persistence.sessions.Session;
  */
 public class FetchItem {
 
-    private String[] attributeNames;
+    protected String[] attributeNames;
 
-    public FetchItem(String attributePath) {
-        this.attributeNames = attributePath.split("\\.");
+    public FetchItem(String ... attributePaths) {
+        if (attributePaths.length == 1 && attributePaths[0].contains(".")) {
+            this.attributeNames = attributePaths[0].split("\\.");
+        } else {
+            this.attributeNames = attributePaths;
+        }
     }
 
     public String[] getAttributeNames() {
