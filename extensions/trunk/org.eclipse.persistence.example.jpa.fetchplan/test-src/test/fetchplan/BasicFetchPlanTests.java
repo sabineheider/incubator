@@ -113,6 +113,17 @@ public class BasicFetchPlanTests extends EclipseLinkJPATest {
     }
 
     @Test
+    public void managedEmployeesAddress() throws Exception {
+        EntityManager em = getEntityManager();
+
+        Query query = this.examples.managedEmployeesAddress(em);
+        List<Employee> emps = query.getResultList();
+
+        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
+        FetchPlanAssert.assertFetched(fetchPlan, emps);
+    }
+
+    @Test
     public void readAllEmployee() throws Exception {
         EntityManager em = getEntityManager();
 

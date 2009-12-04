@@ -130,6 +130,19 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
     }
 
     @Test
+    public void managedEmployeesAddress() throws Exception {
+        EntityManager em = getEntityManager();
+
+        Query query = this.examples.managedEmployeesAddress(em);
+        List<Employee> emps = query.getResultList();
+
+        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
+        FetchPlanAssert.assertFetched(fetchPlan, emps);
+        List<Employee> serializedEmps = serialize(emps);
+        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
+    }
+    
+    @Test
     public void readAllEmployee() throws Exception {
         EntityManager em = getEntityManager();
 

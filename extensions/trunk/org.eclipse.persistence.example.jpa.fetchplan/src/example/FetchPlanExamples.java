@@ -161,6 +161,15 @@ public class FetchPlanExamples {
         return query;
     }
 
+    public Query managedEmployeesAddress(EntityManager em) {
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+
+        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
+        fetchPlan.addFetchItem("e.managedEmployees.address");
+
+        return query;
+    }
+
     public Query readAllEmployee(EntityManager em) {
         ReadAllQuery raq = new ReadAllQuery(Employee.class);
 

@@ -41,7 +41,7 @@ public class ReportItemFetchItem extends FetchItem {
     }
 
     @Override
-    protected Object getEntityValue(Object entity) {
+    public Object getEntityValue(Object entity) {
         if (entity instanceof Object[]) {
             Object[] values = (Object[]) entity;
             return values[getItem().getResultIndex()];

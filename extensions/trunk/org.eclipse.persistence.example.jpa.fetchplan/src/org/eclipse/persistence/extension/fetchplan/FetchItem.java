@@ -85,7 +85,7 @@ public class FetchItem {
      * @param entity
      * @return
      */
-    protected Object getEntityValue(Object entity) {
+    public Object getEntityValue(Object entity) {
         return entity;
     }
 

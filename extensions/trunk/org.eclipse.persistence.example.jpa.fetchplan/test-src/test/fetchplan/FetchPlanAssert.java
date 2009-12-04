@@ -13,6 +13,7 @@
 package test.fetchplan;
 
 import java.util.Collection;
+import java.util.Map;
 
 import junit.framework.Assert;
 
@@ -35,13 +36,15 @@ public class FetchPlanAssert {
     public static void assertFetched(FetchItem fetchItem, Object result) {
         Assert.assertNotNull("Null FetchItem", fetchItem);
         Assert.assertNotNull("Null Result", result);
-        Assert.assertFalse("Object[] results not yet supported", result instanceof Object[]);
 
         DatabaseMapping[] mappings = fetchItem.getMappings();
         Assert.assertNotNull(mappings);
 
-        Object current = result;
+        Object current =  fetchItem.getEntityValue(result);
+        
         for (int index = 0; index < mappings.length; index++) {
+            Assert.assertFalse("Collections not yet supported", current instanceof Collection<?>);
+            Assert.assertFalse("Maps not yet supported", current instanceof Map<?, ?>);
 
             Object value = mappings[index].getAttributeValueFromObject(current);
 
@@ -56,9 +59,12 @@ public class FetchPlanAssert {
             if (current == null) {
                 break;
             }
+            
+            // TODO" If the value is a collection/map then we need to iterate over each of them
+            // asserting its children are loaded.
         }
     }
-
+    
     public static Object assertLoaded(DatabaseMapping mapping, Object entity) {
         Assert.assertEquals("Incorrect class", mapping.getDescriptor().getJavaClass(), entity.getClass());
         
