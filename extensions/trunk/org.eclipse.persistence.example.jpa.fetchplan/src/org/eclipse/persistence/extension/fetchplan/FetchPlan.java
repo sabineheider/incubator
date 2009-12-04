@@ -17,14 +17,25 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.persistence.Query;
+
 import org.eclipse.persistence.internal.sessions.AbstractRecord;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
+import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.*;
 import org.eclipse.persistence.sessions.*;
 
 /**
  * FetchPlan handles specifying a set of relationships in a query result that
- * need to be instantiated on a given query result.
+ * need to be instantiated on a given query result. The FetchPlan is associated
+ * with a query through its properties where it is stored using the FetchPlan's
+ * class name as a key.
+ * <p>
+ * A FetchPlan is created/retrieved from a query using the
+ * {@link #getFetchPlan(Query)} or {@link #getFetchPlan(ObjectLevelReadQuery)}
+ * methods. Relationships that are to be loaded can then be added using
+ * {@link #addFetchItem(String...)} which creates a {@link FetchItem} within the
+ * plan for the requested relationship in the results graph.
  * 
  * @author dclarke
  * @since EclipseLink 1.1.2
@@ -39,6 +50,10 @@ public class FetchPlan implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * Retrieve the FetchPlan for this query. If none is exists in the query
+     * then create one and store it in the query's properties.
+     */
     public static FetchPlan getFetchPlan(ObjectLevelReadQuery query) {
         FetchPlan fetchPlan = (FetchPlan) query.getProperty(QUERY_PROPERTY);
 
@@ -48,6 +63,11 @@ public class FetchPlan implements Serializable {
         }
 
         return fetchPlan;
+    }
+
+    public static FetchPlan getFetchPlan(Query query) {
+        // TODO: Make sure its an EclipseLink ObjectLevelReadQuery
+        return getFetchPlan(JpaHelper.getReadAllQuery(query));
     }
 
     private FetchPlan(ObjectLevelReadQuery query) {
@@ -78,9 +98,15 @@ public class FetchPlan implements Serializable {
      * @param attributePath
      * @return
      */
-    public FetchPlan addFetchItem(String ... attributePaths) {
-        if (attributePaths == null || attributePaths.length < 1) {
+    public FetchPlan addFetchItem(String... attributePaths) {
+        if (attributePaths == null || attributePaths.length == 0) {
             throw new IllegalArgumentException("FetchPlan.addItem: " + attributePaths);
+        }
+
+        for (int index = 0; index < attributePaths.length; index++) {
+            if (attributePaths[index] == null || attributePaths[index].isEmpty() || attributePaths[index].startsWith(".") || attributePaths[index].endsWith(".")) {
+                throw new IllegalArgumentException("FetchPlan.addItem: " + attributePaths);
+            }
         }
 
         FetchItem fetchItem = null;

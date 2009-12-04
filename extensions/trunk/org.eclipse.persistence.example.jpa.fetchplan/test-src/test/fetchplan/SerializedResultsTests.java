@@ -8,10 +8,12 @@
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *     dclarke - Bug 288307: Extensions Incubator - FetchPlan 
+ *     dclarke - FetchPlan Extension incubator
  ******************************************************************************/
 package test.fetchplan;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -21,6 +23,7 @@ import javax.persistence.Query;
 import model.Employee;
 
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
+import org.eclipse.persistence.internal.helper.SerializationHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +34,7 @@ import example.FetchPlanExamples;
 
 @SuppressWarnings("unchecked")
 @PersistenceContext(unitName = "employee")
-public class BasicFetchPlanTests extends EclipseLinkJPATest {
+public class SerializedResultsTests extends EclipseLinkJPATest {
 
     private FetchPlanExamples examples = new FetchPlanExamples();
 
@@ -44,6 +47,8 @@ public class BasicFetchPlanTests extends EclipseLinkJPATest {
 
         FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         FetchPlanAssert.assertFetched(fetchPlan, emps);
+        List<Employee> serializedEmps = serialize(emps);
+        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
     }
 
     @Test
@@ -55,6 +60,8 @@ public class BasicFetchPlanTests extends EclipseLinkJPATest {
 
         FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         FetchPlanAssert.assertFetched(fetchPlan, emps);
+        List<Employee> serializedEmps = serialize(emps);
+        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
     }
 
     @Test
@@ -66,6 +73,8 @@ public class BasicFetchPlanTests extends EclipseLinkJPATest {
 
         FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         FetchPlanAssert.assertFetched(fetchPlan, emps);
+        List<Employee> serializedEmps = serialize(emps);
+        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
     }
 
     @Test
@@ -77,6 +86,8 @@ public class BasicFetchPlanTests extends EclipseLinkJPATest {
 
         FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         FetchPlanAssert.assertFetched(fetchPlan, emps);
+        List<Employee> serializedEmps = serialize(emps);
+        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
     }
 
     @Test
@@ -88,6 +99,8 @@ public class BasicFetchPlanTests extends EclipseLinkJPATest {
 
         FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         FetchPlanAssert.assertFetched(fetchPlan, emps);
+        List<Employee> serializedEmps = serialize(emps);
+        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
     }
 
     @Test
@@ -99,6 +112,8 @@ public class BasicFetchPlanTests extends EclipseLinkJPATest {
 
         FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         FetchPlanAssert.assertFetched(fetchPlan, emps);
+        List<Employee> serializedEmps = serialize(emps);
+        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
     }
 
     @Test
@@ -110,6 +125,8 @@ public class BasicFetchPlanTests extends EclipseLinkJPATest {
 
         FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         FetchPlanAssert.assertFetched(fetchPlan, emps);
+        List<Employee> serializedEmps = serialize(emps);
+        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
     }
 
     @Test
@@ -121,19 +138,8 @@ public class BasicFetchPlanTests extends EclipseLinkJPATest {
 
         FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         FetchPlanAssert.assertFetched(fetchPlan, emps);
-    }
-
-    @Test
-    public void emptyFetchPlan() throws Exception {
-        EntityManager em = getEntityManager();
-
-        Query query = em.createQuery("SELECT e FROM Employee e");
-        
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
-        
-        List<Employee> emps = query.getResultList();
-
-        FetchPlanAssert.assertFetched(fetchPlan, emps);
+        List<Employee> serializedEmps = serialize(emps);
+        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
     }
 
     @Before
@@ -142,5 +148,18 @@ public class BasicFetchPlanTests extends EclipseLinkJPATest {
         EclipseLinkJPAAssert.assertIsWoven(getEMF(), "PhoneNumber");
         JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
         getQuerySQLTracker(getEMF()).reset();
+    }
+
+    /*
+     * clone using serialization
+     */
+    private List serialize(final List<?> results) throws Exception {
+        List cloneList = new ArrayList(results.size());
+        
+        for (int i = 0; i < results.size(); i++) {
+            cloneList.add(SerializationHelper.clone((Serializable) results.get(i)));
+        }
+        
+        return cloneList;
     }
 }

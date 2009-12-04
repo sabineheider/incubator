@@ -30,7 +30,7 @@ public class ReportItemFetchItem extends FetchItem {
         super(attributePaths);
         this.item = matchReportItem(query, attributePaths);
 
-        if (this.item == null) {
+        if (this.item == null || this.attributeNames.length == 0) {
             throw new IllegalArgumentException("Cannot create FetchPlan item: " + attributePaths);
         }
 
@@ -47,12 +47,6 @@ public class ReportItemFetchItem extends FetchItem {
             return values[getItem().getResultIndex()];
         }
         return super.getEntityValue(entity);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    protected Collection<Object> getInitialResults(Object result) {
-        return (Collection<Object>) result;
     }
 
     /**

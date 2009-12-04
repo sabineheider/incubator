@@ -12,28 +12,12 @@
  ******************************************************************************/
 package org.eclipse.persistence.extension.fetchplan;
 
-import java.util.Collection;
-import java.util.Map;
-
 import org.eclipse.persistence.queries.ReadAllQuery;
 
 public class ReadAllFetchItem extends FetchItem {
 
-    protected ReadAllFetchItem(ReadAllQuery query, String ... attributePaths) {
+    protected ReadAllFetchItem(ReadAllQuery query, String... attributePaths) {
         super(attributePaths);
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    protected Collection<Object> getInitialResults(Object result) {
-        if (result instanceof Collection<?>) {
-            return (Collection<Object>) result;
-        }
-
-        if (result instanceof Map<?, ?>) {
-            return ((Map<Object, Object>) result).values();
-        }
-
-        throw new IllegalStateException("Could not convert result to collection: " + result);
-    }
 }

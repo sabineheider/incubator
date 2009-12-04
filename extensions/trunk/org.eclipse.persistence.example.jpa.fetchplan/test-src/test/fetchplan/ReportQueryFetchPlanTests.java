@@ -63,14 +63,18 @@ public class ReportQueryFetchPlanTests extends EclipseLinkJPATest {
     public void employeeCountPhones() throws Exception {
         EntityManager em = getEntityManager();
 
-        Query query = em.createQuery("SELECT e, COUNT(e.phoneNumbers) FROM Employee e");
+        Query query = em.createQuery("SELECT e, COUNT(e.phoneNumbers) FROM Employee e GROUP BY e");
 
         FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
         fetchPlan.addFetchItem("e.manager.address");
         fetchPlan.addFetchItem("e.phoneNumbers");
 
-        List<Employee> emps = query.getResultList();
+        List<Object[]> results = query.getResultList();
 
-        Assert.assertNotNull(emps);
+        Assert.assertNotNull(results);
+
+        for (Object[] result : results) {
+            System.out.println(result[0] + "- phones: " + result[1]);
+        }
     }
 }
