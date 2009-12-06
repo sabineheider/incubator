@@ -35,7 +35,7 @@ public class ReportQueryFetchPlanTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e, e.address FROM Employee e WHERE e.gender IS NOT NULL");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
+        FetchPlan fetchPlan = new FetchPlan(JpaHelper.getReadAllQuery(query));
         fetchPlan.addFetchItem("e.manager.address");
         fetchPlan.addFetchItem("e.manager.phoneNumbers");
 
@@ -50,7 +50,7 @@ public class ReportQueryFetchPlanTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e, e.manager FROM Employee e");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
+        FetchPlan fetchPlan = new FetchPlan(JpaHelper.getReadAllQuery(query));
         fetchPlan.addFetchItem("e.manager.address");
         fetchPlan.addFetchItem("e.phoneNumbers");
 
@@ -65,7 +65,7 @@ public class ReportQueryFetchPlanTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e, COUNT(e.phoneNumbers) FROM Employee e GROUP BY e");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
+        FetchPlan fetchPlan = new FetchPlan(JpaHelper.getReadAllQuery(query));
         fetchPlan.addFetchItem("e.manager.address");
         fetchPlan.addFetchItem("e.phoneNumbers");
 

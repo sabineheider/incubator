@@ -32,7 +32,7 @@ public class FailureTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
+        FetchPlan fetchPlan = new FetchPlan(query);
         try {
             fetchPlan.addFetchItem((String[]) null);
         } catch (IllegalArgumentException iae) {
@@ -47,7 +47,7 @@ public class FailureTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
+        FetchPlan fetchPlan = new FetchPlan(query);
         try {
             fetchPlan.addFetchItem(new String[0]);
         } catch (IllegalArgumentException iae) {
@@ -62,7 +62,7 @@ public class FailureTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
+        FetchPlan fetchPlan = new FetchPlan(query);
         try {
             fetchPlan.addFetchItem("");
         } catch (IllegalArgumentException iae) {
@@ -77,7 +77,7 @@ public class FailureTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
+        FetchPlan fetchPlan = new FetchPlan(query);
         try {
             fetchPlan.addFetchItem(new String[] { null });
         } catch (IllegalArgumentException iae) {
@@ -86,14 +86,15 @@ public class FailureTests extends EclipseLinkJPATest {
         Assert.fail("Should have thrown IllegalArgumentException");
     }
 
-    // TODO - should this test fail. currently its equivalent to an empty FetchPlan
+    // TODO - should this test fail. currently its equivalent to an empty
+    // FetchPlan
     @Test
     public void validAliasOnly() throws Exception {
         EntityManager em = getEntityManager();
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
+        FetchPlan fetchPlan = new FetchPlan(query);
         fetchPlan.addFetchItem("e");
 
         query.getResultList();
@@ -105,7 +106,7 @@ public class FailureTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
+        FetchPlan fetchPlan = new FetchPlan(query);
         try {
             fetchPlan.addFetchItem("e.");
         } catch (IllegalArgumentException iae) {
@@ -120,9 +121,25 @@ public class FailureTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
+        FetchPlan fetchPlan = new FetchPlan(query);
         try {
             fetchPlan.addFetchItem("e.manager.");
+        } catch (IllegalArgumentException iae) {
+            return;
+        }
+        Assert.fail("Should have thrown IllegalArgumentException");
+    }
+
+    @Test
+    public void noEntitiesInResult() throws Exception {
+        EntityManager em = getEntityManager();
+
+        Query query = em.createQuery("SELECT e.id FROM Employee e");
+
+        FetchPlan fetchPlan = new FetchPlan(query);
+
+        try {
+            fetchPlan.addFetchItem("e.address");
         } catch (IllegalArgumentException iae) {
             return;
         }

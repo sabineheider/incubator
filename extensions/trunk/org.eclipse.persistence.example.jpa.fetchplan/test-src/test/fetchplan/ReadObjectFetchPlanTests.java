@@ -42,7 +42,7 @@ public class ReadObjectFetchPlanTests extends EclipseLinkJPATest {
         ExpressionBuilder eb = roq.getExpressionBuilder();
         roq.setSelectionCriteria(eb.get("id").equal(empId));
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(roq);
+        FetchPlan fetchPlan = new FetchPlan(roq);
         fetchPlan.addFetchItem("e.address");
         fetchPlan.addFetchItem("e.phoneNumbers");
 

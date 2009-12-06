@@ -43,7 +43,7 @@ public class FetchPlanAssert {
         Object current =  fetchItem.getEntityValue(result);
         
         for (int index = 0; index < mappings.length; index++) {
-            Assert.assertFalse("Collections not yet supported", current instanceof Collection<?>);
+            Assert.assertFalse("Collections not yet supported by FetchPlanAssert", current instanceof Collection<?>);
             Assert.assertFalse("Maps not yet supported", current instanceof Map<?, ?>);
 
             Object value = mappings[index].getAttributeValueFromObject(current);

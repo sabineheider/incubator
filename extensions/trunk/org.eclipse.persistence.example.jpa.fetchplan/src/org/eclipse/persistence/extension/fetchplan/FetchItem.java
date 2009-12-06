@@ -21,6 +21,7 @@ import java.util.Map;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.indirection.IndirectContainer;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
+import org.eclipse.persistence.internal.helper.Helper;
 import org.eclipse.persistence.internal.indirection.BatchValueHolder;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.mappings.ForeignReferenceMapping;
@@ -174,4 +175,7 @@ public class FetchItem {
         return this.mappings;
     }
 
+    public String toString() {
+        return Helper.getShortClassName(this) + "(" + getAttributeNames() + ")";
+    }
 }

@@ -19,11 +19,19 @@ import java.util.List;
 
 import javax.persistence.Query;
 
+import org.eclipse.persistence.internal.helper.ConcurrentFixedCache;
+import org.eclipse.persistence.internal.jpa.EJBQueryImpl;
 import org.eclipse.persistence.internal.sessions.AbstractRecord;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.queries.*;
-import org.eclipse.persistence.sessions.*;
+import org.eclipse.persistence.queries.DatabaseQuery;
+import org.eclipse.persistence.queries.ObjectLevelReadQuery;
+import org.eclipse.persistence.queries.QueryRedirector;
+import org.eclipse.persistence.queries.ReadAllQuery;
+import org.eclipse.persistence.queries.ReportQuery;
+import org.eclipse.persistence.sessions.Record;
+import org.eclipse.persistence.sessions.Session;
+import org.eclipse.persistence.sessions.SessionEvent;
 
 /**
  * FetchPlan handles specifying a set of relationships in a query result that
@@ -51,29 +59,71 @@ public class FetchPlan implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * Retrieve the FetchPlan for this query. If none is exists in the query
-     * then create one and store it in the query's properties.
+     * TODO
      */
     public static FetchPlan getFetchPlan(ObjectLevelReadQuery query) {
-        FetchPlan fetchPlan = (FetchPlan) query.getProperty(QUERY_PROPERTY);
+        return (FetchPlan) query.getProperty(QUERY_PROPERTY);
+    }
 
-        if (fetchPlan == null) {
-            fetchPlan = new FetchPlan(query);
-            query.setProperty(QUERY_PROPERTY, fetchPlan);
+    /**
+     * TODO
+     */
+    public static FetchPlan getFetchPlan(Query query) {
+        DatabaseQuery dbQuery = JpaHelper.getDatabaseQuery(query);
+        if (!dbQuery.isObjectLevelReadQuery()) {
+            throw new IllegalArgumentException("FetchPlan can only be created for ObjectLevelReadQueries: " + dbQuery);
+        }
+        return getFetchPlan((ObjectLevelReadQuery) dbQuery);
+    }
+
+    /**
+     * Create a FetchPlan and associate it to the provided query. This involves
+     * putting the FetchPlan on the query using a property and setting up a
+     * redirector on the query.
+     * 
+     * @param query
+     */
+    public FetchPlan(ObjectLevelReadQuery query) {
+        initialize(query);
+    }
+
+    public FetchPlan(Query query) {
+        DatabaseQuery dbQuery = JpaHelper.getDatabaseQuery(query);
+        if (!dbQuery.isObjectLevelReadQuery()) {
+            throw new IllegalArgumentException("FetchPlan can only be created for ObjectLevelReadQueries: " + dbQuery);
         }
 
-        return fetchPlan;
+        // If this query is stored in the JPA query cache we need to remove it
+        // This is a work around for Bug XXX
+        EJBQueryImpl<?> queryImpl = (EJBQueryImpl<?>) query;
+        ConcurrentFixedCache queryCache = queryImpl.getEntityManager().getServerSession().getProject().getJPQLParseCache();
+        if (queryCache.getCache().containsValue(dbQuery)) {
+            dbQuery = (DatabaseQuery) dbQuery.clone();
+            queryImpl.setDatabaseQuery(dbQuery);
+
+            // TODO - not sure how cached queries have a FtechPlan but resetting
+            // for now
+            dbQuery.removeProperty(QUERY_PROPERTY);
+            if (dbQuery.getRedirector() != null && dbQuery.getRedirector() instanceof FetchPlanRedirector) {
+                dbQuery.setRedirector(null);
+            }
+        }
+
+        initialize((ObjectLevelReadQuery) dbQuery);
     }
 
-    public static FetchPlan getFetchPlan(Query query) {
-        // TODO: Make sure its an EclipseLink ObjectLevelReadQuery
-        return getFetchPlan(JpaHelper.getReadAllQuery(query));
-    }
+    private void initialize(ObjectLevelReadQuery query) {
+        if (query.getProperties().containsKey(QUERY_PROPERTY)) {
+            throw new IllegalStateException("Query already has a FetchPlan configured.");
+        }
+        if (query.getRedirector() != null) {
+            throw new IllegalStateException("Query already has a QueryRedirector configured");
+        }
 
-    private FetchPlan(ObjectLevelReadQuery query) {
         this.query = query;
         this.items = new ArrayList<FetchItem>();
         query.setRedirector(new FetchPlanRedirector());
+        query.setProperty(QUERY_PROPERTY, this);
     }
 
     public ObjectLevelReadQuery getQuery() {
@@ -139,7 +189,10 @@ public class FetchPlan implements Serializable {
         }
     }
 
-    @SuppressWarnings("serial")
+    public String toString() {
+        return "FetchPlan()";
+    }
+
     class FetchPlanRedirector implements QueryRedirector {
 
         /**

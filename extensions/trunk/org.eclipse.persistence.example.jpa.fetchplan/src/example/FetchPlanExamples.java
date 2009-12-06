@@ -90,7 +90,7 @@ public class FetchPlanExamples {
     public Query employeeAddressPhones(EntityManager em) {
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
+        FetchPlan fetchPlan = new FetchPlan(query);
         fetchPlan.addFetchItem("e.address");
         fetchPlan.addFetchItem("e.phoneNumbers");
 
@@ -103,7 +103,7 @@ public class FetchPlanExamples {
         query.setHint(QueryHints.BATCH, "e.address");
         query.setHint(QueryHints.BATCH, "e.phoneNumbers");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
+        FetchPlan fetchPlan = new FetchPlan(query);
         fetchPlan.addFetchItem("e.address");
         fetchPlan.addFetchItem("e.phoneNumbers");
 
@@ -116,17 +116,17 @@ public class FetchPlanExamples {
         query.setHint(QueryHints.FETCH, "e.address");
         query.setHint(QueryHints.FETCH, "e.phoneNumbers");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
+        FetchPlan fetchPlan = new FetchPlan(query);
         fetchPlan.addFetchItem("e.address");
         fetchPlan.addFetchItem("e.phoneNumbers");
-
+        
         return query;
     }
 
     public Query managerAddressPhones(EntityManager em) {
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
+        FetchPlan fetchPlan = new FetchPlan(query);
         fetchPlan.addFetchItem("e.manager.address");
         fetchPlan.addFetchItem("e.manager.phoneNumbers");
 
@@ -136,7 +136,7 @@ public class FetchPlanExamples {
     public Query responsibilities(EntityManager em) {
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
+        FetchPlan fetchPlan = new FetchPlan(query);
         fetchPlan.addFetchItem("e.responsibilities");
 
         return query;
@@ -144,8 +144,8 @@ public class FetchPlanExamples {
 
     public Query responsibilitiesBatch(EntityManager em) {
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
-        query.setHint(QueryHints.FETCH, "e.responsibilities");
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
+        query.setHint(QueryHints.BATCH, "e.responsibilities");
+        FetchPlan fetchPlan = new FetchPlan(query);
         fetchPlan.addFetchItem("e.responsibilities");
 
         return query;
@@ -154,9 +154,9 @@ public class FetchPlanExamples {
     public Query employeeAddress_ReturnBoth(EntityManager em) {
         Query query = em.createQuery("SELECT e, e.address FROM Employee e WHERE e.gender IS NOT NULL");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(JpaHelper.getReadAllQuery(query));
-        fetchPlan.addFetchItem("e.manager.address");
-        fetchPlan.addFetchItem("e.manager.phoneNumbers");
+        FetchPlan fetchPlan = new FetchPlan(query);
+        fetchPlan.addFetchItem("e.address");
+        fetchPlan.addFetchItem("e.phoneNumbers");
 
         return query;
     }
@@ -164,8 +164,25 @@ public class FetchPlanExamples {
     public Query managedEmployeesAddress(EntityManager em) {
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
+        FetchPlan fetchPlan = new FetchPlan(query);
         fetchPlan.addFetchItem("e.managedEmployees.address");
+
+        return query;
+    }
+
+    public Query managedEmployees(EntityManager em) {
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+        FetchPlan fetchPlan = new FetchPlan(query);
+        fetchPlan.addFetchItem("e.managedEmployees");
+
+        return query;
+    }
+
+    public Query managedEmployees_Batching(EntityManager em) {
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+        query.setHint(QueryHints.BATCH, "e.managedEmployees");
+        FetchPlan fetchPlan = new FetchPlan(query);
+        fetchPlan.addFetchItem("e.managedEmployees");
 
         return query;
     }
@@ -173,9 +190,9 @@ public class FetchPlanExamples {
     public Query readAllEmployee(EntityManager em) {
         ReadAllQuery raq = new ReadAllQuery(Employee.class);
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(raq);
-        fetchPlan.addFetchItem("e.manager.address");
-        fetchPlan.addFetchItem("e.manager.phoneNumbers");
+        FetchPlan fetchPlan = new FetchPlan(raq);
+        fetchPlan.addFetchItem("e.address");
+        fetchPlan.addFetchItem("e.phoneNumbers");
 
         Query query = JpaHelper.createQuery(raq, em);
         return query;
