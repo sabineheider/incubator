@@ -26,28 +26,29 @@ import model.Employee;
 
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
+import org.eclipse.persistence.extension.fetchplan.FetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.queries.ReadAllQuery;
 import org.junit.Test;
 
 import testing.EclipseLinkJPATest;
-import testing.QuerySQLTracker;
-import example.FetchPlanExamples;
 
 @SuppressWarnings("unchecked")
 @PersistenceContext(unitName = "employee")
 public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
-    private FetchPlanExamples examples = new FetchPlanExamples();
-
     @Test
     public void employeeAddressPhones() throws Exception {
         EntityManager em = getEntityManager();
 
-        Query query = this.examples.employeeAddressPhones(em);
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+        fetchPlan.addFetchItem("e.address");
+        fetchPlan.addFetchItem("e.phoneNumbers");
 
         // Verify state of created query
         Assert.assertTrue("Query does not contain FetchPlan", JpaHelper.getDatabaseQuery(query).getProperties().containsKey("org.eclipse.persistence.extension.fetchplan.FetchPlan"));
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         Assert.assertEquals("Incorrect # of items in FetchPlan", 2, fetchPlan.getItems().size());
 
         List<Employee> emps = query.getResultList();
@@ -62,11 +63,17 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     public void employeeAddressPhones_Batching() throws Exception {
         EntityManager em = getEntityManager();
 
-        Query query = this.examples.employeeAddressPhones_Batching(em);
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+
+        query.setHint(QueryHints.BATCH, "e.address");
+        query.setHint(QueryHints.BATCH, "e.phoneNumbers");
+
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+        fetchPlan.addFetchItem("e.address");
+        fetchPlan.addFetchItem("e.phoneNumbers");
 
         // Verify state of created query
         Assert.assertTrue("Query does not contain FetchPlan", JpaHelper.getDatabaseQuery(query).getProperties().containsKey("org.eclipse.persistence.extension.fetchplan.FetchPlan"));
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         Assert.assertEquals("Incorrect # of items in FetchPlan", 2, fetchPlan.getItems().size());
 
         List<Employee> emps = query.getResultList();
@@ -81,11 +88,17 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     public void employeeAddressPhones_Joining() throws Exception {
         EntityManager em = getEntityManager();
 
-        Query query = this.examples.employeeAddressPhones_Joining(em);
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+
+        query.setHint(QueryHints.FETCH, "e.address");
+        query.setHint(QueryHints.FETCH, "e.phoneNumbers");
+
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+        fetchPlan.addFetchItem("e.address");
+        fetchPlan.addFetchItem("e.phoneNumbers");
 
         // Verify state of created query
         Assert.assertTrue("Query does not contain FetchPlan", JpaHelper.getDatabaseQuery(query).getProperties().containsKey("org.eclipse.persistence.extension.fetchplan.FetchPlan"));
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         Assert.assertEquals("Incorrect # of items in FetchPlan", 2, fetchPlan.getItems().size());
 
         List<Employee> emps = query.getResultList();
@@ -100,11 +113,14 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     public void managerAddressPhones() throws Exception {
         EntityManager em = getEntityManager();
 
-        Query query = this.examples.managerAddressPhones(em);
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+        fetchPlan.addFetchItem("e.manager.address");
+        fetchPlan.addFetchItem("e.manager.phoneNumbers");
 
         // Verify state of created query
         Assert.assertTrue("Query does not contain FetchPlan", JpaHelper.getDatabaseQuery(query).getProperties().containsKey("org.eclipse.persistence.extension.fetchplan.FetchPlan"));
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         Assert.assertEquals("Incorrect # of items in FetchPlan", 2, fetchPlan.getItems().size());
 
         List<Employee> emps = query.getResultList();
@@ -125,11 +141,13 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     public void responsibilities() throws Exception {
         EntityManager em = getEntityManager();
 
-        Query query = this.examples.responsibilities(em);
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+        fetchPlan.addFetchItem("e.responsibilities");
 
         // Verify state of created query
         Assert.assertTrue("Query does not contain FetchPlan", JpaHelper.getDatabaseQuery(query).getProperties().containsKey("org.eclipse.persistence.extension.fetchplan.FetchPlan"));
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         Assert.assertEquals("Incorrect # of items in FetchPlan", 1, fetchPlan.getItems().size());
 
         List<Employee> emps = query.getResultList();
@@ -145,11 +163,13 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     public void responsibilities_JOIN() throws Exception {
         EntityManager em = getEntityManager();
 
-        Query query = this.examples.responsibilities(em);
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+        fetchPlan.addFetchItem("e.responsibilities");
 
         // Verify state of created query
         Assert.assertTrue("Query does not contain FetchPlan", JpaHelper.getDatabaseQuery(query).getProperties().containsKey("org.eclipse.persistence.extension.fetchplan.FetchPlan"));
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         Assert.assertEquals("Incorrect # of items in FetchPlan", 1, fetchPlan.getItems().size());
 
         query.setHint(QueryHints.FETCH, "e.responsibilities");
@@ -166,11 +186,13 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     public void responsibilitiesBatch() throws Exception {
         EntityManager em = getEntityManager();
 
-        Query query = this.examples.responsibilitiesBatch(em);
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+        query.setHint(QueryHints.BATCH, "e.responsibilities");
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+        fetchPlan.addFetchItem("e.responsibilities");
 
         // Verify state of created query
         Assert.assertTrue("Query does not contain FetchPlan", JpaHelper.getDatabaseQuery(query).getProperties().containsKey("org.eclipse.persistence.extension.fetchplan.FetchPlan"));
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         Assert.assertEquals("Incorrect # of items in FetchPlan", 1, fetchPlan.getItems().size());
 
         List<Employee> emps = query.getResultList();
@@ -185,11 +207,14 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     public void employeeAddress_ReturnBoth() throws Exception {
         EntityManager em = getEntityManager();
 
-        Query query = this.examples.employeeAddress_ReturnBoth(em);
+        Query query = em.createQuery("SELECT e, e.address FROM Employee e WHERE e.gender IS NOT NULL");
+
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+        fetchPlan.addFetchItem("e.address");
+        fetchPlan.addFetchItem("e.phoneNumbers");
 
         // Verify state of created query
         Assert.assertTrue("Query does not contain FetchPlan", JpaHelper.getDatabaseQuery(query).getProperties().containsKey("org.eclipse.persistence.extension.fetchplan.FetchPlan"));
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         Assert.assertEquals("Incorrect # of items in FetchPlan", 2, fetchPlan.getItems().size());
 
         List<Employee> emps = query.getResultList();
@@ -204,13 +229,14 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     public void managedEmployees() throws Exception {
         EntityManager em = getEntityManager();
 
-        Query query = this.examples.managedEmployees(em);
-        
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+        fetchPlan.addFetchItem("e.managedEmployees");
+
         // Verify state of created query
         Assert.assertTrue("Query does not contain FetchPlan", JpaHelper.getDatabaseQuery(query).getProperties().containsKey("org.eclipse.persistence.extension.fetchplan.FetchPlan"));
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         Assert.assertEquals("Incorrect # of items in FetchPlan", 1, fetchPlan.getItems().size());
-        
+
         List<Employee> emps = query.getResultList();
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
@@ -223,10 +249,13 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
         EntityManager em = getEntityManager();
         Assert.assertEquals("QuerySQLTracker not reset", 0, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
-        Query query = this.examples.managedEmployees_Batching(em);
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+        query.setHint(QueryHints.BATCH, "e.managedEmployees");
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+        fetchPlan.addFetchItem("e.managedEmployees");
+
         List<Employee> emps = query.getResultList();
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
         getQuerySQLTracker(em).printResults("managedEmployees_Batching> ");
@@ -237,10 +266,14 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     public void managedEmployeesAddress() throws Exception {
         EntityManager em = getEntityManager();
 
-        Query query = this.examples.managedEmployeesAddress(em);
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+        fetchPlan.addFetchItem("e.managedEmployees.address");
+
         List<Employee> emps = query.getResultList();
 
-        // FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
+        // FetchPlan fetchPlan = FetchPlanHelper.get(query);
         // FetchPlanAssert.assertFetched(fetchPlan, emps);
 
         getQuerySQLTracker(em).printResults("managedEmployeesAddress> ");
@@ -268,10 +301,16 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     public void readAllEmployee() throws Exception {
         EntityManager em = getEntityManager();
 
-        Query query = this.examples.readAllEmployee(em);
+        ReadAllQuery raq = new ReadAllQuery(Employee.class);
+
+        FetchPlan fetchPlan = FetchPlanHelper.create(raq);
+        fetchPlan.addFetchItem("e.address");
+        fetchPlan.addFetchItem("e.phoneNumbers");
+
+        Query query = JpaHelper.createQuery(raq, em);
+
         List<Employee> emps = query.getResultList();
 
-        FetchPlan fetchPlan = FetchPlan.getFetchPlan(query);
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
         getQuerySQLTracker(em).printResults("readAllEmployee> ");
@@ -284,7 +323,7 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = new FetchPlan(query);
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
 
         List<Employee> emps = query.getResultList();
 

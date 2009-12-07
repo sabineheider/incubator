@@ -19,6 +19,7 @@ import javax.persistence.Query;
 import junit.framework.Assert;
 
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
+import org.eclipse.persistence.extension.fetchplan.FetchPlanHelper;
 import org.junit.Test;
 
 import testing.EclipseLinkJPATest;
@@ -32,7 +33,7 @@ public class FailureTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = new FetchPlan(query);
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
         try {
             fetchPlan.addFetchItem((String[]) null);
         } catch (IllegalArgumentException iae) {
@@ -47,7 +48,7 @@ public class FailureTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = new FetchPlan(query);
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
         try {
             fetchPlan.addFetchItem(new String[0]);
         } catch (IllegalArgumentException iae) {
@@ -62,7 +63,7 @@ public class FailureTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = new FetchPlan(query);
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
         try {
             fetchPlan.addFetchItem("");
         } catch (IllegalArgumentException iae) {
@@ -77,7 +78,7 @@ public class FailureTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = new FetchPlan(query);
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
         try {
             fetchPlan.addFetchItem(new String[] { null });
         } catch (IllegalArgumentException iae) {
@@ -94,7 +95,7 @@ public class FailureTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = new FetchPlan(query);
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
         fetchPlan.addFetchItem("e");
 
         query.getResultList();
@@ -106,7 +107,7 @@ public class FailureTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = new FetchPlan(query);
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
         try {
             fetchPlan.addFetchItem("e.");
         } catch (IllegalArgumentException iae) {
@@ -121,7 +122,7 @@ public class FailureTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e");
 
-        FetchPlan fetchPlan = new FetchPlan(query);
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
         try {
             fetchPlan.addFetchItem("e.manager.");
         } catch (IllegalArgumentException iae) {
@@ -136,7 +137,7 @@ public class FailureTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e.id FROM Employee e");
 
-        FetchPlan fetchPlan = new FetchPlan(query);
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
 
         try {
             fetchPlan.addFetchItem("e.address");

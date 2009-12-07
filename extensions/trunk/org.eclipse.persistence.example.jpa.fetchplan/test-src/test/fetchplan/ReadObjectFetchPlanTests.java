@@ -22,6 +22,7 @@ import model.Employee;
 
 import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
+import org.eclipse.persistence.extension.fetchplan.FetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.junit.Test;
@@ -42,7 +43,7 @@ public class ReadObjectFetchPlanTests extends EclipseLinkJPATest {
         ExpressionBuilder eb = roq.getExpressionBuilder();
         roq.setSelectionCriteria(eb.get("id").equal(empId));
 
-        FetchPlan fetchPlan = new FetchPlan(roq);
+        FetchPlan fetchPlan = FetchPlanHelper.create(roq);
         fetchPlan.addFetchItem("e.address");
         fetchPlan.addFetchItem("e.phoneNumbers");
 

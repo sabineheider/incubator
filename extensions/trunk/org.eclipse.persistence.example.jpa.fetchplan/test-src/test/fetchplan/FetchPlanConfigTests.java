@@ -19,6 +19,7 @@ import javax.persistence.Query;
 import junit.framework.Assert;
 
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
+import org.eclipse.persistence.extension.fetchplan.FetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.DatabaseQuery;
 import org.junit.Test;
@@ -50,10 +51,10 @@ public class FetchPlanConfigTests extends EclipseLinkJPATest {
         Assert.assertTrue(JpaHelper.getDatabaseQuery(query).getProperties().isEmpty());
         Assert.assertNull(dbQuery.getRedirector());
 
-        new FetchPlan(query);
-        
+        FetchPlanHelper.create(query);
+
         Assert.assertNotSame(dbQuery, JpaHelper.getDatabaseQuery(query));
-        
+
         dbQuery = JpaHelper.getDatabaseQuery(query);
         Assert.assertTrue(dbQuery.getProperties().containsKey(FetchPlan.class.getName()));
         Assert.assertNotNull(dbQuery.getRedirector());
@@ -68,10 +69,10 @@ public class FetchPlanConfigTests extends EclipseLinkJPATest {
         EntityManager em = getEntityManager();
 
         Query q1 = em.createQuery("SELECT e FROM Employee e");
-        new FetchPlan(q1);
+        FetchPlanHelper.create(q1);
 
         Query q2 = em.createQuery("SELECT e FROM Employee e");
-        new FetchPlan(q2);
+        FetchPlanHelper.create(q2);
 
         Assert.assertNotSame("Different JPA queries share same native query", JpaHelper.getDatabaseQuery(q1), JpaHelper.getDatabaseQuery(q2));
     }
