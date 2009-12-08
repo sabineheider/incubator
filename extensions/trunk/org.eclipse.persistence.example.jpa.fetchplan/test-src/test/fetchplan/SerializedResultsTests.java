@@ -34,6 +34,14 @@ import org.junit.Test;
 import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 
+/**
+ * Tests to verify that {@link FetchPlan} produced results can be serialized as
+ * expected and later merged into other transactions in the same and different
+ * {@link EntityManager} instances.
+ * 
+ * @author dclarke
+ * @since EclipseLink 2.0
+ */
 @SuppressWarnings("unchecked")
 @PersistenceContext(unitName = "employee")
 public class SerializedResultsTests extends EclipseLinkJPATest {

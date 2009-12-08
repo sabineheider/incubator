@@ -102,7 +102,7 @@ public class FetchPlanHelper {
             dbQuery = (DatabaseQuery) dbQuery.clone();
             queryImpl.setDatabaseQuery(dbQuery);
 
-            // TODO - not sure how cached queries have a FtechPlan but resetting
+            // TODO - not sure how cached queries have a FetchPlan but resetting
             // for now
             dbQuery.removeProperty(QUERY_PROPERTY);
             if (dbQuery.getRedirector() != null && dbQuery.getRedirector() instanceof FetchPlanRedirector) {

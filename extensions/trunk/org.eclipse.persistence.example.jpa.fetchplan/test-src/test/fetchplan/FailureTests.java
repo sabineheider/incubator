@@ -20,6 +20,11 @@ import junit.framework.Assert;
 
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.FetchPlanHelper;
+import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.queries.DatabaseQuery;
+import org.eclipse.persistence.queries.QueryRedirector;
+import org.eclipse.persistence.sessions.Record;
+import org.eclipse.persistence.sessions.Session;
 import org.junit.Test;
 
 import testing.EclipseLinkJPATest;
@@ -143,6 +148,63 @@ public class FailureTests extends EclipseLinkJPATest {
             fetchPlan.addFetchItem("e.address");
         } catch (IllegalArgumentException iae) {
             return;
+        }
+        Assert.fail("Should have thrown IllegalArgumentException");
+    }
+
+    @Test
+    public void incorrectQueryType() throws Exception {
+        EntityManager em = getEntityManager();
+
+        Query query = em.createQuery("SELECT e.id FROM Employee e");
+
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+
+        try {
+            fetchPlan.addFetchItem("e.address");
+        } catch (IllegalArgumentException iae) {
+            return;
+        }
+        Assert.fail("Should have thrown IllegalArgumentException");
+    }
+
+    @Test
+    public void nativeQueryWithExistingRedirector() throws Exception {
+        EntityManager em = getEntityManager();
+
+        Query query = em.createQuery("SELECT e.id FROM Employee e");
+
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+
+        try {
+            fetchPlan.addFetchItem("e.address");
+        } catch (IllegalArgumentException iae) {
+            return;
+        } finally {
+            JpaHelper.getServerSession(getEMF()).getProject().getJPQLParseCache().getCache().clear();
+        }
+        Assert.fail("Should have thrown IllegalArgumentException");
+    }
+
+    @Test
+    public void cachedJpaQueryWithExistingRedirector() throws Exception {
+        EntityManager em = getEntityManager();
+
+        Query query1 = em.createQuery("SELECT e.id FROM Employee e");
+        JpaHelper.getReadAllQuery(query1).setRedirector(new QueryRedirector() {
+            public Object invokeQuery(DatabaseQuery query, Record arguments, Session session) {
+                return null;
+            }
+        });
+
+        Query query2 = em.createQuery("SELECT e.id FROM Employee e");
+
+        try {
+            FetchPlanHelper.create(query2);
+        } catch (IllegalStateException ise) {
+            return;
+        } finally {
+            JpaHelper.getServerSession(getEMF()).getProject().getJPQLParseCache().getCache().clear();
         }
         Assert.fail("Should have thrown IllegalArgumentException");
     }

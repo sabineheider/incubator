@@ -12,6 +12,7 @@
  ******************************************************************************/
 package test.fetchplan;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
@@ -22,7 +23,7 @@ import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.indirection.IndirectContainer;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.mappings.DatabaseMapping;
-import org.eclipse.persistence.queries.FetchGroupTracker;
+import org.eclipse.persistence.mappings.ForeignReferenceMapping;
 
 /**
  * Helper class used by test cases to ensure that the expected attributes and
@@ -40,54 +41,54 @@ public class FetchPlanAssert {
         DatabaseMapping[] mappings = fetchItem.getMappings();
         Assert.assertNotNull(mappings);
 
-        Object current =  fetchItem.getEntityValue(result);
-        
+        Object current = fetchItem.getEntityValue(result);
+
         for (int index = 0; index < mappings.length; index++) {
-            Assert.assertFalse("Collections not yet supported by FetchPlanAssert", current instanceof Collection<?>);
-            Assert.assertFalse("Maps not yet supported", current instanceof Map<?, ?>);
-
-            Object value = mappings[index].getAttributeValueFromObject(current);
-
-            if (value instanceof IndirectContainer) {
-                Assert.assertTrue(((IndirectContainer) value).isInstantiated());
-            } else if (value instanceof ValueHolderInterface) {
-                Assert.assertTrue(((ValueHolderInterface) value).isInstantiated());
-                value = ((ValueHolderInterface) value).getValue();
+            if (current instanceof Collection<?>) {
+                current = assertFetched(mappings[index], (Collection<?>) current);
+            } else {
+                current = assertFetched(mappings[index], current);
             }
-            current = value;
-            
+
             if (current == null) {
                 break;
             }
-            
-            // TODO" If the value is a collection/map then we need to iterate over each of them
-            // asserting its children are loaded.
         }
     }
-    
-    public static Object assertLoaded(DatabaseMapping mapping, Object entity) {
-        Assert.assertEquals("Incorrect class", mapping.getDescriptor().getJavaClass(), entity.getClass());
-        
-        if (entity instanceof Collection<?>) {
-            for (Object o : ((Collection<?>) entity)) {
-                assertLoaded(mapping, o);
-            }
-            return null;
-        }
+
+    public static Object assertFetched(DatabaseMapping mapping, Object entity) {
+        Assert.assertFalse("Collections not supported", entity instanceof Collection<?>);
+        Assert.assertFalse("Maps not  supported", entity instanceof Map<?, ?>);
 
         Object value = mapping.getAttributeValueFromObject(entity);
 
-        if (mapping.isDatabaseMapping()) {
-            if (entity instanceof FetchGroupTracker) {
-                Assert.assertTrue("Attribute not fetched: " + mapping.getAttributeName(), ((FetchGroupTracker) entity)._persistence_isAttributeFetched(mapping.getAttributeName()));
-            }
-        } else if (value instanceof IndirectContainer) {
+        if (value instanceof IndirectContainer) {
             Assert.assertTrue(((IndirectContainer) value).isInstantiated());
         } else if (value instanceof ValueHolderInterface) {
             Assert.assertTrue(((ValueHolderInterface) value).isInstantiated());
             value = ((ValueHolderInterface) value).getValue();
         }
         return value;
+    }
+
+    public static Collection<Object> assertFetched(DatabaseMapping mapping, Collection<?> entities) {
+        Collection<Object> results = new ArrayList<Object>();
+
+        for (Object entity : entities) {
+            Object result = assertFetched(mapping, entity);
+
+            if (mapping.isForeignReferenceMapping() && ((ForeignReferenceMapping) mapping).getReferenceDescriptor() != null) {
+                if (result instanceof Collection<?>) {
+                    results.addAll((Collection<?>) result);
+                } else if (result instanceof Map<?, ?>) {
+                    // Assume for now that only the values can be entities
+                    results.addAll(((Map<?, ?>) result).values());
+                } else {
+                    results.add(result);
+                }
+            }
+        }
+        return results;
     }
 
     public static void assertFetched(FetchPlan fetchPlan, Object result) {
