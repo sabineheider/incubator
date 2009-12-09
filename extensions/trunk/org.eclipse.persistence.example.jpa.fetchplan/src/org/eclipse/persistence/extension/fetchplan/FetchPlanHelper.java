@@ -177,7 +177,7 @@ public class FetchPlanHelper {
          */
         public Object invokeQuery(DatabaseQuery query, Record arguments, Session session) {
             Object result = ((AbstractSession) session).internalExecuteQuery(query, (AbstractRecord) arguments);
-            this.fetchPlan.instantiate((ObjectLevelReadQuery) query, result, session);
+            this.fetchPlan.instantiate(result, session);
             return result;
         }
     }

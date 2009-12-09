@@ -153,23 +153,6 @@ public class DetachedResultsTests extends EclipseLinkJPATest {
     }
 
     @Test
-    public void employeeAddress_ReturnBoth() throws Exception {
-        EntityManager em = getEntityManager();
-
-        Query query = em.createQuery("SELECT e, e.address FROM Employee e WHERE e.gender IS NOT NULL");
-
-        FetchPlan fetchPlan = FetchPlanHelper.create(query);
-        fetchPlan.addFetchItem("e.address");
-        fetchPlan.addFetchItem("e.phoneNumbers");
-
-        List<Employee> emps = query.getResultList();
-
-        FetchPlanAssert.assertFetched(fetchPlan, emps);
-        List<Employee> detachedEmps = detach(em, emps, fetchPlan);
-        FetchPlanAssert.assertFetched(fetchPlan, detachedEmps);
-    }
-
-    @Test
     public void managedEmployeesAddress() throws Exception {
         EntityManager em = getEntityManager();
 
@@ -226,7 +209,7 @@ public class DetachedResultsTests extends EclipseLinkJPATest {
         List<?> copies = uow.registerAllObjects(results);
 
         if (fetchPlan != null) {
-            fetchPlan.instantiate(Employee.class, copies, uow);
+            fetchPlan.instantiate(copies, uow);
         }
 
         uow.release();
