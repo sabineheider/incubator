@@ -55,7 +55,6 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
-        getQuerySQLTracker(em).printResults("employeeAddressPhones> ");
         Assert.assertEquals(1 + (emps.size() * 2), getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
@@ -80,7 +79,6 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
-        getQuerySQLTracker(em).printResults("employeeAddressPhones_Batching> ");
         Assert.assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
@@ -105,7 +103,6 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
-        getQuerySQLTracker(em).printResults("employeeAddressPhones_Joining> ");
         Assert.assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
@@ -133,7 +130,6 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
                 numWithManager++;
             }
         }
-        getQuerySQLTracker(em).printResults("managerAddressPhones> ");
         Assert.assertEquals(11, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
@@ -155,7 +151,6 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
         Assert.assertEquals(1 + emps.size(), getQuerySQLTracker(em).getTotalSQLSELECTCalls());
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
-        getQuerySQLTracker(em).printResults("responsibilities> ");
         Assert.assertEquals(1 + emps.size(), getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
@@ -178,7 +173,6 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
-        getQuerySQLTracker(em).printResults("responsibilities_JOIN> ");
         Assert.assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
@@ -199,7 +193,6 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
-        getQuerySQLTracker(em).printResults("responsibilitiesBatch> ");
         Assert.assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
@@ -221,7 +214,6 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
-        getQuerySQLTracker(em).printResults("employeeAddress_ReturnBoth> ");
         Assert.assertEquals(1 + emps.size(), getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
@@ -240,7 +232,6 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
         List<Employee> emps = query.getResultList();
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
-        getQuerySQLTracker(em).printResults("managedEmployees> ");
         Assert.assertEquals(1 + emps.size(), getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
@@ -258,7 +249,6 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
-        getQuerySQLTracker(em).printResults("managedEmployees_Batching> ");
         Assert.assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
@@ -273,10 +263,7 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
         List<Employee> emps = query.getResultList();
 
-        // FetchPlan fetchPlan = FetchPlanHelper.get(query);
-        // FetchPlanAssert.assertFetched(fetchPlan, emps);
-
-        getQuerySQLTracker(em).printResults("managedEmployeesAddress> ");
+         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
         int initialSqlSelect = getQuerySQLTracker(em).getTotalSQLSELECTCalls();
         int sqlCount = 1;
@@ -313,7 +300,6 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
-        getQuerySQLTracker(em).printResults("readAllEmployee> ");
         Assert.assertEquals(1 + (emps.size() * 2), getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
@@ -332,7 +318,7 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
     @Override
     protected EntityManager getEntityManager() {
-        getEMF().getCache().evictAll();
+        JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
         EntityManager em = super.getEntityManager();
         getQuerySQLTracker(em).reset();
         Assert.assertEquals("QuerySQLTracker not reset", 0, getQuerySQLTracker(em).getTotalSQLSELECTCalls());

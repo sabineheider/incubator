@@ -12,8 +12,6 @@
  ******************************************************************************/
 package test.fetchplan;
 
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -25,9 +23,11 @@ import model.Employee;
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.FetchPlanHelper;
-import org.eclipse.persistence.internal.helper.SerializationHelper;
+import org.eclipse.persistence.internal.sessions.AbstractSession;
+import org.eclipse.persistence.jpa.JpaEntityManager;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.ReadAllQuery;
+import org.eclipse.persistence.sessions.UnitOfWork;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,7 +35,7 @@ import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 
 /**
- * Tests to verify that {@link FetchPlan} produced results can be serialized as
+ * Tests to verify that {@link FetchPlan} produced results can be dettached as
  * expected and later merged into other transactions in the same and different
  * {@link EntityManager} instances.
  * 
@@ -44,7 +44,7 @@ import testing.EclipseLinkJPATest;
  */
 @SuppressWarnings("unchecked")
 @PersistenceContext(unitName = "employee")
-public class SerializedResultsTests extends EclipseLinkJPATest {
+public class DetachedResultsTests extends EclipseLinkJPATest {
 
     @Test
     public void employeeAddressPhones() throws Exception {
@@ -59,8 +59,8 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         List<Employee> emps = query.getResultList();
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
-        List<Employee> serializedEmps = serialize(emps);
-        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
+        List<Employee> detachedEmps = detach(em, emps, fetchPlan);
+        FetchPlanAssert.assertFetched(fetchPlan, detachedEmps);
     }
 
     @Test
@@ -79,8 +79,8 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         List<Employee> emps = query.getResultList();
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
-        List<Employee> serializedEmps = serialize(emps);
-        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
+        List<Employee> detachedEmps = detach(em, emps, fetchPlan);
+        FetchPlanAssert.assertFetched(fetchPlan, detachedEmps);
     }
 
     @Test
@@ -99,8 +99,8 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         List<Employee> emps = query.getResultList();
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
-        List<Employee> serializedEmps = serialize(emps);
-        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
+        List<Employee> detachedEmps = detach(em, emps, fetchPlan);
+        FetchPlanAssert.assertFetched(fetchPlan, detachedEmps);
     }
 
     @Test
@@ -116,8 +116,8 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         List<Employee> emps = query.getResultList();
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
-        List<Employee> serializedEmps = serialize(emps);
-        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
+        List<Employee> detachedEmps = detach(em, emps, fetchPlan);
+        FetchPlanAssert.assertFetched(fetchPlan, detachedEmps);
     }
 
     @Test
@@ -132,8 +132,8 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         List<Employee> emps = query.getResultList();
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
-        List<Employee> serializedEmps = serialize(emps);
-        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
+        List<Employee> detachedEmps = detach(em, emps, fetchPlan);
+        FetchPlanAssert.assertFetched(fetchPlan, detachedEmps);
     }
 
     @Test
@@ -148,8 +148,8 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         List<Employee> emps = query.getResultList();
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
-        List<Employee> serializedEmps = serialize(emps);
-        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
+        List<Employee> detachedEmps = detach(em, emps, fetchPlan);
+        FetchPlanAssert.assertFetched(fetchPlan, detachedEmps);
     }
 
     @Test
@@ -165,8 +165,8 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         List<Employee> emps = query.getResultList();
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
-        List<Employee> serializedEmps = serialize(emps);
-        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
+        List<Employee> detachedEmps = detach(em, emps, fetchPlan);
+        FetchPlanAssert.assertFetched(fetchPlan, detachedEmps);
     }
 
     @Test
@@ -181,8 +181,8 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         List<Employee> emps = query.getResultList();
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
-        List<Employee> serializedEmps = serialize(emps);
-        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
+        List<Employee> detachedEmps = detach(em, emps, fetchPlan);
+        FetchPlanAssert.assertFetched(fetchPlan, detachedEmps);
     }
 
     @Test
@@ -200,8 +200,8 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         List<Employee> emps = query.getResultList();
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
-        List<Employee> serializedEmps = serialize(emps);
-        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
+        List<Employee> detachedEmps = detach(em, emps, fetchPlan);
+        FetchPlanAssert.assertFetched(fetchPlan, detachedEmps);
     }
 
     @Before
@@ -212,16 +212,24 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         getQuerySQLTracker(getEMF()).reset();
     }
 
-    /*
-     * clone using serialization
+    /**
+     * Detach using a non-synchronized UnitOfWork to create copies. If a
+     * {@link FetchPlan} is provided then ensure that resulting detached copies
+     * have the necessary relationships populated.
      */
-    private List serialize(final List<?> results) throws Exception {
-        List cloneList = new ArrayList(results.size());
+    private List detach(EntityManager em, List<?> results, FetchPlan fetchPlan) throws Exception {
+        JpaEntityManager eclipseLinkEm = JpaHelper.getEntityManager(em);
+        AbstractSession session = eclipseLinkEm.getServerSession();
+        
+        // Non-synchronized UOW is not hooked to JTA transaction
+        UnitOfWork uow = session.acquireNonSynchronizedUnitOfWork(null);
+        List<?> copies = uow.registerAllObjects(results);
 
-        for (int i = 0; i < results.size(); i++) {
-            cloneList.add(SerializationHelper.clone((Serializable) results.get(i)));
+        if (fetchPlan != null) {
+            fetchPlan.instantiate(Employee.class, copies, uow);
         }
 
-        return cloneList;
+        uow.release();
+        return copies;
     }
 }

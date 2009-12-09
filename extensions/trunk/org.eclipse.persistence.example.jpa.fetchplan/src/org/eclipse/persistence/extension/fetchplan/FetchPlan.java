@@ -110,9 +110,13 @@ public class FetchPlan implements Serializable {
      * 
      * @param result
      */
-    protected void instantiate(ObjectLevelReadQuery query, Object result, Session session) {
+    public void instantiate(ObjectLevelReadQuery query, Object result, Session session) {
+       instantiate(query.getReferenceClass(), result, session);
+    }
+
+    public void instantiate(Class<?> entityClass, Object result, Session session) {
         for (FetchItem item : getItems()) {
-            item.instantiate(query.getReferenceClass(), result, session);
+            item.instantiate(entityClass, result, session);
         }
     }
 
