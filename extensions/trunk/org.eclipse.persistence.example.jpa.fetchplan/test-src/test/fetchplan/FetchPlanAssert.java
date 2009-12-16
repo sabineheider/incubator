@@ -24,6 +24,7 @@ import org.eclipse.persistence.indirection.IndirectContainer;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.mappings.ForeignReferenceMapping;
+import org.eclipse.persistence.queries.FetchGroupTracker;
 
 /**
  * Helper class used by test cases to ensure that the expected attributes and
@@ -34,7 +35,22 @@ import org.eclipse.persistence.mappings.ForeignReferenceMapping;
  */
 public class FetchPlanAssert {
 
-    public static void assertFetched(FetchItem fetchItem, Object result) {
+    public static void assertFetched(FetchPlan fetchPlan, Object result) {
+        Assert.assertNotNull("Null FetchPlan", fetchPlan);
+        Assert.assertNotNull("Null Result", result);
+
+        for (FetchItem item : fetchPlan.getItems()) {
+            assertFetched(item, result);
+        }
+    }
+
+    public static void assertFetched(FetchPlan fetchPlan, Collection<?> results) {
+        for (Object result : results) {
+            assertFetched(fetchPlan, result);
+        }
+    }
+
+    private static void assertFetched(FetchItem fetchItem, Object result) {
         Assert.assertNotNull("Null FetchItem", fetchItem);
         Assert.assertNotNull("Null Result", result);
 
@@ -56,22 +72,28 @@ public class FetchPlanAssert {
         }
     }
 
-    public static Object assertFetched(DatabaseMapping mapping, Object entity) {
+    private static Object assertFetched(DatabaseMapping mapping, Object entity) {
         Assert.assertFalse("Collections not supported", entity instanceof Collection<?>);
         Assert.assertFalse("Maps not  supported", entity instanceof Map<?, ?>);
+
+        if (mapping.isDirectToFieldMapping() && entity instanceof FetchGroupTracker) {
+            Assert.assertTrue("FetchPlan did not load: '" + mapping.getAttributeName() + "' on " + entity, ((FetchGroupTracker) entity)._persistence_isAttributeFetched(mapping.getAttributeName()));
+            return null;
+        }
 
         Object value = mapping.getAttributeValueFromObject(entity);
 
         if (value instanceof IndirectContainer) {
-            Assert.assertTrue(((IndirectContainer) value).isInstantiated());
+            Assert.assertTrue("FetchPlan did not load: '" + mapping.getAttributeName() + "' on " + entity, ((IndirectContainer) value).isInstantiated());
         } else if (value instanceof ValueHolderInterface) {
-            Assert.assertTrue(((ValueHolderInterface) value).isInstantiated());
+            Assert.assertTrue("FetchPlan did not load: '" + mapping.getAttributeName() + "' on " + entity, ((ValueHolderInterface) value).isInstantiated());
             value = ((ValueHolderInterface) value).getValue();
         }
+
         return value;
     }
 
-    public static Collection<Object> assertFetched(DatabaseMapping mapping, Collection<?> entities) {
+    private static Collection<Object> assertFetched(DatabaseMapping mapping, Collection<?> entities) {
         Collection<Object> results = new ArrayList<Object>();
 
         for (Object entity : entities) {
@@ -89,20 +111,5 @@ public class FetchPlanAssert {
             }
         }
         return results;
-    }
-
-    public static void assertFetched(FetchPlan fetchPlan, Object result) {
-        Assert.assertNotNull("Null FetchPlan", fetchPlan);
-        Assert.assertNotNull("Null Result", result);
-
-        for (FetchItem item : fetchPlan.getItems()) {
-            assertFetched(item, result);
-        }
-    }
-
-    public static void assertFetched(FetchPlan fetchPlan, Collection<?> results) {
-        for (Object result : results) {
-            assertFetched(fetchPlan, result);
-        }
     }
 }

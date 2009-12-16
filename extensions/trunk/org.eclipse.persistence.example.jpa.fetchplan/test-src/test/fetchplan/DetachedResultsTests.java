@@ -18,6 +18,8 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
+import junit.framework.Assert;
+
 import model.Employee;
 
 import org.eclipse.persistence.config.QueryHints;
@@ -186,6 +188,52 @@ public class DetachedResultsTests extends EclipseLinkJPATest {
         List<Employee> detachedEmps = detach(em, emps, fetchPlan);
         FetchPlanAssert.assertFetched(fetchPlan, detachedEmps);
     }
+    
+    @Test
+    public void employeeAddress_Batching() throws Exception {
+        EntityManager em = getEntityManager();
+
+        Query query = em.createQuery("SELECT e FROM Employee e");
+
+        query.setHint(QueryHints.BATCH, "e.address");
+
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+        fetchPlan.addFetchItem("e.address");
+
+        // Verify state of created query
+        Assert.assertTrue("Query does not contain FetchPlan", JpaHelper.getDatabaseQuery(query).getProperties().containsKey("org.eclipse.persistence.extension.fetchplan.FetchPlan"));
+        Assert.assertEquals("Incorrect # of items in FetchPlan", 1, fetchPlan.getItems().size());
+
+        List<Employee> emps = query.getResultList();
+
+        Assert.assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        FetchPlanAssert.assertFetched(fetchPlan, emps);
+        Assert.assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        for (Employee emp : emps) {
+            EclipseLinkJPAAssert.assertLoaded(getEMF(), emp, "address");
+            EclipseLinkJPAAssert.assertNotLoaded(getEMF(), emp, "phoneNumbers");
+            EclipseLinkJPAAssert.assertNotLoaded(getEMF(), emp, "manager");
+            EclipseLinkJPAAssert.assertNotLoaded(getEMF(), emp, "projects");
+
+            // Assumption that all employees have an address
+            Assert.assertNotNull(emp.getAddress());
+        }
+        
+        List<Employee> detachedEmps = detach(em, emps, fetchPlan);
+        for (Employee emp : detachedEmps) {
+            EclipseLinkJPAAssert.assertLoaded(getEMF(), emp, "address");
+            EclipseLinkJPAAssert.assertNotLoaded(getEMF(), emp, "phoneNumbers");
+            EclipseLinkJPAAssert.assertNotLoaded(getEMF(), emp, "manager");
+            EclipseLinkJPAAssert.assertNotLoaded(getEMF(), emp, "projects");
+
+            // Assumption that all employees have an address
+            Assert.assertNotNull(emp.getAddress());
+        }
+        
+        Assert.assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+    }
+
 
     @Before
     public void verifyConfig() {

@@ -25,12 +25,14 @@ import model.Address;
 import model.Employee;
 
 import org.eclipse.persistence.config.QueryHints;
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.FetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.ReadAllQuery;
 import org.junit.Test;
 
+import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 
 @SuppressWarnings("unchecked")
@@ -80,6 +82,49 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
         Assert.assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        FetchPlanAssert.assertFetched(fetchPlan, emps);
+        Assert.assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        for (Employee emp : emps) {
+            EclipseLinkJPAAssert.assertLoaded(getEMF(), emp, "address");
+            EclipseLinkJPAAssert.assertLoaded(getEMF(), emp, "phoneNumbers");
+            EclipseLinkJPAAssert.assertNotLoaded(getEMF(), emp, "manager");
+            EclipseLinkJPAAssert.assertNotLoaded(getEMF(), emp, "projects");
+        }
+    }
+
+    @Test
+    public void employeeAddress_Batching() throws Exception {
+        EntityManager em = getEntityManager();
+
+        Query query = em.createQuery("SELECT e FROM Employee e");
+
+        query.setHint(QueryHints.BATCH, "e.address");
+
+        FetchPlan fetchPlan = FetchPlanHelper.create(query);
+        fetchPlan.addFetchItem("e.address");
+
+        // Verify state of created query
+        Assert.assertTrue("Query does not contain FetchPlan", JpaHelper.getDatabaseQuery(query).getProperties().containsKey("org.eclipse.persistence.extension.fetchplan.FetchPlan"));
+        Assert.assertEquals("Incorrect # of items in FetchPlan", 1, fetchPlan.getItems().size());
+
+        List<Employee> emps = query.getResultList();
+
+        Assert.assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        FetchPlanAssert.assertFetched(fetchPlan, emps);
+        Assert.assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        for (Employee emp : emps) {
+            EclipseLinkJPAAssert.assertLoaded(getEMF(), emp, "address");
+            EclipseLinkJPAAssert.assertNotLoaded(getEMF(), emp, "phoneNumbers");
+            EclipseLinkJPAAssert.assertNotLoaded(getEMF(), emp, "manager");
+            EclipseLinkJPAAssert.assertNotLoaded(getEMF(), emp, "projects");
+
+            // Assumption that all employees have an address
+            Assert.assertNotNull(emp.getAddress());
+        }
+
+        Assert.assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
     @Test
@@ -263,7 +308,7 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
         List<Employee> emps = query.getResultList();
 
-         FetchPlanAssert.assertFetched(fetchPlan, emps);
+        FetchPlanAssert.assertFetched(fetchPlan, emps);
 
         int initialSqlSelect = getQuerySQLTracker(em).getTotalSQLSELECTCalls();
         int sqlCount = 1;
@@ -314,6 +359,12 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
         List<Employee> emps = query.getResultList();
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
+
+        for (Employee emp : emps) {
+            EclipseLinkJPAAssert.assertNotLoaded(getEMF(), emp, "address");
+            EclipseLinkJPAAssert.assertNotLoaded(getEMF(), emp, "phoneNumbers");
+            EclipseLinkJPAAssert.assertNotLoaded(getEMF(), emp, "manager");
+        }
     }
 
     @Override
@@ -322,6 +373,13 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
         EntityManager em = super.getEntityManager();
         getQuerySQLTracker(em).reset();
         Assert.assertEquals("QuerySQLTracker not reset", 0, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        // Verify Config expected
+        ClassDescriptor empDesc = EclipseLinkJPAAssert.assertEntity(getEMF(), "Employee");
+        EclipseLinkJPAAssert.assertLazy(empDesc, "address");
+        EclipseLinkJPAAssert.assertLazy(empDesc, "phoneNumbers");
+        EclipseLinkJPAAssert.assertLazy(empDesc, "manager");
+
         return em;
     }
 }
