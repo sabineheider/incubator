@@ -25,9 +25,10 @@
     <path id="compile.path">
         <pathelement path="${trunk.dir}/${eclipselink.jar.name}"/>
         <pathelement path="${trunk.dir}/plugins/${javax.transaction.lib}"/>
+        <pathelement path="${trunk.dir}/plugins/${persistence.jar}"/>
     </path>
 	
-	<target name="build" depends="clean,compile" />
+    <target name="build" depends="clean,netweaver-platform-jar" />
 	
     <!-- clean -->
     <target name="clean" description="Clean all generated content">
@@ -37,7 +38,7 @@
     </target>
 
     <!-- compile -->
-    <target name="compile" description="Compile MaxDBPlatform">
+    <target name="compile" description="Compile NetWeaver Platform">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}"
                destdir="${classes.dir}"
@@ -52,6 +53,14 @@
                fork="true"
                classpathref="compile.path"
         />
+    </target>
+    
+    <target name="netweaver-platform-jar" description="build jar file" depends="compile">
+        <jar jarfile="netweaver_platform.jar">
+           <fileset dir="${classes.dir}">
+               <include name="**/*.class"/>
+           </fileset>
+        </jar>
     </target>
 
 </project>
