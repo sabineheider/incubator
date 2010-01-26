@@ -20,21 +20,23 @@
 
     <property file="./build.properties"/>
     <property file="${trunk.dir}/build.properties"/>
+    <property name="netweaver.platform.jar" value="netweaver_platform.jar"/>
 	
     <!-- Set Compile Path-->
     <path id="compile.path">
-        <pathelement path="${trunk.dir}/${eclipselink.jar.name}"/>
-        <pathelement path="${trunk.dir}/plugins/${javax.transaction.lib}"/>
-        <pathelement path="${trunk.dir}/plugins/${persistence.jar}"/>
+        <pathelement path="${trunk.dir}/${eclipselink.jar}"/>
+        <pathelement path="${trunk.dir}/plugins/${transaction.jar}"/>
+        <pathelement path="${trunk.dir}/jpa/plugins/${persistence20.jar}"/>
     </path>
 	
-    <target name="build" depends="clean,netweaver-platform-jar" />
+    <target name="build" depends="clean, package" />
 	
     <!-- clean -->
     <target name="clean" description="Clean all generated content">
         <delete includeEmptyDirs="true" failonerror="false">
             <fileset dir="${classes.dir}"/>
         </delete>
+        <delete file="${netweaver.platform.jar}"/>
     </target>
 
     <!-- compile -->
@@ -55,8 +57,8 @@
         />
     </target>
     
-    <target name="netweaver-platform-jar" description="build jar file" depends="compile">
-        <jar jarfile="netweaver_platform.jar">
+    <target name="package" description="build jar file" depends="compile">
+        <jar jarfile="${netweaver.platform.jar}">
            <fileset dir="${classes.dir}">
                <include name="**/*.class"/>
            </fileset>
