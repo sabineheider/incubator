@@ -23,6 +23,7 @@ import javax.persistence.PersistenceContext;
 
 import junit.framework.Assert;
 
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -119,8 +120,7 @@ public abstract class EclipseLinkJPATest {
 					unitName, emfProps);
 			QuerySQLTracker.install(JpaHelper.getServerSession(emf));
 			return emf;
-		} catch (Exception e) {
-			System.out.println("Persistence.createEMF FAILED: "
+		} catch (Exception e) {			System.out.println("Persistence.createEMF FAILED: "
 					+ e.getMessage());
 			e.printStackTrace();
 			throw new RuntimeException("EclipseLinkJPATest.createEMF("
@@ -179,5 +179,12 @@ public abstract class EclipseLinkJPATest {
 			emf = null;
 		}
 	}
+	
+	protected ClassDescriptor getDescriptor(Object entity) {
+	    return JpaHelper.getServerSession(getEMF()).getClassDescriptor(entity);
+	}
 
+    protected ClassDescriptor getDescriptor(String alias) {
+        return JpaHelper.getServerSession(getEMF()).getClassDescriptorForAlias(alias);
+    }
 }

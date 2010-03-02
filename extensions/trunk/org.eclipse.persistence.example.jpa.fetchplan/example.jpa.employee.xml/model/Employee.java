@@ -212,6 +212,6 @@ public class Employee implements Serializable {
     }
 
     public String toString() {
-        return "Employee(" + getId() + " - " + getLastName() + ", " + getFirstName() + ")";
+        return "Employee(" + getId() + ")";
     }
 }

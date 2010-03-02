@@ -13,23 +13,34 @@
  ******************************************************************************/
 package org.eclipse.persistence.extension.fetchplan;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.persistence.Query;
+import javax.persistence.Transient;
 
+import org.eclipse.persistence.config.QueryHints;
+import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
+import org.eclipse.persistence.exceptions.QueryException;
+import org.eclipse.persistence.internal.descriptors.changetracking.ObjectChangeListener;
+import org.eclipse.persistence.internal.sessions.AbstractSession;
+import org.eclipse.persistence.internal.sessions.ObjectChangeSet;
+import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
+import org.eclipse.persistence.mappings.DatabaseMapping;
+import org.eclipse.persistence.queries.FetchGroup;
+import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.eclipse.persistence.queries.ObjectLevelReadQuery;
-import org.eclipse.persistence.queries.ReadAllQuery;
-import org.eclipse.persistence.queries.ReportQuery;
+import org.eclipse.persistence.sessions.ObjectCopyingPolicy;
 import org.eclipse.persistence.sessions.Session;
-import org.eclipse.persistence.sessions.SessionEvent;
+import org.eclipse.persistence.sessions.UnitOfWork;
 
 /**
- * FetchPlan handles specifying a set of relationships in a query result that
- * need to be instantiated on a given query result. The FetchPlan is associated
- * with a query through its properties where it is stored using the FetchPlan's
- * class name as a key.
+ * A FetchPlan ... TODO FetchPlan handles specifying a set of relationships in a
+ * query result that need to be instantiated on a given query result. The
+ * FetchPlan is associated with a query through its properties where it is
+ * stored using the FetchPlan's class name as a key.
  * <p>
  * A FetchPlan is created/retrieved from a query using the
  * {@link #getFetchPlan(Query)} or {@link #getFetchPlan(ObjectLevelReadQuery)}
@@ -38,27 +49,94 @@ import org.eclipse.persistence.sessions.SessionEvent;
  * plan for the requested relationship in the results graph.
  * 
  * @author dclarke
- * @since EclipseLink 1.1.2
+ * @since EclipseLink 2.1
  */
-public class FetchPlan implements Serializable {
+public class FetchPlan {
 
-    private List<FetchItem> items;
+    /**
+     * Map of items where each item represents an attribute to be fetched/copied
+     * depending on the usage of the plan.
+     * 
+     * @see FetchItem
+     */
+    private Map<String, FetchItem> items;
 
-    private ObjectLevelReadQuery query;
+    private Class<?> entityClass;
 
-    private static final long serialVersionUID = 1L;
+    @Transient
+    private ClassDescriptor descriptor;
 
-    protected FetchPlan(ObjectLevelReadQuery query) {
-        this.query = query;
-        this.items = new ArrayList<FetchItem>();
+    public FetchPlan(Class<?> entityClass) {
+        this.entityClass = entityClass;
+        this.items = new HashMap<String, FetchItem>();
     }
 
-    public ObjectLevelReadQuery getQuery() {
-        return this.query;
+    public Class<?> getEntityClass() {
+        return this.entityClass;
     }
 
-    public List<FetchItem> getItems() {
+    /**
+     * Used in {@link FetchItem#initialize(Session)}
+     */
+    protected void setEntityClass(Class<?> entityClass) {
+        this.entityClass = entityClass;
+    }
+
+    protected Map<String, FetchItem> getItems() {
         return this.items;
+    }
+
+    /**
+     * 
+     * @return a read-only collection of {@link FetchItem} in this plan.
+     */
+    public Collection<FetchItem> getFetchItems() {
+        return getItems().values();
+    }
+
+    public boolean containsAttribute(String... attributeNameOrPath) {
+        // TODO
+        return false;
+    }
+
+    /**
+     * Initialize the FetchPlan and all of its FetchItem and nested FetchPlan to
+     * lookup and hold their corresponding descriptors and mappings. If any of
+     * the FetchPlan's state does not match the mappings an exception will be
+     * raised.
+     * <p>
+     * This is used within {@link #getDescriptor(Session)} to lazily lookup the
+     * {@link ClassDescriptor} but it can also be used externally to validate
+     * the configuration of the FetchPlan.
+     * 
+     * @throws IllegalStateException
+     *             if {@link #entityClass} is null or no descriptor can be found
+     *             for the provided class
+     * @throws QueryException
+     *             if any of the items or nested items cannot be associated with
+     *             a mapping
+     */
+    public void initialize(Session session) {
+        if (this.entityClass == null) {
+            throw new IllegalStateException("FetchPlan.initialize: Null entityClass found");
+        }
+
+        this.descriptor = session.getClassDescriptor(getEntityClass());
+
+        if (this.descriptor == null) {
+            throw new IllegalStateException("No descriptor found for class: " + getEntityClass());
+        }
+
+        for (FetchItem item : getItems().values()) {
+            item.initialize(session);
+        }
+    }
+
+    protected ClassDescriptor getDescriptor(Session session) {
+        if (this.descriptor == null) {
+            initialize(session);
+        }
+        return this.descriptor;
     }
 
     /**
@@ -75,48 +153,206 @@ public class FetchPlan implements Serializable {
      * @param attributePath
      * @return
      */
-    public FetchPlan addFetchItem(String... attributePaths) {
-        if (attributePaths == null || attributePaths.length == 0) {
-            throw new IllegalArgumentException("FetchPlan.addItem: " + attributePaths);
-        }
+    public void addAttribute(String... nameOrPath) {
+        String[] attributePaths = convert(nameOrPath);
+        FetchPlan currentFP = this;
 
         for (int index = 0; index < attributePaths.length; index++) {
-            if (attributePaths[index] == null || attributePaths[index].isEmpty() || attributePaths[index].startsWith(".") || attributePaths[index].endsWith(".")) {
-                throw new IllegalArgumentException("FetchPlan.addItem: " + attributePaths);
+            String attrName = attributePaths[index];
+            FetchItem item = (FetchItem) currentFP.getItems().get(attrName);
+
+            if (item == null) {
+                item = new FetchItem(currentFP, attrName);
+                currentFP.getItems().put(attrName, item);
+            }
+
+            currentFP = item.getFetchPlan();
+            if (currentFP == null && index < (attributePaths.length - 1)) {
+                currentFP = new FetchPlan(null);
+                item.setFetchPlan(currentFP);
             }
         }
+    }
 
-        FetchItem fetchItem = null;
-
-        if (getQuery().isReportQuery()) {
-            fetchItem = new ReportItemFetchItem((ReportQuery) query, attributePaths);
-        } else if (getQuery().isReadAllQuery()) {
-            fetchItem = new ReadAllFetchItem((ReadAllQuery) query, attributePaths);
-        } else {
-            fetchItem = new FetchItem(attributePaths);
+    /**
+     * Convert a provided name or path which could be a single attributeName, a
+     * single string with dot separated attribute names, or an array of
+     * attribute names defining the path.
+     */
+    private String[] convert(String... nameOrPath) {
+        if (nameOrPath == null || nameOrPath.length == 0 || (nameOrPath.length == 1 && (nameOrPath[0] == null || nameOrPath[0].isEmpty()))) {
+            throw new IllegalArgumentException("FetchPlan: illegal attribute name or path: '" + nameOrPath + "'");
         }
 
-        getItems().add(fetchItem);
-        return this;
+        String[] path = nameOrPath;
+        if (nameOrPath.length > 1 || !nameOrPath[0].contains(".")) {
+            path = nameOrPath;
+        } else {
+            if (nameOrPath[0].endsWith(".")) {
+                throw new IllegalArgumentException("Invalid path: " + nameOrPath[0]);
+            }
+            path = nameOrPath[0].split("\\.");
+        }
+
+        if (path.length == 0) {
+            throw new IllegalArgumentException("Invalid path: " + nameOrPath[0]);
+        }
+
+        for (int index = 0; index < path.length; index++) {
+            if (path[index] == null || path[index].length() == 0 || !path[index].trim().equals(path[index])) {
+                throw new IllegalArgumentException("Invalid path: " + nameOrPath[0]);
+            }
+        }
+        return path;
     }
 
     /**
      * Instantiate all items ({@link FetchItem}) for the result provided. This
      * walks through the query result using the items and the session's mapping
-     * metadata to populate all requested relationships.
+     * metadata to populate all requested attributes and relationships.
      * <p>
-     * This method invoked by the
-     * {@link FetchPlanListener#postExecuteQuery(SessionEvent)} event.
-     * 
-     * @param result Results with specified attributes loaded
+     * This method ensures that the provided entity has at least the attributes
+     * specified in the plan loaded. Additional attributes may already have been
+     * loaded or will be loaded through interaction with {@link FetchGroup}
+     * behavior.
      */
-    public void instantiate(Object result, Session session) {
-        for (FetchItem item : getItems()) {
-            item.instantiate(getQuery().getReferenceClass(), result, session);
+    public void fetch(Object entity, AbstractSession session) {
+        if (entity instanceof Collection<?>) {
+            for (Object e : (Collection<?>) entity) {
+                if (e instanceof Object[]) {
+                    for (int index = 0; index < ((Object[]) e).length; index++) {
+                        if (((Object[]) e)[index].getClass() == getEntityClass()) {
+                            fetch(((Object[]) e)[index], session);
+                        }
+                    }
+                } else {
+                    fetch(e, session);
+                }
+            }
+        } else {
+            for (Map.Entry<String, FetchItem> entry : getItems().entrySet()) {
+                entry.getValue().fetch(entity, session);
+            }
         }
+    }
+
+    /**
+     * Perform fetch on all entities in collection.
+     * 
+     * @see #fetch(Object, AbstractSession)
+     */
+    public void fetch(Collection<?> entities, AbstractSession session) {
+        for (Object entity : entities) {
+            fetch(entity, session);
+        }
+    }
+
+    /**
+     * Perform fetch on all entities in collection.
+     * 
+     * @see #fetch(Object, AbstractSession)
+     */
+    public void fetch(Collection<Object[]> entities, int resultIndex, AbstractSession session) {
+        for (Object[] entity : entities) {
+            fetch(entity[resultIndex], session);
+        }
+    }
+    @SuppressWarnings("unchecked")
+    public <T> T copy(T source, AbstractSession session) {
+        if (source instanceof Collection) {
+            throw new IllegalArgumentException("FetchPlan.copy does not support collections");
+        }
+        
+        T copy = (T) getDescriptor(session).getInstantiationPolicy().buildNewInstance();
+        ObjectCopyingPolicy policy = new ObjectCopyingPolicy();
+        policy.setShouldResetPrimaryKey(false);
+        policy.setSession(session);
+
+        for (Map.Entry<String, FetchItem> entry : getItems().entrySet()) {
+            entry.getValue().copy(source, copy, session, policy);
+        }
+
+        return copy;
+    }
+    
+    /**
+     * Do a partial merge of the provided entity into the UnitOfWork using the
+     * items specified in this FetchPlan. The entity returned will be the
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T merge(T entity, UnitOfWork uow) {
+        T workingCopy = (T) uow.readObject(entity);
+
+        for (Map.Entry<String, FetchItem> entry : getItems().entrySet()) {
+            entry.getValue().merge(entity, workingCopy, (UnitOfWorkImpl) uow);
+        }
+
+        return workingCopy;
+    }
+
+    private boolean canBePruned(Object entity) {
+        return entity instanceof FetchGroupTracker;
+    }
+
+    /**
+     * Walk through the graph starting from the entity and remove all items not
+     * specified in this plan
+     */
+    public <T> T prune(T entity, Session session) {
+        return (T) prune(entity, this, session);
+    }
+
+    protected <T> T prune(T entity, FetchPlan fetchPlan, Session session) {
+        if (!canBePruned((T) entity)) {
+            throw new IllegalArgumentException("TODO");
+        }
+
+        FetchGroup fg = ((FetchGroupTracker) entity)._persistence_getFetchGroup();
+        if (fg == null) {
+            fg = new FetchGroup();
+            ((FetchGroupTracker) entity)._persistence_setFetchGroup(fg);
+            ((FetchGroupTracker) entity)._persistence_setSession(session);
+        }
+
+        boolean usesChangeTracking = entity instanceof ChangeTracker && ((ChangeTracker) entity)._persistence_getPropertyChangeListener() != null;
+        if (usesChangeTracking) {
+            ((ObjectChangeListener) ((ChangeTracker) entity)._persistence_getPropertyChangeListener()).ignoreEvents();
+        }
+
+        for (DatabaseMapping mapping : getDescriptor(session).getMappings()) {
+            if (!containsAttribute(mapping.getAttributeName()) && fg.containsAttribute(mapping.getAttributeName())) {
+                mapping.setAttributeValueInObject(entity, null);
+            }
+
+            if ((mapping.isAggregateObjectMapping() || mapping.isForeignReferenceMapping()) && containsAttribute(mapping.getAttributeName())) {
+                Object value = mapping.getRealAttributeValueFromObject(entity, (AbstractSession) session);
+                prune(value, getItems().get(mapping.getAttributeName()).getFetchPlan(), session);
+            }
+        }
+
+        if (usesChangeTracking) {
+            ((ObjectChangeListener) ((ChangeTracker) entity)._persistence_getPropertyChangeListener()).processEvents();
+        }
+
+        return entity;
+    }
+
+    /**
+     * Helper method that will set a FetchGroup on the provided query for the
+     * immediate items. FetchGroups in the EclipseLInk 2.0 and earlier releases
+     * only control attributes on the entity being queries and cannot be nested
+     * to effect relationships.
+     */
+    public void setFetchGroup(Query query) {
+        FetchGroup group = new FetchGroup(this.toString());
+        for (String attrName : getItems().keySet()) {
+            group.addAttribute(attrName);
+        }
+        query.setHint(QueryHints.FETCH_GROUP, group);
     }
 
     public String toString() {
         return "FetchPlan()";
     }
+
 }

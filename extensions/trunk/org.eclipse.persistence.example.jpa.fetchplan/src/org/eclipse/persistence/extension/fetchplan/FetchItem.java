@@ -13,169 +13,169 @@
  ******************************************************************************/
 package org.eclipse.persistence.extension.fetchplan;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
+import javax.persistence.Transient;
 
-import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.indirection.IndirectContainer;
-import org.eclipse.persistence.indirection.ValueHolderInterface;
-import org.eclipse.persistence.internal.helper.Helper;
-import org.eclipse.persistence.internal.indirection.BatchValueHolder;
+import org.eclipse.persistence.exceptions.QueryException;
+import org.eclipse.persistence.internal.sessions.AbstractSession;
+import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
 import org.eclipse.persistence.mappings.DatabaseMapping;
-import org.eclipse.persistence.mappings.ForeignReferenceMapping;
+import org.eclipse.persistence.sessions.ObjectCopyingPolicy;
 import org.eclipse.persistence.sessions.Session;
 
 /**
- * A FetchItem represents a single relationship within a {@link FetchPlan} that
- * is to be loaded after the query is executed.
- * 
- * @see FetchPlan
+ * A FetchItem refers to a single attribute in a FetchPlan that is used when
+ * fetching, copying, or merging entities. A FetchItem can be used for a basic
+ * (direct-to-field) attribute as well as relationships (entity->entity or
+ * entity->embedded) with the FetchItem optionally holding a FetchGroup
+ * indicating how that related entity or embeddable should be treated.
+ * <p>
+ * This class is mostly internal to the FetchPlan but is made public so that
+ * users can interrogate the state of the FetchPlan and its nested FetchItems.
+ * These can only be created through the use of
+ * {@link FetchPlan#addAttribute(String...)}
  * 
  * @author dclarke
- * @since EclipseLink 1.1.2
+ * @since EclipseLink 1.2
  */
 public class FetchItem {
 
-    protected String[] attributeNames;
+    /**
+     * @see #getName()
+     */
+    private String name;
 
-    private transient DatabaseMapping[] mappings;
+    /**
+     * @see #getParent()
+     */
+    private FetchPlan parent;
 
-    public FetchItem(String... attributePaths) {
-        if (attributePaths.length == 1 && attributePaths[0].contains(".")) {
-            this.attributeNames = attributePaths[0].split("\\.");
-        } else {
-            this.attributeNames = attributePaths;
-        }
-    }
+    /**
+     * @see #getFetchPlan()
+     */
+    private FetchPlan fetchPlan;
 
-    public String[] getAttributeNames() {
-        return this.attributeNames;
-    }
+    /**
+     * Optimization to hold a reference to the database mapping for the
+     * {@link #name} on the descriptor of the {@link #parent}.
+     */
+    @Transient
+    private DatabaseMapping mapping;
 
-    protected void instantiate(Class<?> entityType, Object result, Session session) {
-        Collection<Object> results = getInitialResults(result);
-        DatabaseMapping[] mappings = getMappings(entityType, session);
-
-        Collection<Object> currentEntities = results;
-        for (int index = 0; index < mappings.length; index++) {
-            DatabaseMapping mapping = mappings[index];
-            currentEntities = instantiate(mapping, currentEntities, index == (mappings.length - 1));
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private Collection<Object> getInitialResults(Object result) {
-        if (result instanceof Collection<?>) {
-            return (Collection<Object>) result;
-        }
-
-        if (result instanceof Map<?, ?>) {
-            return ((Map<Object, Object>) result).values();
-        }
-
-        Collection<Object> results = new ArrayList<Object>();
-        results.add(result);
-        return results;
+    protected FetchItem(FetchPlan parent, String name) {
+        this.parent = parent;
+        this.name = name;
     }
 
     /**
-     * TODO: ?
-     * 
-     * @param entity
-     * @return
+     * Name of the attribute. This is a simple name corresponding to a mapped
+     * attribute of the entity type this FetchItem is applied to.
      */
-    public Object getEntityValue(Object entity) {
-        return entity;
+    public String getName() {
+        return this.name;
     }
 
     /**
-     * TODO
+     * Reference to the owning {@link FetchItem} which has the attribute mapped
+     * for {@link #getName()}
      */
-    private Collection<Object> instantiate(DatabaseMapping mapping, Collection<Object> entities, boolean isLast) {
-        HashSet<Object> results = new HashSet<Object>();
+    public FetchPlan getParent() {
+        return parent;
+    }
 
-        for (Object current : entities) {
-            Object result = mapping.getAttributeValueFromObject(getEntityValue(current));
-            boolean batching = false;
+    /**
+     * Optional FetchPlan that is used to describe how a related entity or
+     * embeddable should be fetched. This FetchPlan is only used in
+     * relationships and is ignored in basic (direct-to-field) mapping scenarios
+     * or in operations where the entity being processed has a null or empty
+     * collection.
+     */
+    public FetchPlan getFetchPlan() {
+        return fetchPlan;
+    }
 
-            if (result instanceof IndirectContainer) {
-                result = ((IndirectContainer) result).getValueHolder();
+    protected void setFetchPlan(FetchPlan fetchPlan) {
+        this.fetchPlan = fetchPlan;
+    }
+
+    // TODO: Made public for testing for now
+    public DatabaseMapping getMapping(Session session) {
+        if (this.mapping == null) {
+            initialize(session);
+        }
+        return mapping;
+    }
+
+    /*
+     * Initialize this item to lookup its mapping and cascade initialize its
+     * nested FetchPlan
+     */
+    protected void initialize(Session session) {
+        this.mapping = getParent().getDescriptor(session).getMappingForAttributeName(getName());
+
+        if (this.mapping == null) {
+            throw QueryException.fetchGroupAttributeNotMapped(getName());
+        }
+
+        if (getFetchPlan() != null) {
+            // If there is no ref descriptor then there should not be a
+            // FetchPlan
+            if (this.mapping.getReferenceDescriptor() == null) {
+                throw new RuntimeException("FetchPlan initialize: FetchItem found with FetchPlan for " + this.mapping);
             }
-            if (result instanceof ValueHolderInterface) {
-                batching = result instanceof BatchValueHolder;
-                result = ((ValueHolderInterface) result).getValue();
-            }
-            if (mapping.isForeignReferenceMapping()) {
-                if (result instanceof Collection<?>) {
-                    // If batching was used and this is the last mapping then
-                    // only add the first result
-                    if (batching && isLast && ((Collection<?>) result).size() > 0) {
-                        // TODO: Optimize?
-                        results.add(((Collection<?>) result).iterator().next());
-                    } else {
-                        results.addAll((Collection<?>) result);
-                    }
-                } else if (result != null) {
-                    results.add(result);
+
+            getFetchPlan().setEntityClass(this.mapping.getReferenceDescriptor().getJavaClass());
+            getFetchPlan().initialize(session);
+        }
+    }
+
+    /*
+     * Force the mapped attribute to be loaded.
+     */
+    protected void fetch(Object entity, AbstractSession session) {
+        if (entity != null) {
+            getMapping(session).instantiateAttribute(entity, session);
+
+            if (getFetchPlan() != null) {
+                Object target = mapping.getRealAttributeValueFromObject(entity, session);
+                if (target != null) {
+                    getFetchPlan().fetch(target, session);
                 }
             }
         }
-
-        return results;
     }
 
-    /**
-     * NOTE: Only returns the mappings after they have been lazily initialized
-     * by {@link #instantiate(Class, Collection, Session)}
-     * 
-     * @return
+    /*
+     * Populate the copy with a copy or value (depending on type) of this mapped
+     * attribute
      */
-    public DatabaseMapping[] getMappings() {
-        return this.mappings;
+    protected void copy(Object source, Object copy, AbstractSession session, ObjectCopyingPolicy policy) {
+        DatabaseMapping mapping = getMapping(session);
 
+        // TODO: Handle relationships differently to avoid complete copy of
+        // target?
+        mapping.buildCopy(copy, source, policy);
     }
 
-    /**
-     * Collect the mappings ... TODO
-     * 
-     * @param entityType
-     * @param session
-     * @return
+    /*
+     * The mapped attribute for this item will be merged into the working copy.
+     * In the case of relationships where this item has a FetchPlan the merge
+     * will be cascade through that FetchPlan.
      */
-    protected DatabaseMapping[] getMappings(Class<?> entityType, Session session) {
-        if (this.mappings != null) {
-            return this.mappings;
+    protected void merge(Object source, Object workingCopy, UnitOfWorkImpl session) {
+        DatabaseMapping mapping = getMapping((AbstractSession) session);
+
+        Object sourceValue = mapping.getRealAttributeValueFromObject(source, session);
+
+        // If there is a reference descriptor then the target is another mapped
+        // class.
+        if (mapping.getReferenceDescriptor() != null) {
+
         }
 
-        ClassDescriptor descriptor = session.getClassDescriptor(entityType);
-        // TODO - remove alias assumption
-        DatabaseMapping[] mappingsFound = new DatabaseMapping[getAttributeNames().length - 1];
-
-        for (int index = 1; index < getAttributeNames().length; index++) {
-            String attributeName = getAttributeNames()[index];
-            DatabaseMapping mapping = descriptor.getMappingForAttributeName(attributeName);
-
-            if (mapping == null) {
-                throw new IllegalStateException("Could not find mapping named '" + attributeName + "' on: " + descriptor);
-            }
-
-            if (mapping.isForeignReferenceMapping()) {
-                descriptor = ((ForeignReferenceMapping) mapping).getReferenceDescriptor();
-            } else {
-                if (index < (getAttributeNames().length - 1)) {
-                    throw new IllegalStateException("Mapping not a relationship: '" + attributeName + "' on: " + descriptor);
-                }
-            }
-            mappingsFound[index - 1] = mapping;
-        }
-
-        this.mappings = mappingsFound;
-        return this.mappings;
+        // TODO: Is this value fine to set in the working copy
+        mapping.setAttributeValueInObject(workingCopy, sourceValue);
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException();
     }
 
-    public String toString() {
-        return Helper.getShortClassName(this) + "(" + getAttributeNames() + ")";
-    }
 }

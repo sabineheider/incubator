@@ -19,8 +19,11 @@ import junit.framework.Assert;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.indirection.IndirectContainer;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
+import org.eclipse.persistence.internal.descriptors.InstanceVariableAttributeAccessor;
+import org.eclipse.persistence.internal.descriptors.MethodAttributeAccessor;
 import org.eclipse.persistence.internal.descriptors.PersistenceEntity;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.mappings.AttributeAccessor;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.mappings.ForeignReferenceMapping;
 import org.eclipse.persistence.queries.FetchGroupTracker;
@@ -125,15 +128,15 @@ public abstract class EclipseLinkJPAAssert {
         DatabaseMapping mapping = assertMapping(descriptor, attribute);
 
         if (mapping.isDirectToFieldMapping() && entity instanceof FetchGroupTracker) {
-            Assert.assertTrue("DirectToFieldMapping for '" + attribute + "' is loaded", ((FetchGroupTracker) entity)._persistence_isAttributeFetched(attribute));
+            Assert.assertTrue("DirectToFieldMapping for '" + attribute + "' is not loaded", ((FetchGroupTracker) entity)._persistence_isAttributeFetched(attribute));
         } else {
 
             Object value = mapping.getAttributeValueFromObject(entity);
             if (value instanceof IndirectContainer) {
-                Assert.assertTrue("IndirectContainer for '" + attribute + "' is loaded", ((IndirectContainer) value).isInstantiated());
+                Assert.assertTrue("IndirectContainer for '" + attribute + "' is not loaded", ((IndirectContainer) value).isInstantiated());
             }
             if (value instanceof ValueHolderInterface) {
-                Assert.assertTrue("ValueHolderInterface for '" + attribute + "' is loaded", ((ValueHolderInterface) value).isInstantiated());
+                Assert.assertTrue("ValueHolderInterface for '" + attribute + "' is not loaded", ((ValueHolderInterface) value).isInstantiated());
             }
         }
     }
@@ -147,15 +150,24 @@ public abstract class EclipseLinkJPAAssert {
         DatabaseMapping mapping = assertMapping(descriptor, attribute);
 
         if (mapping.isDirectToFieldMapping() && entity instanceof FetchGroupTracker) {
-            Assert.assertFalse("DirectToFieldMapping for '" + attribute + "' is not loaded", ((FetchGroupTracker) entity)._persistence_isAttributeFetched(attribute));
+            Assert.assertFalse("DirectToFieldMapping for '" + attribute + "' is loaded", ((FetchGroupTracker) entity)._persistence_isAttributeFetched(attribute));
         } else {
-
-            Object value = mapping.getAttributeValueFromObject(entity);
+            
+            AttributeAccessor accessor = mapping.getAttributeAccessor();
+            
+            // Avoid calling _persistence_get<attribute-name>_vh methods
+            if (accessor.isMethodAttributeAccessor() && ((MethodAttributeAccessor) accessor).getGetMethodName().startsWith("_persistence_get")) {
+                accessor = new InstanceVariableAttributeAccessor();
+                accessor.setAttributeName("_persistence_" + mapping.getAttributeName() + "_vh");
+                accessor.initializeAttributes(mapping.getDescriptor().getJavaClass());
+            }
+            
+            Object value = accessor.getAttributeValueFromObject(entity);
             if (value instanceof IndirectContainer) {
-                Assert.assertFalse("IndirectContainer for '" + attribute + "' is not loaded", ((IndirectContainer) value).isInstantiated());
+                Assert.assertFalse("IndirectContainer for '" + attribute + "' is loaded", ((IndirectContainer) value).isInstantiated());
             }
             if (value instanceof ValueHolderInterface) {
-                Assert.assertFalse("ValueHolderInterface for '" + attribute + "' is not loaded", ((ValueHolderInterface) value).isInstantiated());
+                Assert.assertFalse("ValueHolderInterface for '" + attribute + "' is loaded", ((ValueHolderInterface) value).isInstantiated());
             }
         }
     }

@@ -18,12 +18,12 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
-import junit.framework.Assert;
 import model.Employee;
 
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
-import org.eclipse.persistence.extension.fetchplan.FetchPlanHelper;
+import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.junit.After;
 import org.junit.Test;
 
 import testing.EclipseLinkJPATest;
@@ -33,51 +33,93 @@ import testing.EclipseLinkJPATest;
 public class ReportQueryFetchPlanTests extends EclipseLinkJPATest {
 
     @Test
-    public void employeeAddress() throws Exception {
+    public void employeeManagerPhonesAndAddress() throws Exception {
         EntityManager em = getEntityManager();
 
         Query query = em.createQuery("SELECT e, e.address FROM Employee e WHERE e.gender IS NOT NULL");
 
-        FetchPlan fetchPlan = FetchPlanHelper.create(JpaHelper.getReadAllQuery(query));
-        fetchPlan.addFetchItem("e.manager.address");
-        fetchPlan.addFetchItem("e.manager.phoneNumbers");
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("manager.address");
+        fetchPlan.addAttribute("manager.phoneNumbers");
 
-        List<Employee> emps = query.getResultList();
+        List<Object[]> emps = query.getResultList();
 
-        Assert.assertNotNull(emps);
+        JpaFetchPlanHelper.fetch(em, fetchPlan, emps, 0);
+
+        FetchPlanAssert.assertFetched(fetchPlan, emps, 0);
     }
 
     @Test
-    public void employeeManager() throws Exception {
+    public void employeeManager_FetchEmployeeManagerAddressAndPhones() throws Exception {
         EntityManager em = getEntityManager();
 
         Query query = em.createQuery("SELECT e, e.manager FROM Employee e");
 
-        FetchPlan fetchPlan = FetchPlanHelper.create(JpaHelper.getReadAllQuery(query));
-        fetchPlan.addFetchItem("e.manager.address");
-        fetchPlan.addFetchItem("e.phoneNumbers");
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("manager.address");
+        fetchPlan.addAttribute("phoneNumbers");
 
-        List<Employee> emps = query.getResultList();
+        List<Object[]> results = query.getResultList();
 
-        Assert.assertNotNull(emps);
+        JpaFetchPlanHelper.fetch(em, fetchPlan, results, 0);
+
+        FetchPlanAssert.assertFetched(fetchPlan, results, 0);
     }
 
     @Test
-    public void employeeCountPhones() throws Exception {
+    public void employeeCountPhones_FetchManageraddressAndPhones() throws Exception {
         EntityManager em = getEntityManager();
 
         Query query = em.createQuery("SELECT e, COUNT(e.phoneNumbers) FROM Employee e GROUP BY e");
 
-        FetchPlan fetchPlan = FetchPlanHelper.create(JpaHelper.getReadAllQuery(query));
-        fetchPlan.addFetchItem("e.manager.address");
-        fetchPlan.addFetchItem("e.phoneNumbers");
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("manager.address");
+        fetchPlan.addAttribute("phoneNumbers");
 
         List<Object[]> results = query.getResultList();
 
-        Assert.assertNotNull(results);
+        JpaFetchPlanHelper.fetch(em, fetchPlan, results, 0);
 
-        for (Object[] result : results) {
-            System.out.println(result[0] + "- phones: " + result[1]);
-        }
+        FetchPlanAssert.assertFetched(fetchPlan, results, 0);
     }
+
+    @Test
+    public void employeeWithId_FetchingManagerPhonesAndAddress() throws Exception {
+        EntityManager em = getEntityManager();
+
+        Query query = em.createQuery("SELECT e.id, e FROM Employee e WHERE e.gender IS NOT NULL");
+
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("manager.address");
+        fetchPlan.addAttribute("manager.phoneNumbers");
+
+        List<Object[]> results = query.getResultList();
+
+        JpaFetchPlanHelper.fetch(em, fetchPlan, results, 1);
+
+        FetchPlanAssert.assertFetched(fetchPlan, results, 1);
+    }
+
+    @Test
+    public void employeeManager_FetchingManagerPhonesAndAddress() throws Exception {
+        EntityManager em = getEntityManager();
+
+        Query query = em.createQuery("SELECT e.manager FROM Employee e WHERE e.gender IS NOT NULL");
+
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("manager.address");
+        fetchPlan.addAttribute("manager.phoneNumbers");
+
+        List<Object[]> results = query.getResultList();
+
+        JpaFetchPlanHelper.fetch(em, fetchPlan, results);
+
+        FetchPlanAssert.assertFetched(fetchPlan, results);
+    }
+
+    @After
+    public void clearCache() {
+        JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
+    }
+
 }

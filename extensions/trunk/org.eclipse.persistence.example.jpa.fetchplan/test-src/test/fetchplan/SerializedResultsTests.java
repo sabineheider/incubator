@@ -24,10 +24,10 @@ import model.Employee;
 
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
-import org.eclipse.persistence.extension.fetchplan.FetchPlanHelper;
 import org.eclipse.persistence.internal.helper.SerializationHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.ReadAllQuery;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -52,9 +52,9 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
 
-        FetchPlan fetchPlan = FetchPlanHelper.create(query);
-        fetchPlan.addFetchItem("e.address");
-        fetchPlan.addFetchItem("e.phoneNumbers");
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("e.address");
+        fetchPlan.addAttribute("e.phoneNumbers");
 
         List<Employee> emps = query.getResultList();
 
@@ -72,9 +72,9 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         query.setHint(QueryHints.BATCH, "e.address");
         query.setHint(QueryHints.BATCH, "e.phoneNumbers");
 
-        FetchPlan fetchPlan = FetchPlanHelper.create(query);
-        fetchPlan.addFetchItem("e.address");
-        fetchPlan.addFetchItem("e.phoneNumbers");
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("address");
+        fetchPlan.addAttribute("phoneNumbers");
 
         List<Employee> emps = query.getResultList();
 
@@ -92,9 +92,9 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         query.setHint(QueryHints.FETCH, "e.address");
         query.setHint(QueryHints.FETCH, "e.phoneNumbers");
 
-        FetchPlan fetchPlan = FetchPlanHelper.create(query);
-        fetchPlan.addFetchItem("e.address");
-        fetchPlan.addFetchItem("e.phoneNumbers");
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("address");
+        fetchPlan.addAttribute("phoneNumbers");
 
         List<Employee> emps = query.getResultList();
 
@@ -109,9 +109,9 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
 
-        FetchPlan fetchPlan = FetchPlanHelper.create(query);
-        fetchPlan.addFetchItem("e.manager.address");
-        fetchPlan.addFetchItem("e.manager.phoneNumbers");
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("manager.address");
+        fetchPlan.addAttribute("manager.phoneNumbers");
 
         List<Employee> emps = query.getResultList();
 
@@ -126,8 +126,8 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
 
-        FetchPlan fetchPlan = FetchPlanHelper.create(query);
-        fetchPlan.addFetchItem("e.responsibilities");
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("responsibilities");
 
         List<Employee> emps = query.getResultList();
 
@@ -142,8 +142,9 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
         query.setHint(QueryHints.BATCH, "e.responsibilities");
-        FetchPlan fetchPlan = FetchPlanHelper.create(query);
-        fetchPlan.addFetchItem("e.responsibilities");
+
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("responsibilities");
 
         List<Employee> emps = query.getResultList();
 
@@ -158,9 +159,9 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e, e.address FROM Employee e WHERE e.gender IS NOT NULL");
 
-        FetchPlan fetchPlan = FetchPlanHelper.create(query);
-        fetchPlan.addFetchItem("e.address");
-        fetchPlan.addFetchItem("e.phoneNumbers");
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("address");
+        fetchPlan.addAttribute("phoneNumbers");
 
         List<Employee> emps = query.getResultList();
 
@@ -175,8 +176,8 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
 
-        FetchPlan fetchPlan = FetchPlanHelper.create(query);
-        fetchPlan.addFetchItem("e.managedEmployees.address");
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("managedEmployees.address");
 
         List<Employee> emps = query.getResultList();
 
@@ -191,9 +192,9 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
 
         ReadAllQuery raq = new ReadAllQuery(Employee.class);
 
-        FetchPlan fetchPlan = FetchPlanHelper.create(raq);
-        fetchPlan.addFetchItem("e.address");
-        fetchPlan.addFetchItem("e.phoneNumbers");
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("address");
+        fetchPlan.addAttribute("phoneNumbers");
 
         Query query = JpaHelper.createQuery(raq, em);
 
@@ -204,12 +205,9 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
     }
 
-    @Before
-    public void verifyConfig() {
-        EclipseLinkJPAAssert.assertWoven(getEMF(), "Employee");
-        EclipseLinkJPAAssert.assertWoven(getEMF(), "PhoneNumber");
+    @After
+    public void clearCache() {
         JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
-        getQuerySQLTracker(getEMF()).reset();
     }
 
     /*

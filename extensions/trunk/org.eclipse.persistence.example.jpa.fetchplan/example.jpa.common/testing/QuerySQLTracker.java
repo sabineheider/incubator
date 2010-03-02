@@ -167,8 +167,8 @@ public class QuerySQLTracker extends SessionEventAdapter {
 			writer.write(" result = ");
 
 			Object result = queryResult;
-			if (queryResult instanceof Collection<?>) {
-				result = ((Collection<?>) queryResult).toArray();
+			if (queryResult instanceof Collection) {
+				result = ((Collection) queryResult).toArray();
 			}
 
 			if (result == null) {

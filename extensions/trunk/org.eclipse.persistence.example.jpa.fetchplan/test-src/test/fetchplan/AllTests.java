@@ -16,13 +16,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { FetchPlanConfigTests.class, 
+@Suite.SuiteClasses( { FetchPlanAPITests.class,
                        FetchPlanExamplesTests.class, 
                        ReadObjectFetchPlanTests.class, 
                        ReportQueryFetchPlanTests.class, 
-                       SerializedResultsTests.class, 
-                       DetachedResultsTests.class, 
-                       FailureTests.class })
+//                       SerializedResultsTests.class, 
+                       DetachedResultsTests.class}) 
 public class AllTests {
 
 }
