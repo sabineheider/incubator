@@ -13,8 +13,12 @@
  ******************************************************************************/
 package org.eclipse.persistence.extension.fetchplan;
 
+import java.util.Collection;
+import java.util.Map;
+
 import javax.persistence.Transient;
 
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.exceptions.QueryException;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
@@ -144,16 +148,66 @@ public class FetchItem {
         }
     }
 
-    /*
+    /**
      * Populate the copy with a copy or value (depending on type) of this mapped
      * attribute
      */
-    protected void copy(Object source, Object copy, AbstractSession session, ObjectCopyingPolicy policy) {
-        DatabaseMapping mapping = getMapping(session);
+    protected void copy(Object source, Object target, AbstractSession session, ObjectCopyingPolicy policy, Map<Object, Object> copies) {
+        copy(source, target, getMapping(session), getFetchPlan(), session, policy, copies);
+    }
 
-        // TODO: Handle relationships differently to avoid complete copy of
-        // target?
-        mapping.buildCopy(copy, source, policy);
+    /**
+     * Copy mapped attribute
+     */
+    private void copy(Object source, Object target, DatabaseMapping mapping, FetchPlan targetFetchPlan, AbstractSession session, ObjectCopyingPolicy policy, Map<Object, Object> copies) {
+        if (mapping.getReferenceDescriptor() != null) {
+            Object sourceValue = mapping.getRealAttributeValueFromObject(source, session);
+            Object copyValue = null;
+
+            if (sourceValue != null) {
+                if (targetFetchPlan != null) {
+                    copyValue = targetFetchPlan.copy(sourceValue, session, copies);
+                } else {
+                    copyValue = copyAll(sourceValue, mapping.getReferenceDescriptor(), session, policy, copies);
+                }
+            }
+
+            mapping.setRealAttributeValueInObject(target, copyValue);
+        } else {
+            mapping.buildCopy(target, source, policy);
+        }
+    }
+
+    /**
+     * Copy source object with all of its mapped fields stopping at
+     * uninstantiated lazy relationships and using the copies map to conform
+     * results.
+     */
+    private Object copyAll(Object source, ClassDescriptor descriptor, AbstractSession session, ObjectCopyingPolicy policy, Map<Object, Object> copies) {
+        Object copy = copies.get(source);
+        if (copy != null) {
+            return copy;
+        }
+
+        if (source instanceof Collection<?>) {
+            Collection copiesCollection = FetchPlan.createEmptyContainer((Collection<?>) source);
+
+            for (Object entity : (Collection<?>) source) {
+                copy = copyAll(entity, descriptor, session, policy, copies);
+                copiesCollection.add(copy);
+            }
+            copies.put(source, copiesCollection);
+            return copiesCollection;
+        }
+
+        copy = descriptor.getInstantiationPolicy().buildNewInstance();
+        copies.put(source, copy);
+
+        for (DatabaseMapping mapping : descriptor.getMappings()) {
+            copy(source, copy, mapping, null, session, policy, copies);
+        }
+
+        return copy;
     }
 
     /*
@@ -169,7 +223,8 @@ public class FetchItem {
         // If there is a reference descriptor then the target is another mapped
         // class.
         if (mapping.getReferenceDescriptor() != null) {
-
+            // TODO
+            throw new UnsupportedOperationException();
         }
 
         // TODO: Is this value fine to set in the working copy

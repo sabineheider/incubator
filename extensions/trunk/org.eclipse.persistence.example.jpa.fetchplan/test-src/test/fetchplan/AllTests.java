@@ -21,6 +21,7 @@ import org.junit.runners.Suite;
                        ReadObjectFetchPlanTests.class, 
                        ReportQueryFetchPlanTests.class, 
 //                       SerializedResultsTests.class, 
+                       FetchPlanCopyTests.class,
                        DetachedResultsTests.class}) 
 public class AllTests {
 

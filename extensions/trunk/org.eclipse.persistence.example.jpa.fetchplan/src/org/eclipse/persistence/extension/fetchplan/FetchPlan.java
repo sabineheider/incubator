@@ -13,24 +13,24 @@
  ******************************************************************************/
 package org.eclipse.persistence.extension.fetchplan;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.persistence.Query;
-import javax.persistence.Transient;
 
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
 import org.eclipse.persistence.exceptions.QueryException;
-import org.eclipse.persistence.internal.descriptors.changetracking.ObjectChangeListener;
+import org.eclipse.persistence.internal.helper.DatabaseField;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
-import org.eclipse.persistence.internal.sessions.ObjectChangeSet;
 import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
+import org.eclipse.persistence.logging.SessionLog;
+import org.eclipse.persistence.logging.SessionLogEntry;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.queries.FetchGroup;
-import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.eclipse.persistence.queries.ObjectLevelReadQuery;
 import org.eclipse.persistence.sessions.ObjectCopyingPolicy;
 import org.eclipse.persistence.sessions.Session;
@@ -54,6 +54,13 @@ import org.eclipse.persistence.sessions.UnitOfWork;
 public class FetchPlan {
 
     /**
+     * Name for this FetchPlan. Offers some assistance with debugging as name is
+     * used in log messages. Also align with future FetchGroup enhancements
+     * where named fetchGroups are stored and available for use.
+     */
+    private String name;
+
+    /**
      * Map of items where each item represents an attribute to be fetched/copied
      * depending on the usage of the plan.
      * 
@@ -63,20 +70,63 @@ public class FetchPlan {
 
     private Class<?> entityClass;
 
-    @Transient
+    /**
+     * 
+     */
     private ClassDescriptor descriptor;
 
-    public FetchPlan(Class<?> entityClass) {
+    /**
+     * Indicates if the minimal attributes required of a {@link FetchGroup}
+     * should be added to this FetchPlan automatically when initialized.
+     */
+    private boolean addRequiredAttributes = true;
+
+    /**
+     * {@link SessionLog} category used for messages logged during the use of a
+     * FetchPlan. To enable all messages in this category configure the
+     * persistence unit property:
+     * <p>
+     * <code>
+     * <property name =eclipselink.logging.level.fetch_plan" value="ALL" />
+     * </code>
+     */
+    public static final String LOG_CATEGORY = "fetch_plan";
+
+    /**
+     * 
+     * @param entityClass
+     * @param addRequiredAttributes
+     */
+    public FetchPlan(String name, Class<?> entityClass, boolean addRequiredAttributes) {
+        this.name = name;
         this.entityClass = entityClass;
+        this.addRequiredAttributes = addRequiredAttributes;
         this.items = new HashMap<String, FetchItem>();
+    }
+
+    public FetchPlan(Class<?> entityClass) {
+        this(null, entityClass, true);
+    }
+
+    public String getName() {
+        return this.name;
     }
 
     public Class<?> getEntityClass() {
         return this.entityClass;
     }
 
+    public boolean addRequiredAttributes() {
+        return this.addRequiredAttributes;
+    }
+
+    public void setAddRequiredAttributes(boolean value) {
+        this.addRequiredAttributes = value;
+    }
+
     /**
-     * Used in {@link FetchItem#initialize(Session)}
+     * Used in {@link FetchItem#initialize(Session)} to populate the target
+     * entity type of relationships from the mapping.
      */
     protected void setEntityClass(Class<?> entityClass) {
         this.entityClass = entityClass;
@@ -87,16 +137,10 @@ public class FetchPlan {
     }
 
     /**
-     * 
      * @return a read-only collection of {@link FetchItem} in this plan.
      */
     public Collection<FetchItem> getFetchItems() {
         return getItems().values();
-    }
-
-    public boolean containsAttribute(String... attributeNameOrPath) {
-        // TODO
-        return false;
     }
 
     /**
@@ -117,14 +161,51 @@ public class FetchPlan {
      *             a mapping
      */
     public void initialize(Session session) {
+        if (this.descriptor != null) {
+            return;
+        }
+
         if (this.entityClass == null) {
             throw new IllegalStateException("FetchPlan.initialize: Null entityClass found");
         }
 
         this.descriptor = session.getClassDescriptor(getEntityClass());
-
         if (this.descriptor == null) {
             throw new IllegalStateException("No descriptor found for class: " + getEntityClass());
+        }
+
+        if (session.getSessionLog().shouldLog(SessionLog.FINER, LOG_CATEGORY)) {
+            SessionLogEntry entry = new SessionLogEntry(SessionLog.FINEST, LOG_CATEGORY, (AbstractSession) session, "FetchPlan: initializing {0}", new Object[] { this }, null, false);
+            session.getSessionLog().log(entry);
+        }
+
+        // Add identifier and optimistic locking version attributes
+        if (addRequiredAttributes()) {
+            for (DatabaseMapping mapping : this.descriptor.getObjectBuilder().getPrimaryKeyMappings()) {
+                if (!getItems().containsKey(mapping.getAttributeName())) {
+                    addAttribute(mapping.getAttributeName());
+
+                    if (session.getSessionLog().shouldLog(SessionLog.FINEST, LOG_CATEGORY)) {
+                        SessionLogEntry entry = new SessionLogEntry(SessionLog.FINEST, LOG_CATEGORY, (AbstractSession) session, "FetchPlan: Added required id attribute {0} to {1}", new Object[] { mapping.getAttributeName(), this }, null, false);
+                        session.getSessionLog().log(entry);
+                    }
+                }
+            }
+
+            if (this.descriptor.usesOptimisticLocking()) {
+                DatabaseField lockField = this.descriptor.getOptimisticLockingPolicy().getWriteLockField();
+                if (lockField != null) {
+                    DatabaseMapping lockMapping = this.descriptor.getObjectBuilder().getMappingForField(lockField);
+                    if (lockMapping != null && !getItems().containsKey(lockMapping.getAttributeName())) {
+                        addAttribute(lockMapping.getAttributeName());
+
+                        if (session.getSessionLog().shouldLog(SessionLog.FINEST, LOG_CATEGORY)) {
+                            SessionLogEntry entry = new SessionLogEntry(SessionLog.FINEST, LOG_CATEGORY, (AbstractSession) session, "FetchPlan: Added required lock attribute {0} to {1}", new Object[] { lockMapping.getAttributeName(), this }, null, false);
+                            session.getSessionLog().log(entry);
+                        }
+                    }
+                }
+            }
         }
 
         for (FetchItem item : getItems().values()) {
@@ -133,9 +214,7 @@ public class FetchPlan {
     }
 
     protected ClassDescriptor getDescriptor(Session session) {
-        if (this.descriptor == null) {
-            initialize(session);
-        }
+        initialize(session);
         return this.descriptor;
     }
 
@@ -153,13 +232,14 @@ public class FetchPlan {
      * @param attributePath
      * @return
      */
-    public void addAttribute(String... nameOrPath) {
+    public FetchItem addAttribute(String... nameOrPath) {
         String[] attributePaths = convert(nameOrPath);
         FetchPlan currentFP = this;
+        FetchItem item = null;
 
         for (int index = 0; index < attributePaths.length; index++) {
             String attrName = attributePaths[index];
-            FetchItem item = (FetchItem) currentFP.getItems().get(attrName);
+            item = (FetchItem) currentFP.getItems().get(attrName);
 
             if (item == null) {
                 item = new FetchItem(currentFP, attrName);
@@ -168,10 +248,20 @@ public class FetchPlan {
 
             currentFP = item.getFetchPlan();
             if (currentFP == null && index < (attributePaths.length - 1)) {
-                currentFP = new FetchPlan(null);
+                currentFP = new FetchPlan(getName() + "-" + attrName, null, addRequiredAttributes());
                 item.setFetchPlan(currentFP);
             }
         }
+
+        return item;
+    }
+
+    /**
+     * TODO
+     */
+    public boolean containsAttribute(String... attributeNameOrPath) {
+        // TODO
+        return false;
     }
 
     /**
@@ -217,6 +307,8 @@ public class FetchPlan {
      * behavior.
      */
     public void fetch(Object entity, AbstractSession session) {
+        initialize(session);
+
         if (entity instanceof Collection<?>) {
             for (Object e : (Collection<?>) entity) {
                 if (e instanceof Object[]) {
@@ -257,27 +349,111 @@ public class FetchPlan {
             fetch(entity[resultIndex], session);
         }
     }
+
+    /**
+     * Make a copy of the provided source (entity or collection of
+     * entities)copying only the attributes specified in this plan. If a
+     * relationship does not specify a target
+     * 
+     * @param <T>
+     * @param source
+     * @param session
+     * @return
+     */
     @SuppressWarnings("unchecked")
     public <T> T copy(T source, AbstractSession session) {
-        if (source instanceof Collection) {
-            throw new IllegalArgumentException("FetchPlan.copy does not support collections");
+        initialize(session);
+
+        if (source == null) {
+            return null;
         }
-        
-        T copy = (T) getDescriptor(session).getInstantiationPolicy().buildNewInstance();
+
+        return (T) copy(source, session, new HashMap<Object, Object>());
+    }
+
+    /**
+     * Create a new collection of the same type with the same size. This is done
+     * using reflection
+     */
+    protected static Collection<?> createEmptyContainer(Collection<?> source) {
+        Constructor<?> constructor = null;
+
+        try {
+            constructor = source.getClass().getConstructor(int.class);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalArgumentException("FetchPlan.copy: Cannot create new collection of type: " + source.getClass(), e);
+        }
+
+        Collection<?> newCollection = null;
+
+        try {
+            newCollection = (Collection<?>) constructor.newInstance(source.size());
+        } catch (IllegalArgumentException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return newCollection;
+    }
+
+    /**
+     * TODO
+     * 
+     * @param source
+     * @param session
+     * @param copies
+     * @return
+     */
+    protected Object copy(Object source, AbstractSession session, Map<Object, Object> copies) {
+        if (source instanceof Object[]) {
+            throw new IllegalArgumentException("Fetchplan.copy does not support Object[]");
+        }
+
+        Object copy = copies.get(source);
+        if (copy != null) {
+            return copy;
+        }
+
+        if (source instanceof Collection<?>) {
+            Collection copiesCollection = createEmptyContainer((Collection<?>) source);
+
+            for (Object entity : (Collection<?>) source) {
+                copy = copy(entity, session, copies);
+                copiesCollection.add(copy);
+            }
+            copies.put(source, copiesCollection);
+            return copiesCollection;
+        }
+
+        copy = getDescriptor(session).getInstantiationPolicy().buildNewInstance();
+        copies.put(source, copy);
+
         ObjectCopyingPolicy policy = new ObjectCopyingPolicy();
         policy.setShouldResetPrimaryKey(false);
         policy.setSession(session);
 
         for (Map.Entry<String, FetchItem> entry : getItems().entrySet()) {
-            entry.getValue().copy(source, copy, session, policy);
+            entry.getValue().copy(source, copy, session, policy, copies);
         }
 
         return copy;
     }
-    
+
     /**
      * Do a partial merge of the provided entity into the UnitOfWork using the
-     * items specified in this FetchPlan. The entity returned will be the
+     * items specified in this FetchPlan.
+     * 
+     * @return the working copy for the entity that may include additional
+     *         attributes then what was merged.
      */
     @SuppressWarnings("unchecked")
     public <T> T merge(T entity, UnitOfWork uow) {
@@ -288,53 +464,6 @@ public class FetchPlan {
         }
 
         return workingCopy;
-    }
-
-    private boolean canBePruned(Object entity) {
-        return entity instanceof FetchGroupTracker;
-    }
-
-    /**
-     * Walk through the graph starting from the entity and remove all items not
-     * specified in this plan
-     */
-    public <T> T prune(T entity, Session session) {
-        return (T) prune(entity, this, session);
-    }
-
-    protected <T> T prune(T entity, FetchPlan fetchPlan, Session session) {
-        if (!canBePruned((T) entity)) {
-            throw new IllegalArgumentException("TODO");
-        }
-
-        FetchGroup fg = ((FetchGroupTracker) entity)._persistence_getFetchGroup();
-        if (fg == null) {
-            fg = new FetchGroup();
-            ((FetchGroupTracker) entity)._persistence_setFetchGroup(fg);
-            ((FetchGroupTracker) entity)._persistence_setSession(session);
-        }
-
-        boolean usesChangeTracking = entity instanceof ChangeTracker && ((ChangeTracker) entity)._persistence_getPropertyChangeListener() != null;
-        if (usesChangeTracking) {
-            ((ObjectChangeListener) ((ChangeTracker) entity)._persistence_getPropertyChangeListener()).ignoreEvents();
-        }
-
-        for (DatabaseMapping mapping : getDescriptor(session).getMappings()) {
-            if (!containsAttribute(mapping.getAttributeName()) && fg.containsAttribute(mapping.getAttributeName())) {
-                mapping.setAttributeValueInObject(entity, null);
-            }
-
-            if ((mapping.isAggregateObjectMapping() || mapping.isForeignReferenceMapping()) && containsAttribute(mapping.getAttributeName())) {
-                Object value = mapping.getRealAttributeValueFromObject(entity, (AbstractSession) session);
-                prune(value, getItems().get(mapping.getAttributeName()).getFetchPlan(), session);
-            }
-        }
-
-        if (usesChangeTracking) {
-            ((ObjectChangeListener) ((ChangeTracker) entity)._persistence_getPropertyChangeListener()).processEvents();
-        }
-
-        return entity;
     }
 
     /**
@@ -352,7 +481,7 @@ public class FetchPlan {
     }
 
     public String toString() {
-        return "FetchPlan()";
+        return "FetchPlan(" + getName() + ")";
     }
 
 }

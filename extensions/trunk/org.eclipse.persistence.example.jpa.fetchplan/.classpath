@@ -5,9 +5,9 @@
 	<classpathentry kind="src" path="example.jpa.employee.xml"/>
 	<classpathentry kind="src" path="example.jpa.common"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/EclipseLink 1.2.0"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/JPA 1.0"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="con" path="org.eclipse.datatools.connectivity.jdt.DRIVERLIBRARY/Oracle Database 11g Driver Default"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/EclipseLink 1.2.0"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/JPA 1.0"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

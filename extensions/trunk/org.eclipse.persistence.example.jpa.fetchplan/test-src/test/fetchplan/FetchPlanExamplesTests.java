@@ -45,7 +45,7 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
 
-        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        FetchPlan fetchPlan = new FetchPlan("JustNames", Employee.class, false);
         fetchPlan.addAttribute("firstName");
         fetchPlan.addAttribute("lastName");
 
@@ -56,6 +56,30 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
         FetchPlanAssert.assertFetched(fetchPlan, emps);
 
         Assert.assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        
+        Employee emp1 = emps.get(0);
+        
+        Assert.assertNotNull(emp1);
+        Assert.assertNotNull(emp1.getFirstName());
+        Assert.assertNotNull(emp1.getLastName());
+        Assert.assertTrue(emp1.getId() > 0);
+        Assert.assertTrue(emp1.getSalary() > 0);
+        Assert.assertNotNull(emp1.getGender());
+
+        Employee emp1Copy = JpaFetchPlanHelper.copy(em, fetchPlan, emp1);
+        
+        Assert.assertNotNull(emp1Copy);
+        Assert.assertNotNull(emp1Copy.getFirstName());
+        Assert.assertNotNull(emp1Copy.getLastName());
+        Assert.assertEquals(0, emp1Copy.getId());
+        Assert.assertEquals(0.0, emp1Copy.getSalary());
+        Assert.assertNull(emp1Copy.getGender());
+        Assert.assertNull(emp1Copy.getStartTime());
+        Assert.assertNull(emp1Copy.getEndTime());
+        Assert.assertNull(emp1Copy.getPeriod());
+        Assert.assertNull(emp1Copy.getAddress());
+        Assert.assertNull(emp1Copy.getPhoneNumbers());
+        Assert.assertNull(emp1Copy.getProjects());
     }
 
     @Test
