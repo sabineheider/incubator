@@ -168,6 +168,32 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     }
 
     @Test
+    public void employeeCopyWithNamesAddressAndPhones() {
+        EntityManager em = getEntityManager();
+        
+        List<Employee> emps = this.examples.employeeCopyWithNamesAddressAndPhones(em);
+        
+        assertTrue(emps.size() > 0);
+        assertEquals(1 + (2 * emps.size()), getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        
+        for (Employee emp : emps) {
+            assertNotNull(emp);
+            assertNotNull(emp.getFirstName());
+            assertNotNull(emp.getLastName());
+            assertTrue(emp.getId() > 0);
+            assertTrue(emp.getVersion() > 0);
+            assertEquals(0.0, emp.getSalary(), 0.0);
+            assertNull(emp.getGender());
+            assertNull(emp.getStartTime());
+            assertNull(emp.getEndTime());
+            assertNull(emp.getPeriod());
+            assertNotNull(emp.getAddress());
+            assertNotNull(emp.getPhoneNumbers());
+            assertNull(emp.getProjects());
+        }
+    }
+    
+    @Test
     public void employeeAddress_ReturnBoth() throws Exception {
         EntityManager em = getEntityManager();
 

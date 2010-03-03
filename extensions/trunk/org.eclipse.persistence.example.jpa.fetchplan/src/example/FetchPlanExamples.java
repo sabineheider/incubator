@@ -89,7 +89,7 @@ public class FetchPlanExamples {
         fetchPlan.addAttribute("firstName");
         fetchPlan.addAttribute("lastName");
 
-        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender = 'Male'");
         fetchPlan.setFetchGroup(query);
         List<Employee> emps = query.getResultList();
 
@@ -115,6 +115,24 @@ public class FetchPlanExamples {
         fetchPlan.addAttribute("lastName");
 
         fetchPlan.setFetchGroup(query);
+
+        List<Employee> emps = query.getResultList();
+
+        return JpaFetchPlanHelper.copy(em, fetchPlan, emps);
+    }
+
+    /**
+     * Create copies of managed objects requiring relationships that were not
+     * loaded in the initial query.
+     */
+    public List<Employee> employeeCopyWithNamesAddressAndPhones(EntityManager em) {
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.salary > 0");
+
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("firstName");
+        fetchPlan.addAttribute("lastName");
+        fetchPlan.addAttribute("address");
+        fetchPlan.addAttribute("phoneNumbers");
 
         List<Employee> emps = query.getResultList();
 
