@@ -92,11 +92,6 @@ public class FetchPlan {
      */
     public static final String LOG_CATEGORY = "fetch_plan";
 
-    /**
-     * 
-     * @param entityClass
-     * @param addRequiredAttributes
-     */
     public FetchPlan(String name, Class<?> entityClass, boolean addRequiredAttributes) {
         this.name = name;
         this.entityClass = entityClass;
@@ -104,8 +99,12 @@ public class FetchPlan {
         this.items = new HashMap<String, FetchItem>();
     }
 
+    public FetchPlan(String name, Class<?> entityClass) {
+        this(name, entityClass, true);
+    }
+
     public FetchPlan(Class<?> entityClass) {
-        this(null, entityClass, true);
+        this(null, entityClass);
     }
 
     public String getName() {

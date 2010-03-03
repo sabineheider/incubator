@@ -23,8 +23,6 @@ import model.Employee;
 
 import org.eclipse.persistence.extension.fetchplan.FetchItem;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
-import org.eclipse.persistence.jpa.JpaHelper;
-import org.junit.After;
 import org.junit.Test;
 
 /**

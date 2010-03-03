@@ -28,10 +28,8 @@ import org.eclipse.persistence.internal.helper.SerializationHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.ReadAllQuery;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
-import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 
 /**

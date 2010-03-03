@@ -26,7 +26,6 @@ import javax.persistence.PersistenceContext;
 import model.Employee;
 import model.PhoneNumber;
 
-import org.eclipse.persistence.extension.fetchplan.FetchItem;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
