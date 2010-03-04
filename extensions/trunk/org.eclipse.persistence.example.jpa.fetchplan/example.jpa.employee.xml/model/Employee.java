@@ -99,6 +99,10 @@ public class Employee implements Serializable {
         return version;
     }
 
+    public void setVersion(long value) {
+        version = value;
+    }
+
     public List<Project> getProjects() {
         return projects;
     }

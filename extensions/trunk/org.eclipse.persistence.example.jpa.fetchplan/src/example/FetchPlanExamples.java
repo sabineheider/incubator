@@ -18,10 +18,12 @@ import javax.persistence.EntityManager;
 import javax.persistence.Query;
 
 import model.Employee;
+import model.Gender;
 
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
+import org.eclipse.persistence.jpa.JpaHelper;
 
 @SuppressWarnings("unchecked")
 public class FetchPlanExamples {
@@ -42,8 +44,9 @@ public class FetchPlanExamples {
         fetchPlan.addAttribute("phoneNumbers");
 
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.salary > 0");
-        // Use helper to configure dynamic FetchGroup on query
-        fetchPlan.setFetchGroup(query);
+
+        // Configure a dynamic FetchGroup based on the FetchPlan
+        query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());
 
         List<Employee> emps = query.getResultList();
 
@@ -68,8 +71,10 @@ public class FetchPlanExamples {
         fetchPlan.addAttribute("phoneNumbers");
 
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.salary > 0");
-        // Use helper to configure dynamic FetchGroup on query
-        fetchPlan.setFetchGroup(query);
+
+        // Configure a dynamic FetchGroup based on the FetchPlan
+        query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());
+
         query.setHint(QueryHints.BATCH, "e.address");
         query.setHint(QueryHints.BATCH, "e.phoneNumbers");
 
@@ -77,6 +82,29 @@ public class FetchPlanExamples {
         JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
 
         return emps;
+    }
+
+    public List<Employee> employeesFetchAddressAndPhonesBatchAndUsingRedirector(EntityManager em) {
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("firstName");
+        fetchPlan.addAttribute("lastName");
+        fetchPlan.addAttribute("gender");
+        fetchPlan.addAttribute("salary");
+        fetchPlan.addAttribute("address");
+        fetchPlan.addAttribute("phoneNumbers");
+
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.salary > 0");
+
+        // Configure a dynamic FetchGroup based on the FetchPlan
+        query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());
+
+        query.setHint(QueryHints.BATCH, "e.address");
+        query.setHint(QueryHints.BATCH, "e.phoneNumbers");
+        
+        // Configure redirector so the FetchPlan.fetch is executed automatically
+        fetchPlan.fetchOnExecute(JpaHelper.getReadAllQuery(query));
+
+        return query.getResultList();
     }
 
     /**
@@ -89,8 +117,12 @@ public class FetchPlanExamples {
         fetchPlan.addAttribute("firstName");
         fetchPlan.addAttribute("lastName");
 
-        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender = 'Male'");
-        fetchPlan.setFetchGroup(query);
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender = :GENDER");
+        query.setParameter("GENDER", Gender.Male);
+
+        // Configure a dynamic FetchGroup based on the FetchPlan
+        query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());
+
         List<Employee> emps = query.getResultList();
 
         // This ensures all required relationships are loaded
@@ -105,7 +137,8 @@ public class FetchPlanExamples {
     }
 
     /**
-     * TODO
+     * Load all employees's first and last names (plus required id and version)
+     * attributes based on a FetchGroup and copy the results based on this plan.
      */
     public List<Employee> employeeCopyNamesWithFetchGroup(EntityManager em) {
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
@@ -114,7 +147,8 @@ public class FetchPlanExamples {
         fetchPlan.addAttribute("firstName");
         fetchPlan.addAttribute("lastName");
 
-        fetchPlan.setFetchGroup(query);
+        // Configure a dynamic FetchGroup based on the FetchPlan
+        query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());
 
         List<Employee> emps = query.getResultList();
 
@@ -123,7 +157,8 @@ public class FetchPlanExamples {
 
     /**
      * Create copies of managed objects requiring relationships that were not
-     * loaded in the initial query.
+     * loaded in the initial query. The copy operation will force the fetching
+     * of required relationships.
      */
     public List<Employee> employeeCopyWithNamesAddressAndPhones(EntityManager em) {
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.salary > 0");
@@ -140,8 +175,53 @@ public class FetchPlanExamples {
     }
 
     /**
+     * Create copies of managed objects requiring relationships that were not
+     * loaded in the initial query. The copy operation will force the fetching
+     * of required relationships.
+     */
+    public List<Employee> employeeCopyWithNamesAddressAndPhonesWithBatching(EntityManager em) {
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.salary > 0");
+
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("firstName");
+        fetchPlan.addAttribute("lastName");
+        fetchPlan.addAttribute("address");
+        fetchPlan.addAttribute("phoneNumbers");
+
+        // Optimize graph loading using batching
+        query.setHint(QueryHints.BATCH, "e.address");
+        query.setHint(QueryHints.BATCH, "e.phoneNumbers");
+
+        List<Employee> emps = query.getResultList();
+
+        return JpaFetchPlanHelper.copy(em, fetchPlan, emps);
+    }
+
+    /**
+     * Illustrate a multi-level fetch
+     */
+    public List<Employee> managerManagerManagerFetchWithNames(EntityManager em) {
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("firstName");
+        fetchPlan.addAttribute("lastName");
+        fetchPlan.addAttribute("manager.firstName");
+        fetchPlan.addAttribute("manager.lastName");
+        fetchPlan.addAttribute("manager.manager.firstName");
+        fetchPlan.addAttribute("manager.manager.lastName");
+
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.manager.manager IS NOT NULL");
+
+        List<Employee> emps = query.getResultList();
+
+        JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
+
+        return emps;
+    }
+
+    /**
      * Example of a composite select returning both an Employee and its count of
-     * PhoneNumbers.
+     * PhoneNumbers. To use the {@link FetchPlan} in this case you must also
+     * provide the index into the resulting Object[].
      */
     public List<Object[]> employeeAddress_ReturnBoth(EntityManager em) {
         FetchPlan fetchPlan = new FetchPlan(Employee.class);
@@ -154,6 +234,36 @@ public class FetchPlanExamples {
         JpaFetchPlanHelper.fetch(em, fetchPlan, results, 0);
 
         return results;
+    }
+    
+    /**
+     * TODO
+     * 
+     * Note: caller manages transactions
+     */
+    public void fetchCopyMergeExample(EntityManager em) {
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("firstName");
+        fetchPlan.addAttribute("lastName");
+        //fetchPlan.addAttribute("address");
+        //fetchPlan.addAttribute("phoneNumbers");
+        
+        int minId = ((Number) em.createQuery("SELECT MIN(e.id) FROM Employee e").getSingleResult()).intValue();
+        
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = " + minId);
+        query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());
+        
+        Employee emp = (Employee) query.getSingleResult();
+        
+        JpaFetchPlanHelper.fetch(em, fetchPlan, emp);
+        
+        Employee copy = JpaFetchPlanHelper.copy(em, fetchPlan, emp);
+        
+        copy.setSalary(Integer.MAX_VALUE);
+        copy.setFirstName(emp.getLastName());
+        copy.setLastName(emp.getFirstName());
+        
+        JpaFetchPlanHelper.merge(em, fetchPlan, copy);
     }
 
 }

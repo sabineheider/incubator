@@ -13,12 +13,14 @@
  ******************************************************************************/
 package org.eclipse.persistence.extension.fetchplan;
 
+import java.beans.PropertyChangeEvent;
 import java.util.Collection;
 import java.util.Map;
 
 import javax.persistence.Transient;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
 import org.eclipse.persistence.exceptions.QueryException;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
@@ -101,8 +103,7 @@ public class FetchItem {
         this.fetchPlan = fetchPlan;
     }
 
-    // TODO: Made public for testing for now
-    public DatabaseMapping getMapping(Session session) {
+    protected DatabaseMapping getMapping(Session session) {
         if (this.mapping == null) {
             initialize(session);
         }
@@ -183,6 +184,7 @@ public class FetchItem {
      * uninstantiated lazy relationships and using the copies map to conform
      * results.
      */
+    @SuppressWarnings("unchecked")
     private Object copyAll(Object source, ClassDescriptor descriptor, AbstractSession session, ObjectCopyingPolicy policy, Map<Object, Object> copies) {
         Object copy = copies.get(source);
         if (copy != null) {
@@ -225,12 +227,18 @@ public class FetchItem {
         if (mapping.getReferenceDescriptor() != null) {
             // TODO
             throw new UnsupportedOperationException();
+        } else {
+            Object oldValue = mapping.getAttributeValueFromObject(workingCopy);
+            mapping.setAttributeValueInObject(workingCopy, sourceValue);
+            if (mapping.getDescriptor().getObjectChangePolicyInternal() != null && !mapping.getDescriptor().getObjectChangePolicyInternal().isDeferredChangeDetectionPolicy()) {
+                PropertyChangeEvent event = new PropertyChangeEvent(workingCopy, mapping.getAttributeName(), oldValue, sourceValue);
+                ((ChangeTracker) workingCopy)._persistence_getPropertyChangeListener().propertyChange(event);
+            }
         }
+    }
 
-        // TODO: Is this value fine to set in the working copy
-        mapping.setAttributeValueInObject(workingCopy, sourceValue);
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
+    public String toString() {
+        return "FetchItem(" + getName() + ")";
     }
 
 }

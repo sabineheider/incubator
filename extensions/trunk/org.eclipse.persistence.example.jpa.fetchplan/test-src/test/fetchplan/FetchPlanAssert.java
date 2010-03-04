@@ -12,6 +12,7 @@
  ******************************************************************************/
 package test.fetchplan;
 
+import java.lang.reflect.Method;
 import java.util.Collection;
 
 import junit.framework.Assert;
@@ -20,7 +21,10 @@ import org.eclipse.persistence.extension.fetchplan.FetchItem;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.indirection.IndirectContainer;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
+import org.eclipse.persistence.internal.security.PrivilegedAccessHelper;
+import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.queries.FetchGroupTracker;
+import org.eclipse.persistence.sessions.Session;
 
 /**
  * Helper class used by test cases to ensure that the expected attributes and
@@ -74,7 +78,7 @@ public class FetchPlanAssert {
         }
 
         // Check actual value
-        Object value = fetchItem.getMapping(null).getAttributeValueFromObject(result);
+        Object value = getMapping(fetchItem, null).getAttributeValueFromObject(result);
         if (value instanceof IndirectContainer) {
             Assert.assertTrue(((IndirectContainer) value).isInstantiated());
         } else if (value instanceof ValueHolderInterface) {
@@ -108,11 +112,28 @@ public class FetchPlanAssert {
         }
 
         // Check actual value
-        Object value = fetchItem.getMapping(null).getAttributeValueFromObject(result);
+        Object value = getMapping(fetchItem, null).getAttributeValueFromObject(result);
         if (value instanceof IndirectContainer) {
             Assert.assertFalse(((IndirectContainer) value).isInstantiated());
         } else if (value instanceof ValueHolderInterface) {
             Assert.assertFalse(((ValueHolderInterface) value).isInstantiated());
+        }
+    }
+
+    private static Method GET_MAPPING_METHOD = null;
+
+    /**
+     * Helper to access the protected getMapping method on FetchItem
+     */
+    private static DatabaseMapping getMapping(FetchItem item, Session session) {
+        try {
+            if (GET_MAPPING_METHOD == null) {
+                GET_MAPPING_METHOD = PrivilegedAccessHelper.getMethod(FetchItem.class, "getMapping", new Class[] { Session.class }, true);
+            }
+
+            return (DatabaseMapping) PrivilegedAccessHelper.invokeMethod(GET_MAPPING_METHOD, item, new Object[] { session });
+        } catch (Exception e) {
+            throw new RuntimeException("FetchPlanAssert.getMapping failed", e);
         }
     }
 

@@ -12,20 +12,27 @@
  ******************************************************************************/
 package test.fetchplan;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.HashSet;
 import java.util.List;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
+
+import junit.framework.Assert;
 
 import model.Employee;
 
+import org.eclipse.persistence.config.QueryHints;
+import org.eclipse.persistence.extension.fetchplan.FetchPlan;
+import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.junit.After;
@@ -73,6 +80,35 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
         EntityManager em = getEntityManager();
 
         List<Employee> emps = this.examples.employeesFetchAddressAndPhones_optimized(em);
+
+        assertNotNull(emps);
+        assertTrue(emps.size() > 0);
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        for (Employee emp : emps) {
+            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("id"));
+            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("version"));
+            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("firstName"));
+            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("lastName"));
+            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("gender"));
+            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("salary"));
+            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("address"));
+            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("phoneNumbers"));
+            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("startDate"));
+            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("endDate"));
+            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("projects"));
+            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("period"));
+            assertNotNull(emp.getAddress());
+            emp.getPhoneNumbers().size();
+        }
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+    }
+
+    @Test
+    public void employeesFetchAddressAndPhonesBatchAndUsingRedirector() {
+        EntityManager em = getEntityManager();
+
+        List<Employee> emps = this.examples.employeesFetchAddressAndPhonesBatchAndUsingRedirector(em);
 
         assertNotNull(emps);
         assertTrue(emps.size() > 0);
@@ -170,12 +206,12 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     @Test
     public void employeeCopyWithNamesAddressAndPhones() {
         EntityManager em = getEntityManager();
-        
+
         List<Employee> emps = this.examples.employeeCopyWithNamesAddressAndPhones(em);
-        
+
         assertTrue(emps.size() > 0);
         assertEquals(1 + (2 * emps.size()), getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        
+
         for (Employee emp : emps) {
             assertNotNull(emp);
             assertNotNull(emp.getFirstName());
@@ -191,8 +227,58 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
             assertNotNull(emp.getPhoneNumbers());
             assertNull(emp.getProjects());
         }
+        assertEquals(1 + (2 * emps.size()), getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
-    
+
+    @Test
+    public void employeeCopyWithNamesAddressAndPhonesWithBatching() {
+        EntityManager em = getEntityManager();
+
+        List<Employee> emps = this.examples.employeeCopyWithNamesAddressAndPhonesWithBatching(em);
+
+        assertTrue(emps.size() > 0);
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        for (Employee emp : emps) {
+            assertNotNull(emp);
+            assertNotNull(emp.getFirstName());
+            assertNotNull(emp.getLastName());
+            assertTrue(emp.getId() > 0);
+            assertTrue(emp.getVersion() > 0);
+            assertEquals(0.0, emp.getSalary(), 0.0);
+            assertNull(emp.getGender());
+            assertNull(emp.getStartTime());
+            assertNull(emp.getEndTime());
+            assertNull(emp.getPeriod());
+            assertNotNull(emp.getAddress());
+            assertNotNull(emp.getPhoneNumbers());
+            assertNull(emp.getProjects());
+        }
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+    }
+
+    @Test
+    public void managerManagerManagerFetchWithNames() throws Exception {
+        EntityManager em = getEntityManager();
+
+        List<Employee> emps = this.examples.managerManagerManagerFetchWithNames(em);
+
+        assertTrue(emps.size() > 0);
+        int selectsRun = getQuerySQLTracker(em).getTotalSQLSELECTCalls();
+
+        // Calculate unique managers to figure out expected SQL
+        HashSet<Employee> managers = new HashSet<Employee>();
+        for (Employee emp : emps) {
+            managers.add(emp);
+            managers.add(emp.getManager());
+            managers.add(emp.getManager().getManager());
+        }
+        managers.removeAll(emps);
+
+        assertEquals(1 + managers.size(), getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertEquals(selectsRun, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+    }
+
     @Test
     public void employeeAddress_ReturnBoth() throws Exception {
         EntityManager em = getEntityManager();
@@ -200,6 +286,51 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
         List<Object[]> results = this.examples.employeeAddress_ReturnBoth(em);
 
         assertEquals(1 + results.size(), getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+    }
+
+    @Test
+    public void fetchCopyMergeExample() throws Exception {
+        EntityManager em = getEntityManager();
+
+        em.getTransaction().begin();
+
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("firstName");
+        fetchPlan.addAttribute("lastName");
+        fetchPlan.addAttribute("address");
+        //fetchPlan.addAttribute("phoneNumbers");
+        
+        int minId = ((Number) em.createQuery("SELECT MIN(e.id) FROM Employee e").getSingleResult()).intValue();
+        
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = " + minId);
+        query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());
+        
+        Employee emp = (Employee) query.getSingleResult();
+        
+        JpaFetchPlanHelper.fetch(em, fetchPlan, emp);
+        
+        assertFalse(emp.getFirstName().equals(emp.getLastName()));
+        
+        Employee copy = JpaFetchPlanHelper.copy(em, fetchPlan, emp);
+        
+        Assert.assertNotSame(emp, copy);
+        
+        copy.setSalary(Integer.MAX_VALUE);
+        copy.setFirstName(emp.getLastName());
+        copy.setLastName(emp.getFirstName());
+        
+        assertFalse(copy.getFirstName().equals(copy.getLastName()));
+
+        JpaFetchPlanHelper.merge(em, fetchPlan, copy);
+
+        //assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
+
+        em.flush();
+
+        assertEquals(1, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
+
+        em.getTransaction().rollback();
     }
 
     @After

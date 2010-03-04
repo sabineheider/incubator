@@ -9,38 +9,38 @@
  *
  * Contributors:
  *     dclarke - Bug 288307: FetchPlan Example
- *     ssmith  - various minor edits
  ******************************************************************************/
 package org.eclipse.persistence.extension.fetchplan;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.persistence.Query;
 
-import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.exceptions.QueryException;
 import org.eclipse.persistence.internal.helper.DatabaseField;
+import org.eclipse.persistence.internal.sessions.AbstractRecord;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.logging.SessionLogEntry;
 import org.eclipse.persistence.mappings.DatabaseMapping;
+import org.eclipse.persistence.queries.DatabaseQuery;
 import org.eclipse.persistence.queries.FetchGroup;
 import org.eclipse.persistence.queries.ObjectLevelReadQuery;
+import org.eclipse.persistence.queries.QueryRedirector;
+import org.eclipse.persistence.queries.ReportQuery;
 import org.eclipse.persistence.sessions.ObjectCopyingPolicy;
+import org.eclipse.persistence.sessions.Record;
 import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.sessions.UnitOfWork;
 
 /**
- * A FetchPlan ... TODO FetchPlan handles specifying a set of relationships in a
- * query result that need to be instantiated on a given query result. The
- * FetchPlan is associated with a query through its properties where it is
- * stored using the FetchPlan's class name as a key.
+ * A FetchPlan is an extension to EclipseLink that allows an entity to have
+ * specified attributes forced to be loaded or copied into unmanaged copies.
  * <p>
  * A FetchPlan is created/retrieved from a query using the
  * {@link #getFetchPlan(Query)} or {@link #getFetchPlan(ObjectLevelReadQuery)}
@@ -256,11 +256,28 @@ public class FetchPlan {
     }
 
     /**
-     * TODO
+     * Identifies if the attribute name or path exists in the plan.
      */
     public boolean containsAttribute(String... attributeNameOrPath) {
-        // TODO
-        return false;
+        String[] attributePaths = convert(attributeNameOrPath);
+        FetchPlan currentFP = this;
+        FetchItem item = null;
+
+        for (int index = 0; index < attributePaths.length; index++) {
+            String attrName = attributePaths[index];
+            item = (FetchItem) currentFP.getItems().get(attrName);
+
+            if (item == null) {
+                return false;
+            }
+
+            currentFP = item.getFetchPlan();
+            if (currentFP == null && index < (attributePaths.length - 1)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -332,21 +349,27 @@ public class FetchPlan {
      * 
      * @see #fetch(Object, AbstractSession)
      */
-    public void fetch(Collection<?> entities, AbstractSession session) {
-        for (Object entity : entities) {
-            fetch(entity, session);
-        }
-    }
-
-    /**
-     * Perform fetch on all entities in collection.
-     * 
-     * @see #fetch(Object, AbstractSession)
-     */
     public void fetch(Collection<Object[]> entities, int resultIndex, AbstractSession session) {
         for (Object[] entity : entities) {
             fetch(entity[resultIndex], session);
         }
+    }
+
+    /**
+     * Configure a redirector on the query so that this {@link FetchPlan} is
+     * applied on the result before it is returned. This cannot be used in
+     * conjunction with other redirectors or queries that return results that
+     * are not a single entity or collection of entities (No {@link ReportQuery}
+     * ).
+     */
+    public void fetchOnExecute(ObjectLevelReadQuery query) {
+        query.setRedirector(new QueryRedirector() {
+            public Object invokeQuery(DatabaseQuery query, Record arguments, Session session) {
+                Object result = query.execute((AbstractSession) session, (AbstractRecord) arguments);
+                fetch(result, (AbstractSession) session);
+                return result;
+            }
+        });
     }
 
     /**
@@ -375,43 +398,23 @@ public class FetchPlan {
      * using reflection
      */
     protected static Collection<?> createEmptyContainer(Collection<?> source) {
-        Constructor<?> constructor = null;
-
-        try {
-            constructor = source.getClass().getConstructor(int.class);
-        } catch (NoSuchMethodException e) {
-            throw new IllegalArgumentException("FetchPlan.copy: Cannot create new collection of type: " + source.getClass(), e);
-        }
-
         Collection<?> newCollection = null;
 
         try {
+            Constructor<?> constructor = source.getClass().getConstructor(int.class);
             newCollection = (Collection<?>) constructor.newInstance(source.size());
-        } catch (IllegalArgumentException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        } catch (Exception e) {
+            throw new RuntimeException("FetchPlan.copy: failed to create copy of result container for: " + source.getClass(), e);
         }
 
         return newCollection;
     }
 
     /**
-     * TODO
-     * 
-     * @param source
-     * @param session
-     * @param copies
-     * @return
+     * Create a copy of the entity or collection of entities ensure identity
+     * through maintenance of a map of copies (original -> copy).
      */
+    @SuppressWarnings("unchecked")
     protected Object copy(Object source, AbstractSession session, Map<Object, Object> copies) {
         if (source instanceof Object[]) {
             throw new IllegalArgumentException("Fetchplan.copy does not support Object[]");
@@ -456,31 +459,30 @@ public class FetchPlan {
      */
     @SuppressWarnings("unchecked")
     public <T> T merge(T entity, UnitOfWork uow) {
-        T workingCopy = (T) uow.readObject(entity);
-
-        for (Map.Entry<String, FetchItem> entry : getItems().entrySet()) {
-            entry.getValue().merge(entity, workingCopy, (UnitOfWorkImpl) uow);
-        }
-
-        return workingCopy;
+        initialize(uow);
+        return (T) ((UnitOfWorkImpl) uow).mergeCloneWithReferences(entity, new FetchPlanMergeManager((AbstractSession) uow, entity, this));
     }
 
     /**
-     * Helper method that will set a FetchGroup on the provided query for the
-     * immediate items. FetchGroups in the EclipseLInk 2.0 and earlier releases
-     * only control attributes on the entity being queries and cannot be nested
-     * to effect relationships.
+     * Helper method that will create a dynamic FetchGroup based on the first
+     * level attributes of the FetchPlan at the time this method is called. This
+     * is provided to simplify creating a FetchGroup that matches the first
+     * level of the FetchPlan.
+     * <p>
+     * Usage Example:<br/>
+     * <code>
+     * query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());<br/>
+     * </code>
      */
-    public void setFetchGroup(Query query) {
-        FetchGroup group = new FetchGroup(this.toString());
+    public FetchGroup createFetchGroup() {
+        FetchGroup group = new FetchGroup(toString() + "_fetch-group");
         for (String attrName : getItems().keySet()) {
             group.addAttribute(attrName);
         }
-        query.setHint(QueryHints.FETCH_GROUP, group);
+        return group;
     }
 
     public String toString() {
         return "FetchPlan(" + getName() + ")";
     }
-
 }

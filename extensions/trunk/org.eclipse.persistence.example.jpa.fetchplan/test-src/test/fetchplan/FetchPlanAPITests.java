@@ -23,6 +23,7 @@ import model.Employee;
 
 import org.eclipse.persistence.extension.fetchplan.FetchItem;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
+import org.eclipse.persistence.queries.FetchGroup;
 import org.junit.Test;
 
 /**
@@ -243,4 +244,122 @@ public class FetchPlanAPITests {
         assertSame(item.getFetchPlan(), item2.getParent());
     }
 
+    @Test
+    public void verifyContains_nullString() {
+        FetchPlan fp = new FetchPlan(Employee.class);
+
+        try {
+            fp.containsAttribute((String) null);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        fail("IllegalArgumentException expected.");
+    }
+
+    @Test
+    public void verifyContains_nullStringArray() {
+        FetchPlan fp = new FetchPlan(Employee.class);
+
+        try {
+            fp.containsAttribute((String[]) null);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        fail("IllegalArgumentException expected.");
+    }
+
+    @Test
+    public void verifyContains_emptyString() {
+        FetchPlan fp = new FetchPlan(Employee.class);
+
+        try {
+            fp.containsAttribute("");
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        fail("IllegalArgumentException expected.");
+    }
+
+    @Test
+    public void verifyContains_emptyStringArray() {
+        FetchPlan fp = new FetchPlan(Employee.class);
+
+        try {
+            fp.containsAttribute(new String[0]);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        fail("IllegalArgumentException expected.");
+    }
+
+    @Test
+    public void verifyContains_dot() {
+        FetchPlan fp = new FetchPlan(Employee.class);
+
+        try {
+            fp.containsAttribute(".");
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        fail("IllegalArgumentException expected.");
+    }
+
+    @Test
+    public void verifyContains_nonExistent() {
+        FetchPlan fp = new FetchPlan(Employee.class);
+
+        assertTrue(fp.getFetchItems().isEmpty());
+        assertFalse(fp.containsAttribute("test"));
+
+        assertFalse(fp.containsAttribute("test.test"));
+        assertTrue(fp.getFetchItems().isEmpty());
+    }
+
+    @Test
+    public void verifyCreateFetchGroup_empty() {
+        FetchPlan fp = new FetchPlan("empty", Employee.class);
+
+        FetchGroup fg = fp.createFetchGroup();
+
+        assertNotNull(fg);
+        assertTrue(fg.getAttributes().isEmpty());
+        assertEquals("FetchPlan(empty)_fetch-group", fg.getName());
+    }
+
+    @Test
+    public void verifyCopy_null_null() {
+        FetchPlan fp = new FetchPlan(Employee.class);
+
+        try {
+            fp.copy(null, null);
+        } catch (NullPointerException e) {
+            return;
+        }
+        fail("NullPointerException expected");
+    }
+
+    @Test
+    public void verifyFetch_null_null() {
+        FetchPlan fp = new FetchPlan(Employee.class);
+
+        try {
+            fp.fetch(null, null);
+        } catch (NullPointerException e) {
+            return;
+        }
+        fail("NullPointerException expected");
+    }
+
+    @Test
+    public void verifyFetch_null_0_null() {
+        FetchPlan fp = new FetchPlan(Employee.class);
+
+        try {
+            fp.fetch(null, 0, null);
+        } catch (NullPointerException e) {
+            return;
+        }
+        fail("NullPointerException expected");
+
+    }
 }

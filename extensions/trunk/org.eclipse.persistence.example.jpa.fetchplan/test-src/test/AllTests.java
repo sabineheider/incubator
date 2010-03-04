@@ -10,20 +10,13 @@
  * Contributors:
  *     dclarke - Bug 288307: Extensions Incubator - FetchPlan 
  ******************************************************************************/
-package test.fetchplan;
+package test;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { FetchPlanAPITests.class,
-                       FetchPlanExamplesTests.class, 
-                       ReadObjectFetchPlanTests.class, 
-                       ReportQueryFetchPlanTests.class, 
-//                       SerializedResultsTests.class, 
-                       FetchPlanCopyTests.class,
-                       FetchPlanMergeTests.class,
-                       DetachedResultsTests.class}) 
+@Suite.SuiteClasses( { test.batchin.BatchInTests.class, test.fetchplan.AllTests.class })
 public class AllTests {
 
 }

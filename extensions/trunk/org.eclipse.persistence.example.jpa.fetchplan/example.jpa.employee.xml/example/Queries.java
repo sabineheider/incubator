@@ -111,7 +111,7 @@ public class Queries {
 		return (Employee) query.getSingleResult();
 	}
 	
-	public Employee minEmployeeWithAddressAndPhones(EntityManager em) {
+	public static Employee minEmployeeWithAddressAndPhones(EntityManager em) {
 		return (Employee) em.createQuery("SELECT e FROM Employee e JOIN FETCH e.address WHERE e.id IN (SELECT MIN(p.id) FROM PhoneNumber p)").getSingleResult();
 	}
 
