@@ -8,7 +8,7 @@
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *     dclarke - TODO
+ *     dclarke - Bug 288307: Fetch Plan Extension Incubator
  ******************************************************************************/
 package org.eclipse.persistence.extension.fetchplan;
 
@@ -28,9 +28,9 @@ import org.eclipse.persistence.internal.sessions.MergeManager;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 
 /**
- * TODO
- * 
  * Custom MergeManager to support sparse merge based on a FetchPlan.
+ * 
+ * @see FetchPlan
  * 
  * @author dclarke
  * @since EclipseLink 1.2
@@ -42,7 +42,6 @@ public class FetchPlanMergeManager extends MergeManager {
     public FetchPlanMergeManager(AbstractSession session, Object rootEntity, FetchPlan plan) {
         super(session);
         getFetchPlans().put(rootEntity, plan);
-
         setMergePolicy(CLONE_INTO_WORKING_COPY);
     }
 
@@ -94,6 +93,13 @@ public class FetchPlanMergeManager extends MergeManager {
         return registeredObject;
     }
 
+    /**
+     * This code is copied from
+     * {@link ObjectBuilder#mergeIntoObject(Object, boolean, Object, MergeManager, boolean, boolean)}
+     * to enable {@link FetchPlan} specific merging. The method in ObjectBuilder
+     * merges all relationships based on mappings and cascade configuration
+     * where as this does it by FetchPlan's items.
+     */
     public void mergeIntoObject(Object target, boolean isUnInitialized, Object source, boolean cascadeOnly, boolean isTargetCloneOfOriginal, ClassDescriptor descriptor) {
         FetchPlan plan = getFetchPlans().get(source);
 
@@ -118,7 +124,7 @@ public class FetchPlanMergeManager extends MergeManager {
                 // Configure FetchPlan usage for related objects
                 if (sourceValue != null) {
                     if (sourceValue instanceof Collection<?>) {
-                        for (Object obj: (Collection<?>) sourceValue) {
+                        for (Object obj : (Collection<?>) sourceValue) {
                             getFetchPlans().put(obj, item.getFetchPlan());
                         }
                     } else {

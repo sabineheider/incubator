@@ -103,8 +103,12 @@ public class FetchPlan {
         this(name, entityClass, true);
     }
 
+    public FetchPlan(Class<?> entityClass, boolean addRequiredAttributes) {
+        this(null, entityClass, addRequiredAttributes);
+    }
+
     public FetchPlan(Class<?> entityClass) {
-        this(null, entityClass);
+        this(null, entityClass, true);
     }
 
     public String getName() {

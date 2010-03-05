@@ -237,7 +237,7 @@ public class FetchPlanExamples {
     }
     
     /**
-     * TODO
+     * Example of using a {@link FetchPlan} to fetch, then copy, then merge a single entity
      * 
      * Note: caller manages transactions
      */
@@ -245,8 +245,8 @@ public class FetchPlanExamples {
         FetchPlan fetchPlan = new FetchPlan(Employee.class);
         fetchPlan.addAttribute("firstName");
         fetchPlan.addAttribute("lastName");
-        //fetchPlan.addAttribute("address");
-        //fetchPlan.addAttribute("phoneNumbers");
+        fetchPlan.addAttribute("address");
+        fetchPlan.addAttribute("phoneNumbers");
         
         int minId = ((Number) em.createQuery("SELECT MIN(e.id) FROM Employee e").getSingleResult()).intValue();
         

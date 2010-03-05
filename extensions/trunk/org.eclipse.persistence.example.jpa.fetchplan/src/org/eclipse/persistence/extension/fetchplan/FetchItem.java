@@ -13,17 +13,14 @@
  ******************************************************************************/
 package org.eclipse.persistence.extension.fetchplan;
 
-import java.beans.PropertyChangeEvent;
 import java.util.Collection;
 import java.util.Map;
 
 import javax.persistence.Transient;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.descriptors.changetracking.ChangeTracker;
 import org.eclipse.persistence.exceptions.QueryException;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
-import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.sessions.ObjectCopyingPolicy;
 import org.eclipse.persistence.sessions.Session;
@@ -210,31 +207,6 @@ public class FetchItem {
         }
 
         return copy;
-    }
-
-    /*
-     * The mapped attribute for this item will be merged into the working copy.
-     * In the case of relationships where this item has a FetchPlan the merge
-     * will be cascade through that FetchPlan.
-     */
-    protected void merge(Object source, Object workingCopy, UnitOfWorkImpl session) {
-        DatabaseMapping mapping = getMapping((AbstractSession) session);
-
-        Object sourceValue = mapping.getRealAttributeValueFromObject(source, session);
-
-        // If there is a reference descriptor then the target is another mapped
-        // class.
-        if (mapping.getReferenceDescriptor() != null) {
-            // TODO
-            throw new UnsupportedOperationException();
-        } else {
-            Object oldValue = mapping.getAttributeValueFromObject(workingCopy);
-            mapping.setAttributeValueInObject(workingCopy, sourceValue);
-            if (mapping.getDescriptor().getObjectChangePolicyInternal() != null && !mapping.getDescriptor().getObjectChangePolicyInternal().isDeferredChangeDetectionPolicy()) {
-                PropertyChangeEvent event = new PropertyChangeEvent(workingCopy, mapping.getAttributeName(), oldValue, sourceValue);
-                ((ChangeTracker) workingCopy)._persistence_getPropertyChangeListener().propertyChange(event);
-            }
-        }
     }
 
     public String toString() {

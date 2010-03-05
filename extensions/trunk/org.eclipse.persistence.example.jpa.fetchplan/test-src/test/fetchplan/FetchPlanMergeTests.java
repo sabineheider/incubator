@@ -17,12 +17,17 @@ import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertSame;
+import static junit.framework.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
 import model.Address;
 import model.Employee;
+import model.PhoneNumber;
 
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
@@ -52,6 +57,7 @@ public class FetchPlanMergeTests extends EclipseLinkJPATest {
 
         assertNotNull(emp);
         assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertFalse(emp.getFirstName().equals("-"));
 
         FetchPlan plan = new FetchPlan(Employee.class);
         plan.addAttribute("salary");
@@ -68,6 +74,38 @@ public class FetchPlanMergeTests extends EclipseLinkJPATest {
         em.flush();
 
         assertSame(emp, empWC);
+        assertFalse(empWC.getFirstName().equals("-"));
+        assertNotNull(empWC.getAddress());
+        assertEquals(2, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
+
+        em.getTransaction().rollback();
+    }
+
+    /**
+     * Test doing a merge on an entity not read in.
+     */
+    @Test
+    public void incrementSalary_NotInContext() throws Exception {
+        EntityManager em = getEntityManager();
+
+        int minId = Queries.minEmployeeIdWithAddressAndPhones(em);
+        long version = ((Number) em.createQuery("SELECT e.version FROM Employee e WHERE e.id = " + minId).getSingleResult()).longValue();
+
+        FetchPlan plan = new FetchPlan(Employee.class);
+        plan.addAttribute("id");
+        plan.addAttribute("salary");
+
+        Employee minimalEmp = new Employee();
+        minimalEmp.setId(minId);
+        minimalEmp.setVersion(version);
+        minimalEmp.setSalary(Integer.MAX_VALUE);
+        minimalEmp.setFirstName("-");
+        minimalEmp.setAddress(null);
+
+        em.getTransaction().begin();
+        Employee empWC = JpaFetchPlanHelper.merge(em, plan, minimalEmp);
+        em.flush();
+
         assertFalse(empWC.getFirstName().equals("-"));
         assertNotNull(empWC.getAddress());
         assertEquals(2, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
@@ -116,8 +154,6 @@ public class FetchPlanMergeTests extends EclipseLinkJPATest {
      * Delete the employee's address by setting it to null in the copy being
      * merged and the FetchPlan's merge combined with the mapping's
      * private-owned configuration will cause it to be deleted.
-     * 
-     * @throws Exception
      */
     @Test
     public void deleteAddress() throws Exception {
@@ -143,6 +179,85 @@ public class FetchPlanMergeTests extends EclipseLinkJPATest {
         assertSame(emp, empWC);
         assertNull(empWC.getAddress());
         assertEquals(1, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
+        assertEquals(1, getQuerySQLTracker(em).getTotalSQLDELETECalls());
+
+        em.getTransaction().rollback();
+    }
+
+    /**
+     * Delete the employee's address by setting it to null in the copy being
+     * merged and the FetchPlan's merge combined with the mapping's
+     * private-owned configuration will cause it to be deleted.
+     */
+    @Test
+    public void removeAllPhones() throws Exception {
+        EntityManager em = getEntityManager();
+
+        Employee emp = Queries.minEmployeeWithAddressAndPhones(em);
+
+        assertNotNull(emp);
+        assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        FetchPlan plan = new FetchPlan(Employee.class);
+        plan.addAttribute("phoneNumbers");
+
+        Employee minimalEmp = new Employee();
+        minimalEmp.setId(emp.getId());
+        minimalEmp.setVersion(emp.getVersion());
+        minimalEmp.setPhoneNumbers(new ArrayList<PhoneNumber>());
+
+        em.getTransaction().begin();
+        Employee empWC = JpaFetchPlanHelper.merge(em, plan, minimalEmp);
+        em.flush();
+
+        assertSame(emp, empWC);
+        assertTrue(empWC.getPhoneNumbers().isEmpty());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
+        assertEquals(1, getQuerySQLTracker(em).getTotalSQLDELETECalls());
+
+        em.getTransaction().rollback();
+    }
+
+    /**
+     * Delete the employee's address by setting it to null in the copy being
+     * merged and the FetchPlan's merge combined with the mapping's
+     * private-owned configuration will cause it to be deleted.
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void removeOnePhone() throws Exception {
+        EntityManager em = getEntityManager();
+
+        List<Object[]> phoneIds = em.createQuery("SELECT p.id, COUNT(p.id) FROM PhoneNumber p GROUP BY p.id").getResultList();
+        int empId = -1;
+        for (Object[] values : phoneIds) {
+            if (empId == -1 && ((Number) values[1]).intValue() > 1) {
+                empId = ((Number) values[0]).intValue();
+            }
+        }
+
+        Employee emp = (Employee) em.createQuery("SELECT e FROM Employee e JOIN FETCH e.address WHERE e.id = " + empId).getSingleResult();
+        int numPhones = emp.getPhoneNumbers().size();
+
+        assertNotNull(emp);
+        assertTrue(numPhones > 1);
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        FetchPlan plan = new FetchPlan(Employee.class);
+        plan.addAttribute("phoneNumbers");
+
+        Employee minimalEmp = JpaFetchPlanHelper.copy(em, plan, emp);
+
+        minimalEmp.getPhoneNumbers().remove(0);
+
+        em.getTransaction().begin();
+        Employee empWC = JpaFetchPlanHelper.merge(em, plan, minimalEmp);
+        em.flush();
+
+        assertSame(emp, empWC);
+        assertEquals(numPhones - 1, empWC.getPhoneNumbers().size());
+        assertEquals(minimalEmp.getPhoneNumbers().size(), empWC.getPhoneNumbers().size());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
         assertEquals(1, getQuerySQLTracker(em).getTotalSQLDELETECalls());
 
         em.getTransaction().rollback();

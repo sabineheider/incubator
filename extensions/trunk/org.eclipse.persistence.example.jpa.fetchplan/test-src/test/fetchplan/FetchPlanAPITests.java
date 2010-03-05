@@ -8,7 +8,7 @@
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *     dclarke - TODO
+ *     dclarke - Bug 288307: Fetch Plan Extension Incubator
  ******************************************************************************/
 package test.fetchplan;
 
