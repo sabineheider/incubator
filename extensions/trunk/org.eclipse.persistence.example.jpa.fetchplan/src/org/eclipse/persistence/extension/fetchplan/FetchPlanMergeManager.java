@@ -37,20 +37,28 @@ import org.eclipse.persistence.mappings.DatabaseMapping;
  */
 public class FetchPlanMergeManager extends MergeManager {
 
+    /**
+     * Map of entities to FetchPlan used to do sparse merge on entities in the
+     * graph described by a FetchPlan. When started only the root entity being
+     * merged is set in the map and then as each level of the graph being merged
+     * is traversed the additional objects are added before calling merge on the
+     * mapping so that when called back into
+     * {@link #mergeIntoObject(Object, boolean, Object, boolean, boolean, ClassDescriptor)}
+     * method the appropriate plan can be looked up and used.
+     */
     private Map<Object, FetchPlan> fetchPlans = new HashMap<Object, FetchPlan>();
 
-    public FetchPlanMergeManager(AbstractSession session, Object rootEntity, FetchPlan plan) {
+    public FetchPlanMergeManager(AbstractSession session) {
         super(session);
-        getFetchPlans().put(rootEntity, plan);
         setMergePolicy(CLONE_INTO_WORKING_COPY);
     }
 
-    public Map<Object, FetchPlan> getFetchPlans() {
+    protected Map<Object, FetchPlan> getFetchPlans() {
         return this.fetchPlans;
     }
 
     @Override
-    protected Object mergeChangesOfCloneIntoWorkingCopy(Object rmiClone) {
+    protected Object mergeChangesOfCloneIntoWorkingCopy(Object rmiClone) {        
         Object registeredObject = registerObjectForMergeCloneIntoWorkingCopy(rmiClone);
 
         if (registeredObject == rmiClone && !shouldForceCascade()) {

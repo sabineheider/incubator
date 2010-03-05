@@ -130,11 +130,12 @@ public class FetchItem {
         }
     }
 
-    /*
-     * Force the mapped attribute to be loaded.
+    /**
+     * Force the mapped attribute to be loaded if it is not null and is
+     * assignable to the type of the item's plan.
      */
     protected void fetch(Object entity, AbstractSession session) {
-        if (entity != null) {
+        if (entity != null && getParent().getEntityClass().isAssignableFrom(entity.getClass())) {
             getMapping(session).instantiateAttribute(entity, session);
 
             if (getFetchPlan() != null) {

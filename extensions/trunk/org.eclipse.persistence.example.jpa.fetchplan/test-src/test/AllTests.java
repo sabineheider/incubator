@@ -16,7 +16,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { test.batchin.BatchInTests.class, test.fetchplan.AllTests.class })
+@Suite.SuiteClasses( { test.batchin.BatchInTests.class, 
+                       test.fetchplan.AllTests.class,
+                       FetchPlanFetchWithBatchInTests.class})
 public class AllTests {
 
 }

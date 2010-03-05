@@ -13,6 +13,7 @@
 package test.fetchplan;
 
 import java.util.List;
+import static org.junit.Assert.*;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -30,7 +31,24 @@ import testing.EclipseLinkJPATest;
 
 @SuppressWarnings("unchecked")
 @PersistenceContext(unitName = "employee")
-public class ReportQueryFetchPlanTests extends EclipseLinkJPATest {
+public class CompositeResultsFetchTests extends EclipseLinkJPATest {
+
+    @Test
+    public void employeeManagerPhonesAndAddressByIndex() throws Exception {
+        EntityManager em = getEntityManager();
+
+        Query query = em.createQuery("SELECT e, e.address FROM Employee e WHERE e.gender IS NOT NULL");
+
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("manager.address");
+        fetchPlan.addAttribute("manager.phoneNumbers");
+
+        List<Object[]> emps = query.getResultList();
+
+        JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
+
+        FetchPlanAssert.assertFetched(fetchPlan, emps, 0);
+    }
 
     @Test
     public void employeeManagerPhonesAndAddress() throws Exception {
@@ -42,11 +60,25 @@ public class ReportQueryFetchPlanTests extends EclipseLinkJPATest {
         fetchPlan.addAttribute("manager.address");
         fetchPlan.addAttribute("manager.phoneNumbers");
 
-        List<Object[]> emps = query.getResultList();
+        List<Object[]> results = query.getResultList();
+        
+        assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
-        JpaFetchPlanHelper.fetch(em, fetchPlan, emps, 0);
-
-        FetchPlanAssert.assertFetched(fetchPlan, emps, 0);
+        JpaFetchPlanHelper.fetch(em, fetchPlan, results, 0);
+        
+        getQuerySQLTracker(em).reset();
+        
+        FetchPlanAssert.assertFetched(fetchPlan, results, 0);
+        
+        for (Object[] values: results) {
+            Employee e = (Employee) values[0];
+            if (e.getManager() != null) {
+                e.getManager().getAddress();
+                e.getManager().getPhoneNumbers().size();
+            }
+        }
+        
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
     @Test

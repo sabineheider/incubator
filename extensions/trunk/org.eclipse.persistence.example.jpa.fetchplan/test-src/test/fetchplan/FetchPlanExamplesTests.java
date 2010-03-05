@@ -12,7 +12,7 @@
  ******************************************************************************/
 package test.fetchplan;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
@@ -27,7 +27,6 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
 import junit.framework.Assert;
-
 import model.Employee;
 
 import org.eclipse.persistence.config.QueryHints;
@@ -298,32 +297,32 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
         fetchPlan.addAttribute("firstName");
         fetchPlan.addAttribute("lastName");
         fetchPlan.addAttribute("address");
-        //fetchPlan.addAttribute("phoneNumbers");
-        
+        // fetchPlan.addAttribute("phoneNumbers");
+
         int minId = ((Number) em.createQuery("SELECT MIN(e.id) FROM Employee e").getSingleResult()).intValue();
-        
+
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = " + minId);
         query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());
-        
+
         Employee emp = (Employee) query.getSingleResult();
-        
+
         JpaFetchPlanHelper.fetch(em, fetchPlan, emp);
-        
+
         assertFalse(emp.getFirstName().equals(emp.getLastName()));
-        
+
         Employee copy = JpaFetchPlanHelper.copy(em, fetchPlan, emp);
-        
+
         Assert.assertNotSame(emp, copy);
-        
+
         copy.setSalary(Integer.MAX_VALUE);
         copy.setFirstName(emp.getLastName());
         copy.setLastName(emp.getFirstName());
-        
+
         assertFalse(copy.getFirstName().equals(copy.getLastName()));
 
         JpaFetchPlanHelper.merge(em, fetchPlan, copy);
 
-        //assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        // assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
         assertEquals(0, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
 
         em.flush();

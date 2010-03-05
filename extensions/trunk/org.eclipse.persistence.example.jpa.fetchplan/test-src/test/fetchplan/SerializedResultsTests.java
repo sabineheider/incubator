@@ -24,6 +24,7 @@ import model.Employee;
 
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
+import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.internal.helper.SerializationHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.ReadAllQuery;
@@ -51,10 +52,11 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.gender IS NOT NULL");
 
         FetchPlan fetchPlan = new FetchPlan(Employee.class);
-        fetchPlan.addAttribute("e.address");
-        fetchPlan.addAttribute("e.phoneNumbers");
+        fetchPlan.addAttribute("address");
+        fetchPlan.addAttribute("phoneNumbers");
 
         List<Employee> emps = query.getResultList();
+        JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
         List<Employee> serializedEmps = serialize(emps);
@@ -75,6 +77,7 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         fetchPlan.addAttribute("phoneNumbers");
 
         List<Employee> emps = query.getResultList();
+        JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
         List<Employee> serializedEmps = serialize(emps);
@@ -95,6 +98,7 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         fetchPlan.addAttribute("phoneNumbers");
 
         List<Employee> emps = query.getResultList();
+        JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
         List<Employee> serializedEmps = serialize(emps);
@@ -112,6 +116,7 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         fetchPlan.addAttribute("manager.phoneNumbers");
 
         List<Employee> emps = query.getResultList();
+        JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
         List<Employee> serializedEmps = serialize(emps);
@@ -128,6 +133,7 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         fetchPlan.addAttribute("responsibilities");
 
         List<Employee> emps = query.getResultList();
+        JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
         List<Employee> serializedEmps = serialize(emps);
@@ -145,6 +151,7 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         fetchPlan.addAttribute("responsibilities");
 
         List<Employee> emps = query.getResultList();
+        JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
         List<Employee> serializedEmps = serialize(emps);
@@ -161,11 +168,12 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         fetchPlan.addAttribute("address");
         fetchPlan.addAttribute("phoneNumbers");
 
-        List<Employee> emps = query.getResultList();
+        List<Object[]> results = query.getResultList();
+        JpaFetchPlanHelper.fetch(em, fetchPlan, results);
 
-        FetchPlanAssert.assertFetched(fetchPlan, emps);
-        List<Employee> serializedEmps = serialize(emps);
-        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps);
+        FetchPlanAssert.assertFetched(fetchPlan, results, 0);
+        List<Object[]> serializedEmps = serialize(results);
+        FetchPlanAssert.assertFetched(fetchPlan, serializedEmps, 0);
     }
 
     @Test
@@ -178,6 +186,7 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         fetchPlan.addAttribute("managedEmployees.address");
 
         List<Employee> emps = query.getResultList();
+        JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
         List<Employee> serializedEmps = serialize(emps);
@@ -197,6 +206,7 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
         Query query = JpaHelper.createQuery(raq, em);
 
         List<Employee> emps = query.getResultList();
+        JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
 
         FetchPlanAssert.assertFetched(fetchPlan, emps);
         List<Employee> serializedEmps = serialize(emps);

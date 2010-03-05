@@ -68,10 +68,13 @@ public class FetchPlan {
      */
     private Map<String, FetchItem> items;
 
+    /**
+     * The entity type this fetchPlan will be used against.
+     */
     private Class<?> entityClass;
 
     /**
-     * 
+     * Descriptor cached for the entity class of this FetchPlan.
      */
     private ClassDescriptor descriptor;
 
@@ -127,7 +130,7 @@ public class FetchPlan {
         this.addRequiredAttributes = value;
     }
 
-    /**
+    /*
      * Used in {@link FetchItem#initialize(Session)} to populate the target
      * entity type of relationships from the mapping.
      */
@@ -222,18 +225,11 @@ public class FetchPlan {
     }
 
     /**
-     * Add an item to be fetched
-     * <p>
-     * If a single string is supplied then it is assumed to either be an
-     * attribute name for the only entity type being returned from the query or
-     * it is a path expression with attribute names separated by '.' and the
-     * first part represents the alias or item name in the select of the query.
-     * <p>
-     * If multiple strings are provided it is assumed that they are all mapped
-     * attribute names and the query is returning a single entity type.
-     * 
-     * @param attributePath
-     * @return
+     * Add an item to be fetched. This can be either a mapped attribute name of
+     * the current {@link #entityClass} or it can be a path of mapped attribute
+     * names '.' separated. The values are not validated against the mappings
+     * when added but are instead validated during {@link #initialize(Session)}
+     * when the plan is used in a fetch/copy/merge operation.
      */
     public FetchItem addAttribute(String... nameOrPath) {
         String[] attributePaths = convert(nameOrPath);
@@ -290,7 +286,7 @@ public class FetchPlan {
      * attribute names defining the path.
      */
     private String[] convert(String... nameOrPath) {
-        if (nameOrPath == null || nameOrPath.length == 0 || (nameOrPath.length == 1 && (nameOrPath[0] == null || nameOrPath[0].isEmpty()))) {
+        if (nameOrPath == null || nameOrPath.length == 0 || (nameOrPath.length == 1 && (nameOrPath[0] == null || nameOrPath[0].length() == 0))) {
             throw new IllegalArgumentException("FetchPlan: illegal attribute name or path: '" + nameOrPath + "'");
         }
 
@@ -325,6 +321,9 @@ public class FetchPlan {
      * specified in the plan loaded. Additional attributes may already have been
      * loaded or will be loaded through interaction with {@link FetchGroup}
      * behavior.
+     * <p>
+     * In the case of composite results (Collection<Object[]) all result
+     * elements of the array have fetch performed on them.
      */
     public void fetch(Object entity, AbstractSession session) {
         initialize(session);
@@ -349,7 +348,10 @@ public class FetchPlan {
     }
 
     /**
-     * Perform fetch on all entities in collection.
+     * Special fetch operation for composite query results where the SELECT
+     * returned multiple items and each result is an array of objects. This
+     * method allows an index to be specified so that only the result in
+     * question is used in the fetch operation.
      * 
      * @see #fetch(Object, AbstractSession)
      */
@@ -464,7 +466,11 @@ public class FetchPlan {
     @SuppressWarnings("unchecked")
     public <T> T merge(T entity, UnitOfWork uow) {
         initialize(uow);
-        return (T) ((UnitOfWorkImpl) uow).mergeCloneWithReferences(entity, new FetchPlanMergeManager((AbstractSession) uow, entity, this));
+
+        FetchPlanMergeManager mergeManager = new FetchPlanMergeManager((AbstractSession) uow);
+        mergeManager.getFetchPlans().put(entity, this);
+
+        return (T) ((UnitOfWorkImpl) uow).mergeCloneWithReferences(entity, mergeManager);
     }
 
     /**

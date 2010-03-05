@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import testing.EclipseLinkJPATest;
 
+@SuppressWarnings("unchecked")
 @PersistenceContext(unitName = "employee")
 public class BatchInTests extends EclipseLinkJPATest {
 

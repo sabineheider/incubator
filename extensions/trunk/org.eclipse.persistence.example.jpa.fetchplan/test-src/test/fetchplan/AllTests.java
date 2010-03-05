@@ -19,11 +19,11 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses( { FetchPlanAPITests.class,
                        FetchPlanExamplesTests.class, 
                        ReadObjectFetchPlanTests.class, 
-                       ReportQueryFetchPlanTests.class, 
-//                       SerializedResultsTests.class, 
+                       CompositeResultsFetchTests.class, 
                        FetchPlanCopyTests.class,
                        FetchPlanMergeTests.class,
-                       DetachedResultsTests.class}) 
+                       DetachedResultsTests.class,
+                       SerializedResultsTests.class}) 
 public class AllTests {
 
 }

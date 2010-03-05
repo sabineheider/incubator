@@ -104,6 +104,7 @@ public class Transactions {
      * @param em
      * @throws Exception
      */
+    @SuppressWarnings("unchecked")
     public void updateEmployeeWithCity(EntityManager em) throws Exception {
         em.getTransaction().begin();
 

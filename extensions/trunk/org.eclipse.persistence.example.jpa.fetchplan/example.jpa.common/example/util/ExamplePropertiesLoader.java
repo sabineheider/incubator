@@ -27,6 +27,7 @@ import java.util.Properties;
  * @author dclarke
  * @since EclipseLink 2.0.0
  */
+@SuppressWarnings("unchecked")
 public class ExamplePropertiesLoader {
 
     public static final String DEFAULT_FILENAME = "eclipselink-example.properties";
