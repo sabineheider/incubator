@@ -266,4 +266,21 @@ public class FetchPlanExamples {
         JpaFetchPlanHelper.merge(em, fetchPlan, copy);
     }
 
+    /**
+     * 
+     */
+    public List<Employee> createFetchPlanFromDefaultFetchGroup(EntityManager em) {
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        JpaFetchPlanHelper.addDefaultFetchGroupAttributes(em, fetchPlan);
+        
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.salary > 0");
+        query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());
+        
+        List<Employee> emps = query.getResultList();
+        
+        JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
+
+        return emps;
+    }
+
 }

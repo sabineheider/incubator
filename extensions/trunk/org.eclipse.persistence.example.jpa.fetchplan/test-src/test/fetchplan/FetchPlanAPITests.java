@@ -19,12 +19,20 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceContext;
+
 import model.Employee;
 
 import org.eclipse.persistence.extension.fetchplan.FetchItem;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
+import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.queries.FetchGroup;
 import org.junit.Test;
+
+import testing.EclipseLinkJPATest;
 
 /**
  * Basic set of test verifying that the FetchPlan public API performs as
@@ -33,7 +41,8 @@ import org.junit.Test;
  * @author dclarke
  * @since EclipseLink 1.2
  */
-public class FetchPlanAPITests {
+@PersistenceContext(unitName = "employee")
+public class FetchPlanAPITests extends EclipseLinkJPATest {
 
     @Test
     public void verifyConstructor_nullEntityClass() {
@@ -361,5 +370,137 @@ public class FetchPlanAPITests {
         }
         fail("NullPointerException expected");
 
+    }
+
+    @Test
+    public void jpaFetchGroupHelper_addDefaultFetchGroup_nullEM_null() {
+        try {
+            JpaFetchPlanHelper.addDefaultFetchGroupAttributes((EntityManager) null, null);
+        } catch (NullPointerException e) {
+            return;
+        }
+        fail("NullPointerException expected");
+    }
+
+    @Test
+    public void jpaFetchGroupHelper_addDefaultFetchGroup_nullEMF_null() {
+        try {
+            JpaFetchPlanHelper.addDefaultFetchGroupAttributes((EntityManagerFactory) null, null);
+        } catch (NullPointerException e) {
+            return;
+        }
+        fail("NullPointerException expected");
+    }
+
+    @Test
+    public void jpaFetchGroupHelper_addDefaultFetchGroup_EM_null() {
+        try {
+            JpaFetchPlanHelper.addDefaultFetchGroupAttributes(getEntityManager(), null);
+        } catch (NullPointerException e) {
+            return;
+        }
+        fail("NullPointerException expected");
+    }
+
+    @Test
+    public void jpaFetchGroupHelper_addDefaultFetchGroup_NoEntityClass() {
+        FetchPlan fp = new FetchPlan(null);
+
+        try {
+            JpaFetchPlanHelper.addDefaultFetchGroupAttributes(getEntityManager(), fp);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        fail("IllegalArgumentException expected");
+    }
+
+    @Test
+    public void jpaFetchGroupHelper_addDefaultFetchGroup_UnknownEntityClass() {
+        FetchPlan fp = new FetchPlan(Object.class);
+
+        try {
+            JpaFetchPlanHelper.addDefaultFetchGroupAttributes(getEntityManager(), fp);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        fail("IllegalArgumentException expected");
+    }
+
+    @Test
+    public void jpaFetchGroupHelper_addDefaultFetchGroup_NoDefault() {
+        FetchPlan fp = new FetchPlan(Employee.class);
+
+        try {
+            JpaFetchPlanHelper.addDefaultFetchGroupAttributes(getEntityManager(), fp);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        fail("IllegalArgumentException expected");
+    }
+
+    @Test
+    public void jpaFetchGroupHelper_addNamedFetchGroup_nullEM_null() {
+        try {
+            JpaFetchPlanHelper.addNamedFetchGroupAttributes((EntityManager) null, null, null);
+        } catch (NullPointerException e) {
+            return;
+        }
+        fail("NullPointerException expected");
+    }
+
+    @Test
+    public void jpaFetchGroupHelper_addNamedFetchGroup_nullEMF_null() {
+        try {
+            JpaFetchPlanHelper.addNamedFetchGroupAttributes((EntityManagerFactory) null, null, null);
+        } catch (NullPointerException e) {
+            return;
+        }
+        fail("NullPointerException expected");
+    }
+
+    @Test
+    public void jpaFetchGroupHelper_addNamedFetchGroup_EM_null_null() {
+        try {
+            JpaFetchPlanHelper.addNamedFetchGroupAttributes(getEntityManager(), null, null);
+        } catch (NullPointerException e) {
+            return;
+        }
+        fail("NullPointerException expected");
+    }
+
+    @Test
+    public void jpaFetchGroupHelper_addNamedFetchGroup_NoEntityClass() {
+        FetchPlan fp = new FetchPlan(null);
+
+        try {
+            JpaFetchPlanHelper.addNamedFetchGroupAttributes(getEntityManager(), "unknown", fp);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        fail("IllegalArgumentException expected");
+    }
+
+    @Test
+    public void jpaFetchGroupHelper_addNamedFetchGroup_UnknownEntityClass() {
+        FetchPlan fp = new FetchPlan(Object.class);
+
+        try {
+            JpaFetchPlanHelper.addNamedFetchGroupAttributes(getEntityManager(), "unknown", fp);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        fail("IllegalArgumentException expected");
+    }
+
+    @Test
+    public void jpaFetchGroupHelper_addNamedFetchGroup_UnknownName() {
+        FetchPlan fp = new FetchPlan(Employee.class);
+
+        try {
+            JpaFetchPlanHelper.addNamedFetchGroupAttributes(getEntityManager(), "unknown", fp);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        fail("IllegalArgumentException expected");
     }
 }

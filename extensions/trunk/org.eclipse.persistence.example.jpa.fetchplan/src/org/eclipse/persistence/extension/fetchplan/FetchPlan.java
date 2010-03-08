@@ -16,6 +16,7 @@ import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import javax.persistence.Query;
 
@@ -253,6 +254,16 @@ public class FetchPlan {
         }
 
         return item;
+    }
+    
+    /**
+     * Add all of the attributes from the provided FetchGroup. 
+     */
+    @SuppressWarnings("unchecked")
+    public void addAttributes(FetchGroup fetchGroup) {
+        for (String attribute: (Set<String>) fetchGroup.getAttributes()) {
+            addAttribute(attribute);
+        }
     }
 
     /**

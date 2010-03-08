@@ -33,6 +33,7 @@ import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.queries.FetchGroup;
 import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.junit.After;
 import org.junit.Test;
@@ -330,6 +331,20 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
         assertEquals(1, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
 
         em.getTransaction().rollback();
+    }
+
+    @Test
+    public void createFetchPlanFromDefaultFetchGroup() {
+        EntityManager em = getEntityManager();
+        
+        FetchGroup defaultFG = new FetchGroup();
+        defaultFG.addAttribute("firstName");
+        defaultFG.addAttribute("lastName");
+        getDescriptor("Employee").getFetchGroupManager().setDefaultFetchGroup(defaultFG);
+
+        List<Employee> emps = this.examples.createFetchPlanFromDefaultFetchGroup(em);
+        
+        assertFalse(emps.isEmpty());
     }
 
     @After
