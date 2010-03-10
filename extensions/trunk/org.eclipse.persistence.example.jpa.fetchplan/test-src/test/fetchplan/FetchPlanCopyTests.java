@@ -26,12 +26,15 @@ import javax.persistence.PersistenceContext;
 import model.Employee;
 import model.PhoneNumber;
 
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.junit.After;
 import org.junit.Test;
 
+import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 
 /**
@@ -246,15 +249,15 @@ public class FetchPlanCopyTests extends EclipseLinkJPATest {
             for (int pI = 0; pI < emp.getPhoneNumbers().size(); pI++) {
                 PhoneNumber phone = emp.getPhoneNumbers().get(pI);
                 PhoneNumber phoneCopy = copy.getPhoneNumbers().get(pI);
-                
+
                 assertEquals(phone.getId(), phoneCopy.getId());
                 assertEquals(phone.getNumber(), phoneCopy.getNumber());
                 assertEquals(phone.getAreaCode(), phoneCopy.getAreaCode());
                 assertEquals(phone.getType(), phoneCopy.getType());
-                
+
                 assertNotNull(phone.getOwner());
                 assertSame(emp, phone.getOwner());
-                
+
                 assertNotNull(phoneCopy.getOwner());
                 assertSame(copy, phoneCopy.getOwner());
             }
@@ -302,15 +305,15 @@ public class FetchPlanCopyTests extends EclipseLinkJPATest {
             for (int pI = 0; pI < emp.getPhoneNumbers().size(); pI++) {
                 PhoneNumber phone = emp.getPhoneNumbers().get(pI);
                 PhoneNumber phoneCopy = copy.getPhoneNumbers().get(pI);
-                
+
                 assertEquals(phone.getId(), phoneCopy.getId());
                 assertEquals(phone.getNumber(), phoneCopy.getNumber());
                 assertEquals(phone.getAreaCode(), phoneCopy.getAreaCode());
                 assertEquals(phone.getType(), phoneCopy.getType());
-                
+
                 assertNotNull(phone.getOwner());
                 assertSame(emp, phone.getOwner());
-                
+
                 assertNotNull(phoneCopy.getOwner());
                 assertSame(copy, phoneCopy.getOwner());
             }
@@ -358,15 +361,15 @@ public class FetchPlanCopyTests extends EclipseLinkJPATest {
             for (int pI = 0; pI < emp.getPhoneNumbers().size(); pI++) {
                 PhoneNumber phone = emp.getPhoneNumbers().get(pI);
                 PhoneNumber phoneCopy = copy.getPhoneNumbers().get(pI);
-                
+
                 assertEquals(0, phoneCopy.getId());
                 assertEquals(phone.getNumber(), phoneCopy.getNumber());
                 assertEquals(phone.getAreaCode(), phoneCopy.getAreaCode());
                 assertEquals(phone.getType(), phoneCopy.getType());
-                
+
                 assertNotNull(phone.getOwner());
                 assertSame(emp, phone.getOwner());
-                
+
                 assertNull(phoneCopy.getOwner());
             }
         }
@@ -375,6 +378,12 @@ public class FetchPlanCopyTests extends EclipseLinkJPATest {
     @After
     public void clearCache() {
         JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
+    }
+
+    @Override
+    protected void verifyConfig(EntityManager em) {
+        super.verifyConfig(em);
+        FetchPlanAssert.verifyEmployeeConfig(getEMF());
     }
 
 }

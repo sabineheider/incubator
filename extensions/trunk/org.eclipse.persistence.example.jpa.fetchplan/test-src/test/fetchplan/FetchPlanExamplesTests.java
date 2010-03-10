@@ -30,6 +30,7 @@ import junit.framework.Assert;
 import model.Employee;
 
 import org.eclipse.persistence.config.QueryHints;
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
@@ -38,6 +39,7 @@ import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.junit.After;
 import org.junit.Test;
 
+import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 import example.FetchPlanExamples;
 
@@ -336,14 +338,14 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     @Test
     public void createFetchPlanFromDefaultFetchGroup() {
         EntityManager em = getEntityManager();
-        
+
         FetchGroup defaultFG = new FetchGroup();
         defaultFG.addAttribute("firstName");
         defaultFG.addAttribute("lastName");
         getDescriptor("Employee").getFetchGroupManager().setDefaultFetchGroup(defaultFG);
 
         List<Employee> emps = this.examples.createFetchPlanFromDefaultFetchGroup(em);
-        
+
         assertFalse(emps.isEmpty());
     }
 
@@ -351,4 +353,11 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     public void clearCache() {
         JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
     }
+
+    @Override
+    protected void verifyConfig(EntityManager em) {
+        super.verifyConfig(em);
+        FetchPlanAssert.verifyEmployeeConfig(getEMF());
+    }
+
 }

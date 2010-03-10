@@ -52,7 +52,7 @@ public abstract class EclipseLinkJPAAssert {
     }
 
     public static void assertWoven(ClassDescriptor descriptor) {
-        Assert.assertTrue(PersistenceEntity.class.isAssignableFrom(descriptor.getJavaClass()));
+        Assert.assertTrue("Entity type not woven: " + descriptor, PersistenceEntity.class.isAssignableFrom(descriptor.getJavaClass()));
     }
 
     public static void assertWoven(EntityManagerFactory emf, String entityTypeName) {
@@ -81,7 +81,13 @@ public abstract class EclipseLinkJPAAssert {
     public static void assertLazy(ClassDescriptor descriptor, String attributeName) {
         DatabaseMapping mapping = assertMapping(descriptor, attributeName);
 
-        Assert.assertTrue(mapping.isLazy());
+        if (mapping.isForeignReferenceMapping()) {
+            Assert.assertTrue("FRMapping not lazy: " + mapping, ((ForeignReferenceMapping) mapping).usesIndirection());
+        } else if (descriptor.hasFetchGroupManager() && descriptor.getFetchGroupManager().getDefaultFetchGroup() != null){
+            Assert.assertTrue("Basic Mapping not lazy: " + mapping, mapping.isLazy());
+        } else {
+            Assert.fail("Mapping is not lazy: " + mapping);
+        }
     }
 
     public static void assertLazy(EntityManagerFactory emf, String entityTypeName, String attributeName) {
@@ -152,16 +158,16 @@ public abstract class EclipseLinkJPAAssert {
         if (mapping.isDirectToFieldMapping() && entity instanceof FetchGroupTracker) {
             Assert.assertFalse("DirectToFieldMapping for '" + attribute + "' is loaded", ((FetchGroupTracker) entity)._persistence_isAttributeFetched(attribute));
         } else {
-            
+
             AttributeAccessor accessor = mapping.getAttributeAccessor();
-            
+
             // Avoid calling _persistence_get<attribute-name>_vh methods
             if (accessor.isMethodAttributeAccessor() && ((MethodAttributeAccessor) accessor).getGetMethodName().startsWith("_persistence_get")) {
                 accessor = new InstanceVariableAttributeAccessor();
                 accessor.setAttributeName("_persistence_" + mapping.getAttributeName() + "_vh");
                 accessor.initializeAttributes(mapping.getDescriptor().getJavaClass());
             }
-            
+
             Object value = accessor.getAttributeValueFromObject(entity);
             if (value instanceof IndirectContainer) {
                 Assert.assertFalse("IndirectContainer for '" + attribute + "' is loaded", ((IndirectContainer) value).isInstantiated());

@@ -12,8 +12,10 @@
  ******************************************************************************/
 package test.fetchplan;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.List;
-import static org.junit.Assert.*;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -21,12 +23,15 @@ import javax.persistence.Query;
 
 import model.Employee;
 
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.junit.After;
 import org.junit.Test;
 
+import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 
 @SuppressWarnings("unchecked")
@@ -61,23 +66,23 @@ public class CompositeResultsFetchTests extends EclipseLinkJPATest {
         fetchPlan.addAttribute("manager.phoneNumbers");
 
         List<Object[]> results = query.getResultList();
-        
+
         assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
         JpaFetchPlanHelper.fetch(em, fetchPlan, results, 0);
-        
+
         getQuerySQLTracker(em).reset();
-        
+
         FetchPlanAssert.assertFetched(fetchPlan, results, 0);
-        
-        for (Object[] values: results) {
+
+        for (Object[] values : results) {
             Employee e = (Employee) values[0];
             if (e.getManager() != null) {
                 e.getManager().getAddress();
                 e.getManager().getPhoneNumbers().size();
             }
         }
-        
+
         assertEquals(0, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
@@ -152,6 +157,12 @@ public class CompositeResultsFetchTests extends EclipseLinkJPATest {
     @After
     public void clearCache() {
         JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
+    }
+
+    @Override
+    protected void verifyConfig(EntityManager em) {
+        super.verifyConfig(em);
+        FetchPlanAssert.verifyEmployeeConfig(getEMF());
     }
 
 }

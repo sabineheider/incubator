@@ -26,12 +26,14 @@ import javax.persistence.PersistenceContext;
 
 import model.Employee;
 
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.extension.fetchplan.FetchItem;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.queries.FetchGroup;
 import org.junit.Test;
 
+import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 
 /**
@@ -503,4 +505,5 @@ public class FetchPlanAPITests extends EclipseLinkJPATest {
         }
         fail("IllegalArgumentException expected");
     }
+
 }

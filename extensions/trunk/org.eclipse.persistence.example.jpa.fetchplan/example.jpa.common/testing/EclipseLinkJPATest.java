@@ -15,7 +15,7 @@ package testing;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import static org.junit.Assert.*;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
@@ -29,7 +29,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 
 import example.util.ExamplePropertiesLoader;
-
 
 /**
  * Base test case for testing a JPA persistence unit in JavaSE using JUnit4.
@@ -45,144 +44,150 @@ import example.util.ExamplePropertiesLoader;
  */
 public abstract class EclipseLinkJPATest {
 
-	/**
-	 * This is he current EMF in use
-	 */
-	private static EntityManagerFactory emf;
+    /**
+     * This is he current EMF in use
+     */
+    private static EntityManagerFactory emf;
 
-	private EntityManager entityManager;
+    private EntityManager entityManager;
 
-	protected EntityManagerFactory getEMF() {
-		if (emf == null) {
-			emf = createEMF(getUnitName());
-		}
+    protected EntityManagerFactory getEMF() {
+        if (emf == null) {
+            emf = createEMF(getUnitName());
+        }
 
-		return emf;
-	}
+        return emf;
+    }
 
-	protected EntityManager getEntityManager() {
-		if (this.entityManager == null) {
-			this.entityManager = getEMF().createEntityManager();
-		}
+    protected EntityManager getEntityManager() {
+        if (this.entityManager == null) {
+            this.entityManager = getEMF().createEntityManager();
+        }
+        
+        verifyConfig(this.entityManager);
 
-		return this.entityManager;
-	}
+        return this.entityManager;
+    }
 
-	protected EntityManagerFactory createEMF(String unitName) {
-		if (emf != null) {
-			if (emf.isOpen()) {
-				emf.close();
-			}
-		}
+    protected EntityManagerFactory createEMF(String unitName) {
+        if (emf != null) {
+            if (emf.isOpen()) {
+                emf.close();
+            }
+        }
 
-		Assert.assertNotNull("EclipseLinkJPATest.createEMF:: Null unit name",
-				unitName);
+        Assert.assertNotNull("EclipseLinkJPATest.createEMF:: Null unit name", unitName);
 
-		try {
-			return createEMF(unitName, null);
-		} catch (RuntimeException e) {
-			System.out.println("Persistence.createEMF FAILED: "
-					+ e.getMessage());
-			e.printStackTrace();
-			throw e;
-		}
-	}
+        try {
+            return createEMF(unitName, null);
+        } catch (RuntimeException e) {
+            System.out.println("Persistence.createEMF FAILED: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
 
-	protected String getUnitName() {
-		PersistenceContext context = null;
-		Class<?> javaClass = getClass();
+    protected String getUnitName() {
+        PersistenceContext context = null;
+        Class<?> javaClass = getClass();
 
-		while (context == null && javaClass != Object.class) {
-			context = (PersistenceContext) javaClass
-					.getAnnotation(PersistenceContext.class);
-			javaClass = javaClass.getSuperclass();
-		}
-		Assert.assertNotNull("No @PersistenceContext found", context);
+        while (context == null && javaClass != Object.class) {
+            context = (PersistenceContext) javaClass.getAnnotation(PersistenceContext.class);
+            javaClass = javaClass.getSuperclass();
+        }
+        Assert.assertNotNull("No @PersistenceContext found", context);
 
-		return context.unitName();
-	}
+        return context.unitName();
+    }
 
-	/**
-	 * 
-	 * @param properties
-	 * @return
-	 * @throws Exception
-	 */
-	protected EntityManagerFactory createEMF(String unitName, Map<String, Object> properties) {
-		try {
-			Map<String, Object> emfProps = getEMFProperties();
+    /**
+     * 
+     * @param properties
+     * @return
+     * @throws Exception
+     */
+    protected EntityManagerFactory createEMF(String unitName, Map<String, Object> properties) {
+        try {
+            Map<String, Object> emfProps = getEMFProperties();
 
-			if (properties != null) {
-				emfProps.putAll(properties);
-			}
+            if (properties != null) {
+                emfProps.putAll(properties);
+            }
 
-			EntityManagerFactory emf = Persistence.createEntityManagerFactory(
-					unitName, emfProps);
-			QuerySQLTracker.install(JpaHelper.getServerSession(emf));
-			return emf;
-		} catch (Exception e) {			System.out.println("Persistence.createEMF FAILED: "
-					+ e.getMessage());
-			e.printStackTrace();
-			throw new RuntimeException("EclipseLinkJPATest.createEMF("
-					+ unitName + ", properties) - failed", e);
-		}
-	}
+            EntityManagerFactory emf = Persistence.createEntityManagerFactory(unitName, emfProps);
+            QuerySQLTracker.install(JpaHelper.getServerSession(emf));
+            return emf;
+        } catch (Exception e) {
+            System.out.println("Persistence.createEMF FAILED: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("EclipseLinkJPATest.createEMF(" + unitName + ", properties) - failed", e);
+        }
+    }
 
-	/**
-	 * 
-	 * @return
-	 */
-	protected Map<String, Object> getEMFProperties() {
-		Map<String, Object> properties = new HashMap<String, Object>();
+    /**
+     * 
+     * @return
+     */
+    protected Map<String, Object> getEMFProperties() {
+        Map<String, Object> properties = new HashMap<String, Object>();
 
-		ExamplePropertiesLoader.loadProperties(properties);
+        ExamplePropertiesLoader.loadProperties(properties);
 
-		return properties;
-	}
+        return properties;
+    }
 
-	protected QuerySQLTracker getQuerySQLTracker(EntityManager em) {
-		return QuerySQLTracker.getTracker(JpaHelper.getEntityManager(em)
-				.getActiveSession());
-	}
+    /**
+     * This method is invoked prior to the return of an EntityManager from
+     * {@link #getEntityManager()}. The intent is that subclasses of this test
+     * class can override this method to verify configuration information that
+     * must be true for all test cases. This of course assumes
+     * {@link #getEntityManager()} is called in each test case.
+     */
+    protected void verifyConfig(EntityManager em) {
+        assertNotNull("EntityManager is null", em);
+    }
+
+    protected QuerySQLTracker getQuerySQLTracker(EntityManager em) {
+        return QuerySQLTracker.getTracker(JpaHelper.getEntityManager(em).getActiveSession());
+    }
 
     protected QuerySQLTracker getQuerySQLTracker(EntityManagerFactory emf) {
         return QuerySQLTracker.getTracker(JpaHelper.getServerSession(emf));
     }
 
     @After
-	public void cleanupClosedEMF() {
-		if (this.entityManager != null) {
+    public void cleanupClosedEMF() {
+        if (this.entityManager != null) {
 
-			if (this.entityManager.getTransaction().isActive()) {
-				this.entityManager.getTransaction().rollback();
-			}
-			if (this.entityManager.isOpen()) {
-				this.entityManager.close();
-			}
-		}
-		this.entityManager = null;
+            if (this.entityManager.getTransaction().isActive()) {
+                this.entityManager.getTransaction().rollback();
+            }
+            if (this.entityManager.isOpen()) {
+                this.entityManager.close();
+            }
+        }
+        this.entityManager = null;
 
-		if (emf != null) {
-			if (!emf.isOpen()) {
-				emf = null;
-			} else {
-				QuerySQLTracker.getTracker(JpaHelper.getServerSession(emf))
-						.reset();
-			}
-		}
-	}
+        if (emf != null) {
+            if (!emf.isOpen()) {
+                emf = null;
+            } else {
+                QuerySQLTracker.getTracker(JpaHelper.getServerSession(emf)).reset();
+            }
+        }
+    }
 
-	@AfterClass
-	public static void closeEMF() throws Exception {
-		if (emf != null && emf.isOpen()) {
-			emf.close();
-			emf = null;
-		}
-	}
-	
-	protected ClassDescriptor getDescriptor(Object entity) {
-	    return JpaHelper.getServerSession(getEMF()).getClassDescriptor(entity);
-	}
+    @AfterClass
+    public static void closeEMF() throws Exception {
+        if (emf != null && emf.isOpen()) {
+            emf.close();
+            emf = null;
+        }
+    }
+
+    protected ClassDescriptor getDescriptor(Object entity) {
+        return JpaHelper.getServerSession(getEMF()).getClassDescriptor(entity);
+    }
 
     protected ClassDescriptor getDescriptor(String alias) {
         return JpaHelper.getServerSession(getEMF()).getClassDescriptorForAlias(alias);

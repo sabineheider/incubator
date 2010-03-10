@@ -29,12 +29,15 @@ import model.Address;
 import model.Employee;
 import model.PhoneNumber;
 
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.junit.After;
 import org.junit.Test;
 
+import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 import example.Queries;
 
@@ -268,4 +271,9 @@ public class FetchPlanMergeTests extends EclipseLinkJPATest {
         JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
     }
 
+    @Override
+    protected void verifyConfig(EntityManager em) {
+        super.verifyConfig(em);
+        FetchPlanAssert.verifyEmployeeConfig(getEMF());
+    }
 }

@@ -14,20 +14,24 @@ package test.fetchplan;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
 import model.Employee;
 
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.eclipse.persistence.queries.ReadObjectQuery;
 import org.junit.After;
 import org.junit.Test;
 
+import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 import example.Queries;
 
@@ -67,5 +71,10 @@ public class ReadObjectFetchPlanTests extends EclipseLinkJPATest {
     public void clearCache() {
         JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
     }
-
+    
+    @Override
+    protected void verifyConfig(EntityManager em) {
+        super.verifyConfig(em);
+        FetchPlanAssert.verifyEmployeeConfig(getEMF());
+    }
 }

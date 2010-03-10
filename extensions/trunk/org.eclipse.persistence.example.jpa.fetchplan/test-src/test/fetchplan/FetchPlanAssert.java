@@ -12,11 +12,17 @@
  ******************************************************************************/
 package test.fetchplan;
 
+import static org.junit.Assert.assertTrue;
+
 import java.lang.reflect.Method;
 import java.util.Collection;
 
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+
 import junit.framework.Assert;
 
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.extension.fetchplan.FetchItem;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.indirection.IndirectContainer;
@@ -25,6 +31,8 @@ import org.eclipse.persistence.internal.security.PrivilegedAccessHelper;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.eclipse.persistence.sessions.Session;
+
+import testing.EclipseLinkJPAAssert;
 
 /**
  * Helper class used by test cases to ensure that the expected attributes and
@@ -135,6 +143,21 @@ public class FetchPlanAssert {
         } catch (Exception e) {
             throw new RuntimeException("FetchPlanAssert.getMapping failed", e);
         }
+    }
+
+    public static void verifyEmployeeConfig(EntityManagerFactory emf) {
+        ClassDescriptor employeeDescriptor = EclipseLinkJPAAssert.assertEntity(emf, "Employee");
+        assertTrue("Entity does not implement FetchGroupTracker: " + employeeDescriptor, FetchGroupTracker.class.isAssignableFrom(employeeDescriptor.getJavaClass()));
+        EclipseLinkJPAAssert.assertLazy(employeeDescriptor, "address");
+        EclipseLinkJPAAssert.assertLazy(employeeDescriptor, "phoneNumbers");
+        EclipseLinkJPAAssert.assertLazy(employeeDescriptor, "manager");
+        EclipseLinkJPAAssert.assertLazy(employeeDescriptor, "managedEmployees");
+
+        ClassDescriptor addressDescriptor = EclipseLinkJPAAssert.assertEntity(emf, "Address");
+        assertTrue("Entity does not implement FetchGroupTracker: " + employeeDescriptor, FetchGroupTracker.class.isAssignableFrom(addressDescriptor.getJavaClass()));
+
+        ClassDescriptor phoneDescriptor = EclipseLinkJPAAssert.assertEntity(emf, "PhoneNumber");
+        assertTrue("Entity does not implement FetchGroupTracker: " + employeeDescriptor, FetchGroupTracker.class.isAssignableFrom(phoneDescriptor.getJavaClass()));
     }
 
 }

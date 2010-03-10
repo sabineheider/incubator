@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 
+import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 
 @SuppressWarnings("unchecked")
@@ -281,4 +282,15 @@ public class BatchInTests extends EclipseLinkJPATest {
     public void clearCache() {
         JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
     }
+
+    @Override
+    protected void verifyConfig(EntityManager em) {
+        super.verifyConfig(em);
+        
+        ClassDescriptor employeeDescriptor =  EclipseLinkJPAAssert.assertEntity(getEMF(), "Employee");
+        //EclipseLinkJPAAssert.assertWoven(employeeDescriptor);
+        EclipseLinkJPAAssert.assertLazy(employeeDescriptor, "address");
+        EclipseLinkJPAAssert.assertLazy(employeeDescriptor, "phoneNumbers");
+
+    }    
 }

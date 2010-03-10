@@ -12,6 +12,8 @@
  ******************************************************************************/
 package test.fetchplan;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,14 +25,17 @@ import javax.persistence.Query;
 import model.Employee;
 
 import org.eclipse.persistence.config.QueryHints;
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.internal.helper.SerializationHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.eclipse.persistence.queries.ReadAllQuery;
 import org.junit.After;
 import org.junit.Test;
 
+import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 
 /**
@@ -230,4 +235,11 @@ public class SerializedResultsTests extends EclipseLinkJPATest {
 
         return cloneList;
     }
+
+    @Override
+    protected void verifyConfig(EntityManager em) {
+        super.verifyConfig(em);
+        FetchPlanAssert.verifyEmployeeConfig(getEMF());
+    }
+
 }

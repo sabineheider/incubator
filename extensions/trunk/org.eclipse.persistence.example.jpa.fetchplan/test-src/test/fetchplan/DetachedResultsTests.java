@@ -12,6 +12,8 @@
  ******************************************************************************/
 package test.fetchplan;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,9 +25,11 @@ import junit.framework.Assert;
 import model.Employee;
 
 import org.eclipse.persistence.config.QueryHints;
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.eclipse.persistence.queries.ReadAllQuery;
 import org.junit.After;
 import org.junit.Test;
@@ -288,6 +292,12 @@ public class DetachedResultsTests extends EclipseLinkJPATest {
     @After
     public void clearCache() {
         JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
+    }
+
+    @Override
+    protected void verifyConfig(EntityManager em) {
+        super.verifyConfig(em);
+        FetchPlanAssert.verifyEmployeeConfig(getEMF());
     }
 
 }
