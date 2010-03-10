@@ -16,8 +16,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses( { SimpleDefaultFetchGroupTests.class, SimpleFetchGroupTests.class, SimpleNamedFetchGroupTests.class, NestedDefaultFetchGroupTests.class, NestedFetchGroupTests.class,
-		NestedNamedFetchGroupTests.class })
+@Suite.SuiteClasses( { FetchGroupAPITests.class, 
+                       FetchGroupValidateTests.class, 
+                       SimpleDefaultFetchGroupTests.class, 
+                       SimpleFetchGroupTests.class, 
+                       SimpleNamedFetchGroupTests.class, 
+                       NestedDefaultFetchGroupTests.class, 
+                       NestedFetchGroupTests.class, 
+                       NestedNamedFetchGroupTests.class,
+                       SimpleSerializeFetchGroupTests.class,
+                       FetchGroupTrackerWeavingTests.class})
 public class AllTests {
 
 }

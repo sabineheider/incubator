@@ -8,179 +8,46 @@
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *     dclarke - Bug 273057: NestedFetchGroup Example
+ *     dclarke - Bug TBD: Initial Implementation
  ******************************************************************************/
 package test;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
+import static junit.framework.Assert.assertSame;
+import static junit.framework.Assert.assertTrue;
+import static test.FetchGroupAssert.assertFetchedAttribute;
+import static test.FetchGroupAssert.assertNotFetchedAttribute;
 
-import java.util.*;
+import java.util.List;
 
-import javax.persistence.*;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 
 import model.Employee;
-import model.PhoneNumber;
 
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.mappings.DatabaseMapping;
-import org.eclipse.persistence.queries.*;
+import org.eclipse.persistence.queries.FetchGroup;
+import org.eclipse.persistence.queries.FetchGroupTracker;
+import org.eclipse.persistence.queries.ObjectLevelReadQuery;
 
 import testing.EclipseLinkJPATest;
 import example.Queries;
 
 /**
- * Simple tests to verify the functionality of single level FetchGroup usage
+ * Simple set of tests that verify the {@link FetchGroup} API. Need to verify
+ * that the nesting and default behaves as expected.
  * 
  * @author dclarke
- * @since EclipseLink 1.1
+ * @since EclipseLink 2.1
  */
 @PersistenceContext(unitName = "employee")
 public abstract class BaseFetchGroupTests extends EclipseLinkJPATest {
-
-    @Override
-    protected EntityManagerFactory createEMF(String unitName, Map properties) {
-        EntityManagerFactory emf = super.createEMF(unitName, properties);
-
-        new NestedFetchGroup.Customizer().customize(JpaHelper.getServerSession(emf));
-        return emf;
-    }
-
-    protected void findNoFetchGroup(EntityManager em) throws Exception {
-        Employee emp = findMinimumEmployee(em);
-
-        assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        assertFetched(emp);
-        assertFetched(emp.getAddress());
-
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        assertFetched(emp.getManager());
-
-        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertFetched(phone);
-        }
-
-        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-    }
-
-    public void singleResultNoFetchGroup() throws Exception {
-        EntityManager em = getEntityManager();
-
-        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :ID");
-        query.setParameter("ID", Queries.minimumEmployeeId(em));
-
-        Employee emp = (Employee) query.getSingleResult();
-
-        assertNotNull(emp);
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        assertFetched(emp);
-        assertFetched(emp.getAddress());
-
-        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertFetched(phone);
-        }
-
-        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-    }
-
-    public void resultListNoFetchGroup() throws Exception {
-        EntityManager em = getEntityManager();
-
-        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :ID");
-        query.setParameter("ID", Queries.minimumEmployeeId(em));
-
-        List<Employee> emps = query.getResultList();
-
-        assertNotNull(emps);
-        assertEquals(1, emps.size());
-
-        Employee emp = emps.get(0);
-
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        assertFetched(emp);
-        assertFetched(emp.getAddress());
-
-        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertFetched(phone);
-        }
-        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-    }
-
-
-    public void singleResultDefaultEmptyFetchGroup() throws Exception {
-        EntityManager em = getEntityManager();
-
-        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :ID");
-        query.setParameter("ID", Queries.minimumEmployeeId(em));
-        FetchGroup emptyFG = new FetchGroup();
-        query.setHint(QueryHints.FETCH_GROUP, emptyFG);
-
-        Employee emp = (Employee) query.getSingleResult();
-
-        assertNotNull(emp);
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        assertNotFetched(emptyFG, emp);
-
-        emp.getSalary();
-
-        assertFetched(emptyFG, emp);
-        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        assertFetched(emp.getAddress());
-
-        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertFetched(phone);
-        }
-
-        assertEquals(5, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-    }
-
-    public void resultListDefaultEmptyFetchGroup() throws Exception {
-        EntityManager em = getEntityManager();
-
-        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :ID");
-        query.setParameter("ID", Queries.minimumEmployeeId(em));
-        FetchGroup emptyFG = new FetchGroup();
-        query.setHint(QueryHints.FETCH_GROUP, emptyFG);
-
-        List<Employee> emps = query.getResultList();
-
-        assertNotNull(emps);
-        assertEquals(1, emps.size());
-
-        Employee emp = emps.get(0);
-
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertNotFetched(emptyFG, emp);
-
-        emp.getSalary();
-
-        assertFetched(emptyFG, emp);
-        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        assertFetched(emp.getAddress());
-
-        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertFetched(phone);
-        }
-        assertEquals(5, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-    }
 
     public void managerFetchGroup() throws Exception {
         EntityManager em = getEntityManager();
@@ -188,9 +55,9 @@ public abstract class BaseFetchGroupTests extends EclipseLinkJPATest {
         // Use q query since find will only use default fetch group
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :ID");
         query.setParameter("ID", Queries.minimumEmployeeId(em));
+
         FetchGroup managerFG = new FetchGroup();
         managerFG.addAttribute("manager");
-
         query.setHint(QueryHints.FETCH_GROUP, managerFG);
 
         assertNotNull(JpaHelper.getReadAllQuery(query).getFetchGroup());
@@ -198,31 +65,22 @@ public abstract class BaseFetchGroupTests extends EclipseLinkJPATest {
 
         Employee emp = (Employee) query.getSingleResult();
 
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertNotFetched(managerFG, emp);
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        assertFetchedAttribute(getEMF(), emp, "id");
+        assertNotFetchedAttribute(getEMF(), emp, "firstName");
+        assertFetchedAttribute(getEMF(), emp, "version");
+        assertFetchedAttribute(getEMF(), emp, "manager");
+        assertFetchedAttribute(getEMF(), emp, "address");
+        assertFetchedAttribute(getEMF(), emp, "phoneNumbers");
+        assertFetchedAttribute(getEMF(), emp, "projects");
 
         emp.getManager();
-        if (emp.getManager() != null) {
-            assertFetched(emp.getManager());
-        }
-
         assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertNotFetched(managerFG, emp);
 
         emp.getLastName();
 
-        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertFetched(managerFG, emp);
-
-        for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertNotFetched(phone);
-
-            phone.getAreaCode();
-
-            assertFetched(phone);
-        }
-
-        assertEquals(5, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
     public void employeeNamesFetchGroup() throws Exception {
@@ -234,10 +92,10 @@ public abstract class BaseFetchGroupTests extends EclipseLinkJPATest {
         // Use q query since find will only use default fetch group
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :ID");
         query.setParameter("ID", minId);
+
         FetchGroup namesFG = new FetchGroup();
         namesFG.addAttribute("firstName");
         namesFG.addAttribute("lastName");
-
         query.setHint(QueryHints.FETCH_GROUP, namesFG);
 
         assertNotNull(JpaHelper.getReadAllQuery(query).getFetchGroup());
@@ -246,7 +104,17 @@ public abstract class BaseFetchGroupTests extends EclipseLinkJPATest {
         Employee emp = (Employee) query.getSingleResult();
 
         assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertNotFetched(namesFG, emp);
+
+        assertFetchedAttribute(getEMF(), emp, "id");
+        assertFetchedAttribute(getEMF(), emp, "firstName");
+        assertFetchedAttribute(getEMF(), emp, "lastName");
+        assertFetchedAttribute(getEMF(), emp, "gender");
+        assertFetchedAttribute(getEMF(), emp, "salary");
+        assertFetchedAttribute(getEMF(), emp, "version");
+        assertFetchedAttribute(getEMF(), emp, "manager");
+        assertFetchedAttribute(getEMF(), emp, "address");
+        assertFetchedAttribute(getEMF(), emp, "phoneNumbers");
+        assertFetchedAttribute(getEMF(), emp, "projects");
 
         emp.getId();
         emp.getFirstName();
@@ -254,27 +122,20 @@ public abstract class BaseFetchGroupTests extends EclipseLinkJPATest {
         emp.getVersion();
 
         assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertNotFetched(namesFG, emp);
 
         emp.getGender();
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertFetchedAttribute(getEMF(), emp, "gender");
+        assertFetchedAttribute(getEMF(), emp, "salary");
+
         emp.getSalary();
 
         assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertFetched(namesFG, emp);
-
-        for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertNotFetched(phone);
-
-            phone.getAreaCode();
-
-            assertFetched(phone);
-        }
-        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
         emp.getManager();
 
-        assertEquals(5, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertFetched(emp.getManager());
+        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertFetchedAttribute(getEMF(), emp, "manager");
     }
 
     public void joinFetchEmployeeAddressWithDynamicFetchGroup() {
@@ -316,91 +177,47 @@ public abstract class BaseFetchGroupTests extends EclipseLinkJPATest {
         return emps.get(0);
     }
 
-    public void assertFetched(FetchGroup fetchGroup, Object entity) {
-        ClassDescriptor descriptor = getDescriptor(entity);
-        FetchGroupTracker tracker = (FetchGroupTracker) entity;
-
-        if (tracker._persistence_getFetchGroup() != null && fetchGroup != null) {
-            Iterator<DatabaseMapping> descI = descriptor.getMappings().iterator();
-            while (descI.hasNext()) {
-                DatabaseMapping mapping = descI.next();
-                assertTrue("Attribute not fetched: " + mapping, tracker._persistence_isAttributeFetched(mapping.getAttributeName()));
-            }
-        } 
-    }
-
-    public void assertHasFetchGroup(Object entity) {
+    public FetchGroup<?> assertHasFetchGroup(Object entity) {
         assertNotNull("Entity is null", entity);
         assertTrue("Entity does not implement FetchGroupTracker", entity instanceof FetchGroupTracker);
         assertNotNull("Entity does not have FetchGroup", ((FetchGroupTracker) entity)._persistence_getFetchGroup());
+
+        return ((FetchGroupTracker) entity)._persistence_getFetchGroup();
     }
 
-    public void assertFetched(Object entity) {
-        ClassDescriptor descriptor = getDescriptor(entity);
+    protected FetchGroup getFetchGroup(Object object) {
+        assertNotNull("Cannot get a FetchGroup from null", object);
 
-        if (descriptor != null) {
-            FetchGroup fetchGroup = descriptor.getFetchGroupManager().getDefaultFetchGroup();
-
-            assertFetched(fetchGroup, entity);
+        if (object instanceof Query) {
+            return getFetchGroup((Query) object);
         }
+        if (object instanceof ObjectLevelReadQuery) {
+            return getFetchGroup((ObjectLevelReadQuery) object);
+        }
+        assertTrue("Entity " + object + " does not implement FetchGroupTracker", object instanceof FetchGroupTracker);
+
+        FetchGroupTracker tracker = (FetchGroupTracker) object;
+        return tracker._persistence_getFetchGroup();
     }
 
-    public void assertNotFetched(FetchGroup fetchGroup, Object entity) {
-        ClassDescriptor descriptor = getDescriptor(entity);
-        FetchGroupTracker tracker = (FetchGroupTracker) entity;
+    protected FetchGroup getFetchGroup(Query query) {
+        return getFetchGroup(JpaHelper.getReadAllQuery(query));
+    }
 
-        if (tracker._persistence_getFetchGroup() == null) {
-            toString();
+    protected FetchGroup getFetchGroup(ObjectLevelReadQuery readQuery) {
+        if (readQuery.hasFetchGroup()) {
+            return readQuery.getFetchGroup();
         }
-        assertNotNull("No FetchGroup found on " + entity, tracker._persistence_getFetchGroup());
-
-        Iterator<DatabaseMapping> descI = descriptor.getMappings().iterator();
-        while (descI.hasNext()) {
-            DatabaseMapping mapping = descI.next();
-
-            if (tracker._persistence_getFetchGroup().getAttributes().contains(mapping.getAttributeName())) {
-                assertTrue(tracker._persistence_isAttributeFetched(mapping.getAttributeName()));
-            } else {
-                assertFalse(tracker._persistence_isAttributeFetched(mapping.getAttributeName()));
+        if (readQuery.shouldUseDefaultFetchGroup() && !readQuery.isPrepared()) {
+            ClassDescriptor desc = JpaHelper.getServerSession(getEMF()).getClassDescriptor(readQuery.getReferenceClass());
+            if (desc.hasFetchGroupManager()) {
+                return desc.getFetchGroupManager().getDefaultFetchGroup();
             }
         }
-    }
-
-    public void assertNotFetched(Object entity) {
-        ClassDescriptor descriptor = getDescriptor(entity);
-
-        if (descriptor != null) {
-            FetchGroup fetchGroup = descriptor.getFetchGroupManager().getDefaultFetchGroup();
-            assertNotNull("No default FetchGroup for: " + descriptor, fetchGroup);
-            assertNotFetched(fetchGroup, entity);
-        }
-    }
-
-    public ClassDescriptor getDescriptor(Object entity) {
-        assertNotNull("Entity is null", entity);
-        
-        if (entity instanceof String) {
-        	return JpaHelper.getServerSession(getEMF()).getClassDescriptorForAlias((String) entity);
-        }
-        
-        assertTrue("Entity "+ entity +" does not implement FetchGroupTracker", entity instanceof FetchGroupTracker);
-
-        FetchGroupTracker tracker = (FetchGroupTracker) entity;
-
-        if (tracker._persistence_getSession() != null) {
-            ClassDescriptor descriptor = tracker._persistence_getSession().getClassDescriptor(entity);
-            assertNotNull("No descriptor found for: " + entity.getClass(), descriptor);
-            return descriptor;
-        }
-
         return null;
     }
 
-    public void assertConfig(EntityManagerFactory emf, String entityName, FetchGroup defaultFetchGroup) throws Exception {
-        assertConfig(emf, entityName, defaultFetchGroup, 0);
-    }
-
-    public void assertConfig(EntityManagerFactory emf, String entityName, FetchGroup defaultFetchGroup, int numNamedFetchGroups) throws Exception {
+    public void assertConfig(EntityManagerFactory emf, String entityName, FetchGroup defaultFetchGroup, Integer numNamedFetchGroups) {
         ClassDescriptor descriptor = JpaHelper.getServerSession(emf).getClassDescriptorForAlias(entityName);
         assertNotNull("Not descriptor found for: " + entityName, descriptor);
 
@@ -410,9 +227,17 @@ public abstract class BaseFetchGroupTests extends EclipseLinkJPATest {
             assertNull("Default FetchGroup not null: " + entityName, descriptor.getFetchGroupManager().getDefaultFetchGroup());
         } else {
             assertEquals("Default FetchGroup does not match", defaultFetchGroup, descriptor.getFetchGroupManager().getDefaultFetchGroup());
+            if (descriptor.getDescriptorQueryManager().hasReadObjectQuery() && !descriptor.getDescriptorQueryManager().getReadObjectQuery().shouldUseDefaultFetchGroup()) {
+                assertEquals("DescriptorQueryManager.readObjectQuery.fetchGroup does not match", defaultFetchGroup, descriptor.getDescriptorQueryManager().getReadObjectQuery().getFetchGroup());
+            }
+            if (descriptor.getDescriptorQueryManager().hasReadAllQuery() && !descriptor.getDescriptorQueryManager().getReadAllQuery().shouldUseDefaultFetchGroup()) {
+                assertEquals("DescriptorQueryManager.readAllQuery.fetchGroup does not match", defaultFetchGroup, descriptor.getDescriptorQueryManager().getReadAllQuery().getFetchGroup());
+            }
         }
 
-        assertEquals("Incorrect number of Named FetchGroups: " + entityName, numNamedFetchGroups, descriptor.getFetchGroupManager().getFetchGroups().size());
+        if (numNamedFetchGroups != null) {
+            assertEquals("Incorrect number of Named FetchGroups: " + entityName, numNamedFetchGroups.intValue(), descriptor.getFetchGroupManager().getFetchGroups().size());
+        }
     }
 
 }

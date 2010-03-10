@@ -12,62 +12,154 @@
  ******************************************************************************/
 package test;
 
+import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
+import static test.FetchGroupAssert.*;
+
+import java.util.List;
+import java.util.Map;
 
 import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 
+import model.Address;
 import model.Employee;
+import model.PhoneNumber;
 
+import org.eclipse.persistence.config.DescriptorCustomizer;
+import org.eclipse.persistence.config.PersistenceUnitProperties;
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.FetchGroup;
-import org.eclipse.persistence.queries.NestedFetchGroup;
 import org.junit.Before;
 import org.junit.Test;
 
 import example.Queries;
 
+/**
+ * Test named nested FetchGroup usage.
+ * 
+ * @author dclarke
+ * @since EclipseLink 2.1
+ */
 public class NestedDefaultFetchGroupTests extends BaseFetchGroupTests {
 
     @Test
-    public void simpleReadEmployee() {
+    public void findMinEmployee() {
         EntityManager em = getEntityManager();
+        int minId = Queries.minEmployeeIdWithAddressAndPhones(em);
+        assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
-        Employee emp = new Queries().minEmployeeWithAddressAndPhones(em);
+        Employee emp = em.find(Employee.class, minId);
 
         assertNotNull(emp);
-        // assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        
+        emp.getAddress();
+        emp.getPhoneNumbers().size();
+        
+        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertFetched(getEMF(), emp, defaultEmployeeFG);
+        assertFetchedAttribute(getEMF(), emp, "address");
+        assertFetchedAttribute(getEMF(), emp, "phoneNumbers");
+        
+        // Check Address
+        FetchGroup<Address> nestedAddressFG = defaultEmployeeFG.getFetchItem("address").getFetchGroup();
+        assertFetched(getEMF(), emp.getAddress(), nestedAddressFG);
+        
+        // Check phones
+        FetchGroup<PhoneNumber> nestedPhoneFG = defaultEmployeeFG.getFetchItem("phoneNumbers").getFetchGroup();
+        for (PhoneNumber phone: emp.getPhoneNumbers()) {
+            assertFetched(getEMF(), phone, nestedPhoneFG);
+        }
+    }
+
+    @Test
+    public void allAddress() {
+        EntityManager em = getEntityManager();
+        
+        
+        List<Address> allAddresses = em.createQuery("SELECT a FROM Address a", Address.class).getResultList();
+        
+        for (Address address: allAddresses) {
+            assertNoFetchGroup(getEMF(), address);
+        }
+    }
+
+    @Test
+    public void allPhone() {
+        EntityManager em = getEntityManager();
+        
+        
+        List<PhoneNumber> allPhones = em.createQuery("SELECT p FROM PhoneNumber p", PhoneNumber.class).getResultList();
+        
+        for (PhoneNumber phone: allPhones) {
+            assertFetched(getEMF(), phone, defaultPhoneFG);
+        }
+    }
+
+    @Test
+    public void singleResultMinEmployeeFetchJoinAddress() {
+        EntityManager em = getEntityManager();
+
+        TypedQuery<Employee> query = em.createQuery("SELECT e FROM Employee e JOIN FETCH e.address WHERE e.id IN (SELECT MIN(p.id) FROM PhoneNumber p)", Employee.class);
+        Employee emp = query.getSingleResult();
+
+        assertNotNull(emp);
+        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+    }
+
+    @Override
+    public EntityManager getEntityManager() {
+        EntityManager em = super.getEntityManager();
+        
+        assertNotNull("Default Employee FetchGroup not available in test case", defaultEmployeeFG);
+        assertNotNull("Default PhoneNumber FetchGroup not available in test case", defaultPhoneFG);
+        
+        assertConfig(getEMF(), "Employee", defaultEmployeeFG, 0);
+        assertConfig(getEMF(), "Address", null, 0);
+        assertConfig(getEMF(), "PhoneNumber", defaultPhoneFG, 0);
+        
+
+        JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
+        
+        return em;
+    }
+
+    @Override
+    protected Map getEMFProperties() {
+        Map properties = super.getEMFProperties();
+        properties.put(PersistenceUnitProperties.DESCRIPTOR_CUSTOMIZER_ + "Employee", EmployeeCustomizer.class.getName());
+        properties.put(PersistenceUnitProperties.DESCRIPTOR_CUSTOMIZER_ + "PhoneNumber", PhoneCustomizer.class.getName());
+        return properties;
+    }
+    
+    public static FetchGroup<Employee> defaultEmployeeFG;
+
+    public static class EmployeeCustomizer implements DescriptorCustomizer {
+
+        public void customize(ClassDescriptor descriptor) throws Exception {
+            defaultEmployeeFG = new FetchGroup<Employee>("Employee.default");
+            defaultEmployeeFG.addAttribute("firstName");
+            defaultEmployeeFG.addAttribute("lastName");
+            defaultEmployeeFG.addAttribute("address.country");
+            defaultEmployeeFG.addAttribute("phoneNumbers.areaCode");
+
+            descriptor.getFetchGroupManager().setDefaultFetchGroup(defaultEmployeeFG);
+        }
 
     }
 
-    @Before
-    public void config() throws Exception {
-        assertConfig(getEMF(), "Employee", null);
-        assertConfig(getEMF(), "Address", null);
-        assertConfig(getEMF(), "PhoneNumber", null);
+    private static FetchGroup<PhoneNumber> defaultPhoneFG;
 
-        // Set Default FetchGroup on Employee for its names
-        NestedFetchGroup empFG = new NestedFetchGroup("Employee.names");
-        empFG.addAttribute("firstName");
-        empFG.addAttribute("lastName");
-        FetchGroup empAddrFG = new FetchGroup();
-        empAddrFG.addAttribute("country");
-        // empFG.addGroup("address", empAddrFG);
-        FetchGroup empPhoneFG = new FetchGroup();
-        empAddrFG.addAttribute("number");
-        empFG.addGroup("phoneNumbers", empPhoneFG);
+    public static class PhoneCustomizer implements DescriptorCustomizer {
 
-        getDescriptor("Employee").getFetchGroupManager().setDefaultFetchGroup(empFG);
+        public void customize(ClassDescriptor descriptor) throws Exception {
+            defaultPhoneFG = new FetchGroup<PhoneNumber>("PhoneNumber.default");
+            defaultPhoneFG.addAttribute("number");
+            descriptor.getFetchGroupManager().setDefaultFetchGroup(defaultPhoneFG);
+        }
 
-        // Set Default FetchGroup on Address for its city
-        FetchGroup addrFG = new FetchGroup("Address.city");
-        addrFG.addAttribute("city");
-        getDescriptor("Address").getFetchGroupManager().setDefaultFetchGroup(addrFG);
-
-        assertConfig(getEMF(), "Employee", empFG);
-        assertConfig(getEMF(), "Address", addrFG);
-        assertConfig(getEMF(), "PhoneNumber", null);
-
-        JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
     }
 
 }

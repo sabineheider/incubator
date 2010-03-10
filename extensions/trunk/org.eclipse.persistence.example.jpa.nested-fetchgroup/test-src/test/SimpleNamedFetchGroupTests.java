@@ -8,24 +8,36 @@
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *     dclarke - Bug 273057: NestedFetchGroup Example
+ *     dclarke - Bug 273057: FetchGroup Example
  ******************************************************************************/
 package test;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertSame;
+import static junit.framework.Assert.assertTrue;
+import static test.FetchGroupAssert.assertDefaultFetched;
+import static test.FetchGroupAssert.assertFetched;
+import static test.FetchGroupAssert.assertNoFetchGroup;
 
-import java.util.*;
+import java.util.List;
 
-import javax.persistence.*;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 
+import model.Address;
 import model.Employee;
 import model.PhoneNumber;
 
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.queries.*;
-import org.junit.*;
+import org.eclipse.persistence.queries.FetchGroup;
+import org.eclipse.persistence.queries.FetchGroupTracker;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import example.Queries;
 
@@ -41,33 +53,30 @@ public class SimpleNamedFetchGroupTests extends BaseFetchGroupTests {
     public void findDefaultFetchGroup() throws Exception {
         EntityManager em = getEntityManager();
 
-        Employee emp = em.find(Employee.class, Queries.minimumEmployeeId(em));
+        Employee emp = Queries.minimumEmployee(em);
 
         assertNotNull(emp);
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        assertFetched(emp);
+        assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertNoFetchGroup(getEMF(), emp);
 
         emp.getSalary();
 
-        assertFetched(emp);
+        assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        assertNoFetchGroup(getEMF(), emp.getAddress());
         assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
-        assertFetched(emp.getAddress());
+        for (PhoneNumber phone : emp.getPhoneNumbers()) {
+            assertNoFetchGroup(getEMF(), phone);
+        }
 
         assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
-        for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertFetched(phone);
+        if (emp.getManager() != null) {
+            assertNoFetchGroup(getEMF(), emp.getManager());
         }
 
         assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        if (emp.getManager() != null) {
-            assertFetched(emp.getManager());
-        }
-
-        assertEquals(5, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
     @Test
@@ -81,26 +90,23 @@ public class SimpleNamedFetchGroupTests extends BaseFetchGroupTests {
 
         assertNotNull(emp);
         assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        assertFetched(emp);
+        assertNoFetchGroup(getEMF(), emp);
 
         emp.getSalary();
 
-        assertFetched(emp);
         assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
-        assertFetched(emp.getAddress());
-
+        assertNoFetchGroup(getEMF(), emp.getAddress());
         assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
         for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertFetched(phone);
+            assertNoFetchGroup(getEMF(), phone);
         }
 
         assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
         if (emp.getManager() != null) {
-            assertFetched(emp.getManager());
+            assertNoFetchGroup(getEMF(), emp.getManager());
         }
 
         assertEquals(5, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
@@ -120,30 +126,29 @@ public class SimpleNamedFetchGroupTests extends BaseFetchGroupTests {
 
         Employee emp = emps.get(0);
 
+        assertNotNull(emp);
         assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertFetched(emp);
+        assertNoFetchGroup(getEMF(), emp);
 
         emp.getSalary();
 
-        assertFetched(emp);
         assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
-        assertFetched(emp.getAddress());
-
+        assertNoFetchGroup(getEMF(), emp.getAddress());
         assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
         for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertFetched(phone);
+            assertNoFetchGroup(getEMF(), phone);
         }
+
         assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
         if (emp.getManager() != null) {
-            assertFetched(emp.getManager());
+            assertNoFetchGroup(getEMF(), emp.getManager());
         }
 
         assertEquals(5, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
-
 
     @Test
     public void singleResultNoFetchGroup() throws Exception {
@@ -157,17 +162,26 @@ public class SimpleNamedFetchGroupTests extends BaseFetchGroupTests {
 
         assertNotNull(emp);
         assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertNoFetchGroup(getEMF(), emp);
 
-        assertNotFetched(emp);
-        assertFetched(emp.getAddress());
+        emp.getSalary();
 
+        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        assertNoFetchGroup(getEMF(), emp.getAddress());
         assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
         for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertFetched(phone);
+            assertNoFetchGroup(getEMF(), phone);
         }
 
         assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        if (emp.getManager() != null) {
+            assertNoFetchGroup(getEMF(), emp.getManager());
+        }
+
+        assertEquals(5, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
     @Test
@@ -185,154 +199,28 @@ public class SimpleNamedFetchGroupTests extends BaseFetchGroupTests {
 
         Employee emp = emps.get(0);
 
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        assertNotFetched(emp);
-        assertFetched(emp.getAddress());
-
-        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertFetched(phone);
-        }
-        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-    }
-
-    @Test
-    public void findDefaultEmptyFetchGroup() throws Exception {
-        NestedFetchGroup emptyFG = new NestedFetchGroup();
-        emptyFG.setAsDefault(getDescriptor("Employee"));
-
-        EntityManager em = getEntityManager();
-
-        Employee emp = em.find(Employee.class, Queries.minimumEmployeeId(em));
-
         assertNotNull(emp);
         assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        assertNotFetched(emptyFG, emp);
-
-        emp.getSalary();
-
-        assertFetched(emptyFG, emp);
-        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        assertFetched(emp.getAddress());
-
-        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertFetched(phone);
-        }
-
-        assertEquals(5, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        if (emp.getManager() != null) {
-            assertNotFetched(emp.getManager());
-        }
-
-        assertEquals(6, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-    }
-
-    @Test
-    public void singleResultDefaultEmptyFetchGroup() throws Exception {
-        FetchGroup emptyFG = new FetchGroup();
-        getDescriptor("Employee").getFetchGroupManager().setDefaultFetchGroup(emptyFG);
-
-        EntityManager em = getEntityManager();
-
-        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id IN (SELECT MIN(EE.id) FROM Employee ee)");
-
-        Employee emp = (Employee) query.getSingleResult();
-
-        assertNotNull(emp);
-        assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        assertNotFetched(emptyFG, emp);
+        assertNoFetchGroup(getEMF(), emp);
 
         emp.getSalary();
 
-        assertFetched(emptyFG, emp);
         assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
-        assertFetched(emp.getAddress());
-
+        assertNoFetchGroup(getEMF(), emp.getAddress());
         assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
         for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertFetched(phone);
+            assertNoFetchGroup(getEMF(), phone);
         }
 
         assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
         if (emp.getManager() != null) {
-            assertNotFetched(emptyFG, emp.getManager());
+            assertNoFetchGroup(getEMF(), emp.getManager());
         }
 
         assertEquals(5, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-    }
-
-    @Test
-    public void resultListDefaultEmptyFetchGroup() throws Exception {
-        FetchGroup emptyFG = new FetchGroup();
-        getDescriptor("Employee").getFetchGroupManager().setDefaultFetchGroup(emptyFG);
-
-        EntityManager em = getEntityManager();
-
-        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id IN (SELECT MIN(ee.id) FROM Employee ee)");
-
-        List<Employee> emps = query.getResultList();
-
-        assertNotNull(emps);
-        assertEquals(1, emps.size());
-
-        Employee emp = emps.get(0);
-
-        assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertNotFetched(emptyFG, emp);
-
-        emp.getSalary();
-
-        assertFetched(emptyFG, emp);
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        assertFetched(emp.getAddress());
-
-        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertFetched(phone);
-        }
-        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        if (emp.getManager() != null) {
-            assertNotFetched(emptyFG, emp.getManager());
-        }
-
-        assertEquals(5, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-    }
-
-    @Test
-    public void emptyFetchGroup() throws Exception {
-        EntityManager em = getEntityManager();
-
-        // Use q query since find will only use default fetch group
-        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :ID");
-        query.setParameter("ID", Queries.minimumEmployeeId(em));
-        FetchGroup emptyFG = new FetchGroup();
-        query.setHint(QueryHints.FETCH_GROUP, emptyFG);
-
-        Employee emp = (Employee) query.getSingleResult();
-
-        assertNotFetched(emptyFG, emp);
-
-        for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertNotFetched(phone);
-
-            phone.getAreaCode();
-
-            assertFetched(phone);
-        }
     }
 
     @Test
@@ -352,83 +240,24 @@ public class SimpleNamedFetchGroupTests extends BaseFetchGroupTests {
 
         Employee emp = (Employee) query.getSingleResult();
 
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertNotFetched(managerFG, emp);
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertFetched(getEMF(), emp, managerFG);
 
         emp.getManager();
 
         assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertNotFetched(managerFG, emp);
+        assertFetched(getEMF(), emp, managerFG);
 
         emp.getLastName();
 
         assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertFetched(managerFG, emp);
-
-        assertFetched(managerFG, emp);
+        assertNoFetchGroup(getEMF(), emp);
 
         for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertNotFetched(phone);
-
-            phone.getAreaCode();
-
-            assertFetched(phone);
+            assertNoFetchGroup(getEMF(), phone);
         }
 
         assertEquals(5, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-    }
-
-    @Test
-    public void employeeNamesFetchGroup() throws Exception {
-        EntityManager em = getEntityManager();
-
-        int minId = Queries.minimumEmployeeId(em);
-        assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        // Use q query since find will only use default fetch group
-        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :ID");
-        query.setParameter("ID", minId);
-
-        FetchGroup namesFG = new FetchGroup();
-        namesFG.addAttribute("firstName");
-        namesFG.addAttribute("lastName");
-        query.setHint(QueryHints.FETCH_GROUP, namesFG);
-
-        assertNotNull(JpaHelper.getReadAllQuery(query).getFetchGroup());
-        assertSame(namesFG, JpaHelper.getReadAllQuery(query).getFetchGroup());
-
-        Employee emp = (Employee) query.getSingleResult();
-
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertNotFetched(namesFG, emp);
-
-        emp.getId();
-        emp.getFirstName();
-        emp.getLastName();
-        emp.getVersion();
-
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertNotFetched(namesFG, emp);
-
-        emp.getGender();
-        emp.getSalary();
-
-        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertFetched(namesFG, emp);
-
-        for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertNotFetched(phone);
-
-            phone.getAreaCode();
-
-            assertFetched(phone);
-        }
-        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        emp.getManager();
-
-        assertEquals(5, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertFetched(emp.getManager());
     }
 
     @Test
@@ -437,7 +266,7 @@ public class SimpleNamedFetchGroupTests extends BaseFetchGroupTests {
 
         FetchGroup fetchGroup = new FetchGroup("test");
         descriptor.getFetchGroupManager().addFetchGroup(fetchGroup);
-        assertTrue(fetchGroup.getAttributes().isEmpty());
+        assertTrue(fetchGroup.getFetchItems().isEmpty());
 
         assertEquals(2, descriptor.getFetchGroupManager().getFetchGroups().size());
 
@@ -458,7 +287,7 @@ public class SimpleNamedFetchGroupTests extends BaseFetchGroupTests {
         assertNotNull("No FetchGroup found on read Employee", usedFG);
         assertEquals(fetchGroup.getName(), usedFG.getName());
         assertSame(fetchGroup, usedFG);
-        assertEquals(2, fetchGroup.getAttributes().size());
+        assertEquals(2, fetchGroup.getFetchItems().size());
         assertTrue(tracker._persistence_isAttributeFetched("id"));
         assertTrue(tracker._persistence_isAttributeFetched("version"));
         assertFalse(tracker._persistence_isAttributeFetched("salary"));
@@ -475,7 +304,7 @@ public class SimpleNamedFetchGroupTests extends BaseFetchGroupTests {
         fetchGroup.addAttribute("lastName");
 
         descriptor.getFetchGroupManager().addFetchGroup(fetchGroup);
-        assertEquals(2, fetchGroup.getAttributes().size());
+        assertEquals(2, fetchGroup.getFetchItems().size());
 
         assertEquals(2, descriptor.getFetchGroupManager().getFetchGroups().size());
 
@@ -496,7 +325,7 @@ public class SimpleNamedFetchGroupTests extends BaseFetchGroupTests {
         assertNotNull("No FetcGroup found on read Employee", fetchGroup);
         assertEquals(fetchGroup.getName(), usedFG.getName());
         assertSame(fetchGroup, usedFG);
-        assertEquals(4, fetchGroup.getAttributes().size());
+        assertEquals(4, fetchGroup.getFetchItems().size());
         assertTrue(tracker._persistence_isAttributeFetched("id"));
         assertTrue(tracker._persistence_isAttributeFetched("version"));
         assertFalse(tracker._persistence_isAttributeFetched("salary"));
@@ -536,26 +365,25 @@ public class SimpleNamedFetchGroupTests extends BaseFetchGroupTests {
         assertNotNull(emps);
     }
 
-    private FetchGroup namedEmpFG;
-    private FetchGroup namedPhoneFG;
-    private FetchGroup namedAddressFG;
-
+    /**
+     * 
+     */
     @Before
     public void config() throws Exception {
-        assertConfig(getEMF(), "Employee", null);
-        assertConfig(getEMF(), "Address", null);
-        assertConfig(getEMF(), "PhoneNumber", null);
+        assertConfig(getEMF(), "Employee", null, 0);
+        assertConfig(getEMF(), "Address", null, 0);
+        assertConfig(getEMF(), "PhoneNumber", null, 0);
 
-        namedEmpFG = new FetchGroup("Employee.test");
+        FetchGroup<Employee> namedEmpFG = new FetchGroup<Employee>("Employee.test");
         namedEmpFG.addAttribute("firstName");
         namedEmpFG.addAttribute("lastName");
         getDescriptor("Employee").getFetchGroupManager().addFetchGroup(namedEmpFG);
 
-        namedPhoneFG = new FetchGroup("Phone.test");
+        FetchGroup<PhoneNumber> namedPhoneFG = new FetchGroup<PhoneNumber>("Phone.test");
         namedPhoneFG.addAttribute("number");
         getDescriptor("PhoneNumber").getFetchGroupManager().addFetchGroup(namedPhoneFG);
 
-        namedAddressFG = new FetchGroup("Address.test");
+        FetchGroup<Address> namedAddressFG = new FetchGroup<Address>("Address.test");
         namedAddressFG.addAttribute("city");
         getDescriptor("Address").getFetchGroupManager().addFetchGroup(namedAddressFG);
 

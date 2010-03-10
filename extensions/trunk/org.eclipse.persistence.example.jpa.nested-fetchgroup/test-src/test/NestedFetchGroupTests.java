@@ -8,11 +8,16 @@
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *     dclarke - Bug 273057: NestedFetchGroup Example
+ *     dclarke - Bug 273057: FetchGroup Example
  ******************************************************************************/
 package test;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
+import static junit.framework.Assert.assertTrue;
+import static test.FetchGroupAssert.assertFetched;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,15 +25,20 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 
-import model.*;
+import model.Address;
+import model.Employee;
+import model.Gender;
+import model.PhoneNumber;
 
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.queries.*;
+import org.eclipse.persistence.queries.FetchGroup;
+import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.eclipse.persistence.sessions.server.Server;
 import org.junit.Before;
 import org.junit.Test;
+
 
 public class NestedFetchGroupTests extends BaseFetchGroupTests {
 
@@ -40,22 +50,16 @@ public class NestedFetchGroupTests extends BaseFetchGroupTests {
         query.setParameter("GENDER", Gender.Male);
 
         // Define the fields to be fetched on Employee
-        NestedFetchGroup empGroup = new NestedFetchGroup();
-        empGroup.addAttribute("id");
-        empGroup.addAttribute("version");
-        empGroup.addAttribute("firstName");
-        empGroup.addAttribute("lastName");
-        empGroup.addAttribute("address");
-
-        // Define the fields to be fetched on Address
-        FetchGroup addressGroup = new FetchGroup();
-        addressGroup.addAttribute("city");
-        addressGroup.addAttribute("postalCode");
-
-        empGroup.addGroup("address", addressGroup);
+        FetchGroup fg = new FetchGroup();
+        fg.addAttribute("id");
+        fg.addAttribute("version");
+        fg.addAttribute("firstName");
+        fg.addAttribute("lastName");
+        fg.addAttribute("address.city");
+        fg.addAttribute("address.postalCode");
 
         // Configure the dynamic FetchGroup
-        query.setHint(QueryHints.FETCH_GROUP, empGroup);
+        query.setHint(QueryHints.FETCH_GROUP, fg);
 
         List<Employee> emps = query.getResultList();
 
@@ -107,7 +111,7 @@ public class NestedFetchGroupTests extends BaseFetchGroupTests {
         query.setParameter("GENDER", Gender.Male);
 
         // Define the fields to be fetched on Employee
-        NestedFetchGroup empGroup = new NestedFetchGroup();
+        FetchGroup empGroup = new FetchGroup();
         empGroup.addAttribute("firstName");
         empGroup.addAttribute("lastName");
         empGroup.addAttribute("address");
@@ -117,7 +121,7 @@ public class NestedFetchGroupTests extends BaseFetchGroupTests {
         addressGroup.addAttribute("city");
         addressGroup.addAttribute("postalCode");
 
-        empGroup.addGroup("address", null);
+        empGroup.addAttribute("address", null);
 
         // Configure the dynamic FetchGroup
         query.setHint(QueryHints.FETCH_GROUP, empGroup);
@@ -170,18 +174,13 @@ public class NestedFetchGroupTests extends BaseFetchGroupTests {
         query.setParameter("GENDER", Gender.Male);
 
         // Define the fields to be fetched on Employee
-        NestedFetchGroup empGroup = new NestedFetchGroup();
+        FetchGroup empGroup = new FetchGroup();
         empGroup.addAttribute("firstName");
         empGroup.addAttribute("lastName");
         empGroup.addAttribute("address");
-
-        // Define the fields to be fetched on Address
-        FetchGroup addressGroup = new FetchGroup();
-        addressGroup.addAttribute("city");
-        addressGroup.addAttribute("postalCode");
-
-        empGroup.addGroup("address", addressGroup);
-        empGroup.addGroup("phoneNumbers", null);
+        empGroup.addAttribute("address.city");
+        empGroup.addAttribute("address.postalCode");
+        empGroup.addAttribute("phoneNumbers").setUseDefaultFetchGroup(false);
 
         // Configure the dynamic FetchGroup
         query.setHint(QueryHints.FETCH_GROUP, empGroup);
@@ -236,25 +235,21 @@ public class NestedFetchGroupTests extends BaseFetchGroupTests {
         query.setParameter("GENDER", Gender.Male);
 
         // Define the fields to be fetched on Employee
-        NestedFetchGroup empGroup = new NestedFetchGroup();
-        empGroup.addAttribute("firstName");
-        empGroup.addAttribute("lastName");
-        empGroup.addAttribute("address");
-
-        // Define the fields to be fetched on Address
-        FetchGroup addressGroup = new FetchGroup();
-        addressGroup.addAttribute("city");
-        addressGroup.addAttribute("postalCode");
-
-        empGroup.addGroup("address", addressGroup);
-        empGroup.addGroup("phoneNumbers", new FetchGroup());
+        FetchGroup fg = new FetchGroup();
+        fg.addAttribute("firstName");
+        fg.addAttribute("lastName");
+        fg.addAttribute("address.city");
+        fg.addAttribute("address.postalCode");
+        fg.addAttribute("phoneNumbers", new FetchGroup());
 
         // Configure the dynamic FetchGroup
-        query.setHint(QueryHints.FETCH_GROUP, empGroup);
+        query.setHint(QueryHints.FETCH_GROUP, fg);
 
         List<Employee> emps = query.getResultList();
 
         assertNotNull(emps);
+        assertEquals(1 + (emps.size() * 2), getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        
         for (Employee emp : emps) {
             FetchGroupTracker tracker = (FetchGroupTracker) emp;
 
@@ -303,82 +298,56 @@ public class NestedFetchGroupTests extends BaseFetchGroupTests {
 
     @Test
     public void dynamicHierarchicalFetchGroup() throws Exception {
-        // Define the fields to be fetched on Employee
-        NestedFetchGroup empGroup = new NestedFetchGroup();
-        empGroup.addAttribute("firstName");
-        empGroup.addAttribute("lastName");
-
-        assertTrue(empGroup.getNestedGroups().isEmpty());
-
-        NestedFetchGroup mgrGroup = empGroup.addGroup("manager", new NestedFetchGroup());
-        mgrGroup.addAttribute("firstName");
-        mgrGroup.addAttribute("salary");
-
-        assertEquals(1, empGroup.getNestedGroups().size());
-        assertTrue(empGroup.getNestedGroups().containsValue(mgrGroup));
-        assertTrue(mgrGroup.getNestedGroups().isEmpty());
-
-        FetchGroup mgrMgrGroup = mgrGroup.addGroup("manager", new FetchGroup());
-        mgrMgrGroup.addAttribute("gender");
-
-        assertEquals(1, mgrGroup.getNestedGroups().size());
-        assertTrue(mgrGroup.getNestedGroups().containsValue(mgrMgrGroup));
 
         EntityManager em = getEntityManager();
 
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.lastName LIKE :LNAME AND e.manager.lastName <> e.lastName");
         query.setParameter("LNAME", "%");
-        query.setHint(QueryHints.FETCH_GROUP, empGroup);
+
+        // Define the fields to be fetched on Employee
+        FetchGroup<Employee> fg = new FetchGroup<Employee>();
+        fg.addAttribute("firstName");
+        fg.addAttribute("lastName");
+        fg.addAttribute("manager.firstName");
+        fg.addAttribute("manager.salary");
+        fg.addAttribute("manager.manager.gender");
+        query.setHint(QueryHints.FETCH_GROUP, fg);
 
         List<Employee> emps = query.getResultList();
 
-        int numSelect = 1;
-        assertEquals(numSelect, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-        List<Employee> loadedEmployees = new ArrayList<Employee>();
+        int numSelect = getQuerySQLTracker(em).getTotalSQLSELECTCalls();
 
         for (Employee emp : emps) {
-            if (!loadedEmployees.contains(emp)) {
-                assertNotFetched(empGroup, emp);
-                numSelect++;
-            }
-
-            // Force the loading of lazy fields and verify
-            emp.getSalary();
-            loadedEmployees.add(emp);
-
-            assertEquals(numSelect, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-            assertFetched(empGroup, emp);
-
-            if (emp.getManager() != null && !loadedEmployees.contains(emp.getManager())) {
-                if (!loadedEmployees.contains(emp.getManager())) {
-                    assertNotFetched(mgrGroup, emp.getManager());
-                    assertEquals(++numSelect, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-                    // Force the loading of lazy fields and verify
-                    emp.getManager().getGender();
-                    emp.getManager().getSalary();
-                    loadedEmployees.add(emp.getManager());
-
-                    assertFetched(mgrGroup, emp.getManager());
-                    assertEquals(++numSelect, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-                }
-            }
-
-            if (emp.getManager() != null && emp.getManager().getManager() != null && !loadedEmployees.contains(emp.getManager().getManager())) {
-                if (!loadedEmployees.contains(emp.getManager().getManager())) {
-                    assertNotFetched(mgrMgrGroup, emp.getManager().getManager());
-                    assertEquals(++numSelect, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-
-                    // Force the loading of lazy fields and verify
-                    emp.getManager().getManager().getSalary();
-                    loadedEmployees.add(emp.getManager().getManager());
-
-                    assertFetched(mgrMgrGroup, emp.getManager().getManager());
-                    assertEquals(++numSelect, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-                }
-            }
+                assertFetched(getEMF(), emp, fg);
         }
+        assertEquals(numSelect, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+    }
+
+    @Test
+    public void dynamicHierarchicalFetchGroup_JOIN_FETCH() throws Exception {
+
+        EntityManager em = getEntityManager();
+
+        Query query = em.createQuery("SELECT e FROM Employee e JOIN FETCH e.manager WHERE e.lastName LIKE :LNAME AND e.manager.lastName <> e.lastName");
+        query.setParameter("LNAME", "%");
+
+        // Define the fields to be fetched on Employee
+        FetchGroup<Employee> fg = new FetchGroup<Employee>();
+        fg.addAttribute("firstName");
+        fg.addAttribute("lastName");
+        fg.addAttribute("manager.firstName");
+        fg.addAttribute("manager.salary");
+        fg.addAttribute("manager.manager.gender");
+        query.setHint(QueryHints.FETCH_GROUP, fg);
+
+        List<Employee> emps = query.getResultList();
+
+        int numSelect = getQuerySQLTracker(em).getTotalSQLSELECTCalls();
+
+        for (Employee emp : emps) {
+                assertFetched(getEMF(), emp, fg);
+        }
+        assertEquals(numSelect, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
     }
 
     @Before

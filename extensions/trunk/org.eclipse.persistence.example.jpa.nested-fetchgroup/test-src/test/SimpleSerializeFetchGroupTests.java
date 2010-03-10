@@ -23,6 +23,8 @@ import static test.FetchGroupAssert.assertFetchedAttribute;
 import static test.FetchGroupAssert.assertNoFetchGroup;
 import static test.FetchGroupAssert.assertNotFetchedAttribute;
 
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,142 +37,84 @@ import model.Employee;
 import model.PhoneNumber;
 
 import org.eclipse.persistence.config.QueryHints;
-import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.indirection.IndirectList;
+import org.eclipse.persistence.internal.helper.SerializationHelper;
+import org.eclipse.persistence.internal.queries.DetachedFetchItem;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.mappings.OneToManyMapping;
+import org.eclipse.persistence.queries.EntityFetchGroup;
 import org.eclipse.persistence.queries.FetchGroup;
-import org.junit.Before;
+import org.eclipse.persistence.queries.FetchGroup.FetchItem;
 import org.junit.Test;
 
 import example.Queries;
 
 /**
- * Simple tests to verify the functionality of single level FetchGroup usage
+ * Simple tests to verify the functionality of {@link FetchGroup} when the
+ * entities are detached through serialization.
  * 
  * @author dclarke
- * @since EclipseLink 1.1
+ * @since EclipseLink 2.1
  */
-public class SimpleFetchGroupTests extends BaseFetchGroupTests {
+public class SimpleSerializeFetchGroupTests extends BaseFetchGroupTests {
 
     @Test
-    public void findNoFetchGroup() throws Exception {
-        EntityManager em = getEntityManager();
-        int minId = Queries.minimumEmployeeId(em);
+    public void verifyWriteReplaceOnFetchGroup() throws Exception {
+        FetchGroup<?> fg = new FetchGroup();
+        fg.addAttribute("basic");
+        fg.addAttribute("a.b");
 
-        Employee emp = em.find(Employee.class, minId);
+        assertTrue(fg.getClass() == FetchGroup.class);
 
-        assertNotNull(emp);
+        FetchGroup<?> serFG = serialize(fg);
 
-        // Check Basics
-        assertFetchedAttribute(getEMF(), emp, "id");
-        assertFetchedAttribute(getEMF(), emp, "version");
-        assertFetchedAttribute(getEMF(), emp, "firstName");
-        assertFetchedAttribute(getEMF(), emp, "lastName");
-        assertFetchedAttribute(getEMF(), emp, "gender");
-        assertFetchedAttribute(getEMF(), emp, "salary");
-        assertFetchedAttribute(getEMF(), emp, "startTime");
-        assertFetchedAttribute(getEMF(), emp, "endTime");
-        if (emp.getPeriod() != null) {
-            assertFetchedAttribute(getEMF(), emp.getPeriod(), "startDate");
-            assertFetchedAttribute(getEMF(), emp.getPeriod(), "endDate");
-        }
+        assertNotNull(serFG);
+        assertTrue(serFG.getClass() == EntityFetchGroup.class);
+        assertTrue(serFG.hasFetchItems());
 
-        // Check Relationships
-        assertNotFetchedAttribute(getEMF(), emp, "address");
-        assertNotFetchedAttribute(getEMF(), emp, "manager");
-        assertNotFetchedAttribute(getEMF(), emp, "phoneNumbers");
-        assertNotFetchedAttribute(getEMF(), emp, "projects");
+        FetchItem basicFI = serFG.getFetchItem("basic");
 
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertNotNull(basicFI);
+        assertTrue(basicFI instanceof DetachedFetchItem);
+
+        FetchItem aFI = serFG.getFetchItem("a");
+
+        assertNotNull(aFI);
+        assertTrue(aFI instanceof DetachedFetchItem);
+        assertNotNull(aFI.getFetchGroup());
+        assertTrue(aFI.getFetchGroup() instanceof EntityFetchGroup<?>);
+        EntityFetchGroup<?> aEFG = (EntityFetchGroup<?>) aFI.getFetchGroup();
+        assertNull(aEFG.getParent());
+        assertTrue(aEFG.hasFetchItems());
+
+        FetchItem bFI = aEFG.getFetchItem("b");
+
+        assertNotNull(bFI);
+        assertTrue(bFI instanceof DetachedFetchItem);
+        assertNull(bFI.getFetchGroup());
     }
 
     @Test
-    public void singleResultNoFetchGroup() throws Exception {
-        EntityManager em = getEntityManager();
-
-        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :ID");
-        query.setParameter("ID", Queries.minimumEmployeeId(em));
-
-        Employee emp = (Employee) query.getSingleResult();
-
-        assertNotNull(emp);
-
-        // Check Basics
-        assertFetchedAttribute(getEMF(), emp, "id");
-        assertFetchedAttribute(getEMF(), emp, "version");
-        assertFetchedAttribute(getEMF(), emp, "firstName");
-        assertFetchedAttribute(getEMF(), emp, "lastName");
-        assertFetchedAttribute(getEMF(), emp, "gender");
-        assertFetchedAttribute(getEMF(), emp, "salary");
-        assertFetchedAttribute(getEMF(), emp, "startTime");
-        assertFetchedAttribute(getEMF(), emp, "endTime");
-        if (emp.getPeriod() != null) {
-            assertFetchedAttribute(getEMF(), emp.getPeriod(), "startDate");
-            assertFetchedAttribute(getEMF(), emp.getPeriod(), "endDate");
-        }
-
-        // Check Relationships
-        assertNotFetchedAttribute(getEMF(), emp, "address");
-        assertNotFetchedAttribute(getEMF(), emp, "manager");
-        assertNotFetchedAttribute(getEMF(), emp, "phoneNumbers");
-        assertNotFetchedAttribute(getEMF(), emp, "projects");
-
-        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-    }
-
-    public void resultListNoFetchGroup() throws Exception {
-        EntityManager em = getEntityManager();
-
-        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :ID");
-        query.setParameter("ID", Queries.minimumEmployeeId(em));
-
-        List<Employee> emps = query.getResultList();
-
-        assertNotNull(emps);
-        assertEquals(1, emps.size());
-
-        Employee emp = emps.get(0);
-
-        // Check Basics
-        assertFetchedAttribute(getEMF(), emp, "id");
-        assertFetchedAttribute(getEMF(), emp, "version");
-        assertFetchedAttribute(getEMF(), emp, "firstName");
-        assertFetchedAttribute(getEMF(), emp, "lastName");
-        assertFetchedAttribute(getEMF(), emp, "gender");
-        assertFetchedAttribute(getEMF(), emp, "salary");
-        assertFetchedAttribute(getEMF(), emp, "startTime");
-        assertFetchedAttribute(getEMF(), emp, "endTime");
-        if (emp.getPeriod() != null) {
-            assertFetchedAttribute(getEMF(), emp.getPeriod(), "startDate");
-            assertFetchedAttribute(getEMF(), emp.getPeriod(), "endDate");
-        }
-
-        // Check Relationships
-        assertNotFetchedAttribute(getEMF(), emp, "address");
-        assertNotFetchedAttribute(getEMF(), emp, "manager");
-        assertNotFetchedAttribute(getEMF(), emp, "phoneNumbers");
-        assertNotFetchedAttribute(getEMF(), emp, "projects");
-    }
-
-    @Test
-    public void findEmptyFetchGroup() throws Exception {
+    public void findMinimalFetchGroup() throws Exception {
         EntityManager em = getEntityManager();
         int minId = Queries.minimumEmployeeId(em);
 
         assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
         Map<String, Object> properties = new HashMap<String, Object>();
-        FetchGroup emptyFG = new FetchGroup();
-        properties.put(QueryHints.FETCH_GROUP, emptyFG);
+
+        FetchGroup fg = new FetchGroup();
+        fg.addAttribute("id");
+        fg.addAttribute("version");
+
+        properties.put(QueryHints.FETCH_GROUP, fg);
 
         Employee emp = em.find(Employee.class, minId, properties);
 
         assertNotNull(emp);
-        assertFetched(getEMF(), emp, emptyFG);
+        assertFetched(getEMF(), emp, fg);
         assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
-        // Check Basics
         assertFetchedAttribute(getEMF(), emp, "id");
         assertFetchedAttribute(getEMF(), emp, "version");
         assertNotFetchedAttribute(getEMF(), emp, "firstName");
@@ -179,40 +123,36 @@ public class SimpleFetchGroupTests extends BaseFetchGroupTests {
         assertNotFetchedAttribute(getEMF(), emp, "salary");
         assertNotFetchedAttribute(getEMF(), emp, "startTime");
         assertNotFetchedAttribute(getEMF(), emp, "endTime");
-        if (emp.getPeriod() != null) {
-            assertFetchedAttribute(getEMF(), emp.getPeriod(), "startDate");
-            assertFetchedAttribute(getEMF(), emp.getPeriod(), "endDate");
-        }
-
-        // Check Relationships
+        assertNotFetchedAttribute(getEMF(), emp, "period");
         assertNotFetchedAttribute(getEMF(), emp, "address");
         assertNotFetchedAttribute(getEMF(), emp, "manager");
         assertNotFetchedAttribute(getEMF(), emp, "phoneNumbers");
         assertNotFetchedAttribute(getEMF(), emp, "projects");
 
-        emp.getSalary();
+        assertTrue(getFetchGroup(emp).getClass() == FetchGroup.class);
+        Employee serEmp = serialize(emp);
 
-        assertFetchedAttribute(getEMF(), emp, "salary");
+        assertNotNull(serEmp);
+        assertFetchedAttribute(getEMF(), serEmp, "id");
+        assertFetchedAttribute(getEMF(), serEmp, "version");
+        assertNotFetchedAttribute(getEMF(), serEmp, "firstName");
+        assertNotFetchedAttribute(getEMF(), serEmp, "lastName");
+        assertNotFetchedAttribute(getEMF(), serEmp, "gender");
+        assertNotFetchedAttribute(getEMF(), serEmp, "salary");
+        assertNotFetchedAttribute(getEMF(), serEmp, "startTime");
+        assertNotFetchedAttribute(getEMF(), serEmp, "endTime");
+        assertNotFetchedAttribute(getEMF(), serEmp, "period");
+        assertNotFetchedAttribute(getEMF(), serEmp, "address");
+        assertNotFetchedAttribute(getEMF(), serEmp, "manager");
+        assertNotFetchedAttribute(getEMF(), serEmp, "phoneNumbers");
+        assertNotFetchedAttribute(getEMF(), serEmp, "projects");
 
-        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertNoFetchGroup(getEMF(), emp);
+        assertTrue(getFetchGroup(serEmp) instanceof EntityFetchGroup<?>);
+        EntityFetchGroup.enableChangeTracking(serEmp);
 
-        emp.getAddress();
-
-        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        assertNoFetchGroup(getEMF(), emp.getAddress());
-
-        emp.getPhoneNumbers().size();
-
-        assertEquals(5, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-        for (PhoneNumber phone : emp.getPhoneNumbers()) {
-            assertNoFetchGroup(getEMF(), phone);
-        }
-
-        emp.getManager();
-
-        assertEquals(6, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
-}
+        serEmp.setFirstName("Doug");
+        assertFetchedAttribute(getEMF(), serEmp, "firstName");
+    }
 
     @Test
     public void findEmptyFetchGroup_setUnfetchedSalary() throws Exception {
@@ -270,6 +210,50 @@ public class SimpleFetchGroupTests extends BaseFetchGroupTests {
         for (PhoneNumber phone : emp.getPhoneNumbers()) {
             assertNoFetchGroup(getEMF(), phone);
         }
+    }
+
+    /**
+     * Verify that attributes added to detached EntityFetchGroup are added using
+     * DetachedFetchItem
+     */
+    @Test
+    public void verifyAddAttributeInDetachedEntityFetchGroup() {
+        EntityFetchGroup<Employee> detFG = new EntityFetchGroup<Employee>(null);
+
+        detFG.addAttribute("basic");
+        detFG.addAttribute("a.b");
+
+        assertNull(detFG.getParent());
+        assertEquals(2, detFG.getFetchItems().size());
+
+        FetchItem basicItem = detFG.getFetchItem("basic");
+        assertNotNull(basicItem);
+        assertEquals("basic", basicItem.getAttributeName());
+        assertTrue(basicItem instanceof DetachedFetchItem);
+        assertNull(basicItem.getFetchGroup());
+        assertSame(detFG, basicItem.getParentFetchGroup());
+        assertFalse(basicItem.useDefaultFetchGroup());
+
+        FetchItem aItem = detFG.getFetchItem("a");
+        assertNotNull(aItem);
+        assertEquals("a", aItem.getAttributeName());
+        assertTrue(aItem instanceof DetachedFetchItem);
+        assertNotNull(aItem.getFetchGroup());
+        assertSame(detFG, aItem.getParentFetchGroup());
+        assertFalse(aItem.useDefaultFetchGroup());
+        assertTrue(aItem.getFetchGroup() instanceof EntityFetchGroup<?>);
+
+        EntityFetchGroup<?> aFG = (EntityFetchGroup<?>) aItem.getFetchGroup();
+
+        assertEquals(1, aFG.getFetchItems().size());
+
+        FetchItem bItem = aFG.getFetchItem("b");
+        assertNotNull(bItem);
+        assertEquals("b", bItem.getAttributeName());
+        assertTrue(bItem instanceof DetachedFetchItem);
+        assertNull(bItem.getFetchGroup());
+        assertSame(aFG, bItem.getParentFetchGroup());
+        assertFalse(bItem.useDefaultFetchGroup());
     }
 
     @Test
@@ -661,6 +645,11 @@ public class SimpleFetchGroupTests extends BaseFetchGroupTests {
 
         assertNotNull(emp);
 
+    }
+
+    private <T> T serialize(Serializable entity) throws IOException, ClassNotFoundException {
+        byte[] bytes = SerializationHelper.serialize(entity);
+        return (T) SerializationHelper.deserialize(bytes);
     }
 
     /**
