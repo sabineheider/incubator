@@ -26,7 +26,7 @@
 	</named-query>
 
 	<entity class="model.LargeProject">
-		<table name="LPROJECT" />
+		<table name="FP_LPROJECT" />
 		<discriminator-value>L</discriminator-value>
 		<attributes>
 			<basic name="budget" />
@@ -37,6 +37,7 @@
 	</entity>
 
 	<entity class="model.Address">
+		<table name="FP_ADDRESS" />
 		<attributes>
 			<id name="id">
 				<column name="ADDRESS_ID" />
@@ -53,7 +54,7 @@
 	</entity>
 
 	<entity class="model.PhoneNumber">
-		<table name="PHONE" />
+		<table name="FP_PHONE" />
 		<id-class class="model.PhoneNumber$ID" />
 		<attributes>
 			<id name="id">
@@ -75,7 +76,8 @@
 	</entity>
 
 	<entity class="model.Employee">
-		<secondary-table name="SALARY" />
+		<table name="FP_EMPLOYEE" />
+		<secondary-table name="FP_SALARY" />
 		<attributes>
 			<id name="id">
 				<column name="EMP_ID" />
@@ -98,11 +100,11 @@
 				<convert>gender-converter</convert>
 			</basic>
 			<basic name="salary">
-				<column table="SALARY" />
+				<column table="FP_SALARY" />
 			</basic>
 			<basic-collection name="responsibilities">
 				<value-column name="RESPON_DESC" />
-				<collection-table name="RESPONS" />
+				<collection-table name="FP_RESPONS" />
 			</basic-collection>
 			<version name="version" />
 			<many-to-one name="manager" fetch="LAZY" optional="true">
@@ -123,7 +125,7 @@
 				<private-owned />
 			</one-to-one>
 			<many-to-many name="projects">
-				<join-table name="PROJ_EMP">
+				<join-table name="FP_PROJ_EMP">
 					<join-column name="EMP_ID" />
 					<inverse-join-column name="PROJ_ID" />
 				</join-table>
@@ -133,11 +135,12 @@
 	</entity>
 
 	<entity class="model.SmallProject">
-		<table name="PROJECT" />
+		<table name="FP_PROJECT" />
 		<discriminator-value>S</discriminator-value>
 	</entity>
 
 	<entity class="model.Project">
+		<table name="FP_PROJECT" />
 		<inheritance strategy="JOINED" />
 		<discriminator-column name="PROJ_TYPE"
 			discriminator-type="CHAR" />

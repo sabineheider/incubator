@@ -36,6 +36,7 @@ import example.util.ExamplePropertiesLoader;
  * @author dclarke
  * @since EclipseLink 1.1
  */
+@SuppressWarnings("unchecked")
 public class CreateDatabase {
 
     @Test
