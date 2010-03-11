@@ -19,7 +19,6 @@ import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 import static test.FetchGroupAssert.assertFetched;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -73,6 +72,10 @@ public class NestedFetchGroupTests extends BaseFetchGroupTests {
             assertTrue(tracker._persistence_isAttributeFetched("firstName"));
             assertTrue(tracker._persistence_isAttributeFetched("lastName"));
             assertTrue(tracker._persistence_isAttributeFetched("address"));
+            FetchGroupTracker addrTracker = (FetchGroupTracker) emp.getAddress();
+            assertTrue(addrTracker._persistence_isAttributeFetched("city"));
+            assertTrue(addrTracker._persistence_isAttributeFetched("postalCode"));
+            assertFalse(addrTracker._persistence_isAttributeFetched("street"));
 
             // Verify the other fields are not loaded
             assertFalse(tracker._persistence_isAttributeFetched("salary"));
@@ -90,7 +93,7 @@ public class NestedFetchGroupTests extends BaseFetchGroupTests {
             assertTrue(tracker._persistence_isAttributeFetched("endTime"));
 
             // Now we'll check the address uses the provided dynamic fetch-group
-            FetchGroupTracker addrTracker = (FetchGroupTracker) emp.getAddress();
+            addrTracker = (FetchGroupTracker) emp.getAddress();
             assertNotNull("Address does not have a FetchGroup", addrTracker._persistence_getFetchGroup());
             assertTrue(addrTracker._persistence_isAttributeFetched("city"));
             assertTrue(addrTracker._persistence_isAttributeFetched("postalCode"));
