@@ -29,7 +29,7 @@ import org.junit.Test;
 import testing.EclipseLinkJPATest;
 
 /**
- * Simple tests to verify the functionality of single level FetchGroup usage
+ * Simple tests to verify the functionality of FetchGroup API
  * 
  * @author dclarke
  * @since EclipseLink 1.1

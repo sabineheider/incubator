@@ -72,6 +72,7 @@ public class NestedFetchGroupTests extends BaseFetchGroupTests {
             // Verify specified fields plus mandatory ones are loaded
             assertTrue(tracker._persistence_isAttributeFetched("firstName"));
             assertTrue(tracker._persistence_isAttributeFetched("lastName"));
+            assertTrue(tracker._persistence_isAttributeFetched("address"));
 
             // Verify the other fields are not loaded
             assertFalse(tracker._persistence_isAttributeFetched("salary"));
@@ -81,6 +82,9 @@ public class NestedFetchGroupTests extends BaseFetchGroupTests {
             // Force the loading of lazy fields and verify
             emp.getSalary();
 
+            assertTrue(tracker._persistence_isAttributeFetched("firstName"));
+            assertTrue(tracker._persistence_isAttributeFetched("lastName"));
+            assertTrue(tracker._persistence_isAttributeFetched("address"));
             assertTrue(tracker._persistence_isAttributeFetched("salary"));
             assertTrue(tracker._persistence_isAttributeFetched("startTime"));
             assertTrue(tracker._persistence_isAttributeFetched("endTime"));

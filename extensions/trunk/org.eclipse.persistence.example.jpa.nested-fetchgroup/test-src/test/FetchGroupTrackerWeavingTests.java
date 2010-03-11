@@ -50,7 +50,7 @@ public class FetchGroupTrackerWeavingTests extends EclipseLinkJPATest {
     public void verifyCheckFetchedForSetWithFetchGroup() {
         Employee emp = new Employee();
         TestFetchGroup fg = new TestFetchGroup();
-        fg.setOnEntity(emp);
+        fg.setOnEntity((FetchGroupTracker) emp);
 
         assertNull(this.checkAttribute);
         assertNull(this.checkForSetAttribute);
@@ -66,7 +66,7 @@ public class FetchGroupTrackerWeavingTests extends EclipseLinkJPATest {
     public void verifyCheckFetchedWithFetchGroup() {
         Employee emp = new Employee();
         TestFetchGroup fg = new TestFetchGroup();
-        fg.setOnEntity(emp);
+        fg.setOnEntity((FetchGroupTracker) emp);
 
         assertNull(this.checkAttribute);
         assertNull(this.checkForSetAttribute);
@@ -82,7 +82,7 @@ public class FetchGroupTrackerWeavingTests extends EclipseLinkJPATest {
     public void verifyCheckFetchedForSetWithFetchGroup_OneToOne() {
         Employee emp = new Employee();
         TestFetchGroup fg = new TestFetchGroup();
-        fg.setOnEntity(emp);
+        fg.setOnEntity((FetchGroupTracker) emp);
 
         assertNull(this.checkAttribute);
         assertNull(this.checkForSetAttribute);
@@ -98,7 +98,7 @@ public class FetchGroupTrackerWeavingTests extends EclipseLinkJPATest {
     public void verifyCheckFetchedWithFetchGroup_OneToOne() {
         Employee emp = new Employee();
         TestFetchGroup fg = new TestFetchGroup();
-        fg.setOnEntity(emp);
+        fg.setOnEntity((FetchGroupTracker) emp);
 
         assertNull(this.checkAttribute);
         assertNull(this.checkForSetAttribute);
@@ -115,7 +115,7 @@ public class FetchGroupTrackerWeavingTests extends EclipseLinkJPATest {
     public void verifyCheckFetchedForSetWithFetchGroup_OneToMany() {
         Employee emp = new Employee();
         TestFetchGroup fg = new TestFetchGroup();
-        fg.setOnEntity(emp);
+        fg.setOnEntity((FetchGroupTracker) emp);
 
         assertNull(this.checkAttribute);
         assertNull(this.checkForSetAttribute);
@@ -131,7 +131,7 @@ public class FetchGroupTrackerWeavingTests extends EclipseLinkJPATest {
     public void verifyCheckFetchedWithFetchGroup_OneToMany() {
         Employee emp = new Employee();
         TestFetchGroup fg = new TestFetchGroup();
-        fg.setOnEntity(emp);
+        fg.setOnEntity((FetchGroupTracker) emp);
 
         assertNull(this.checkAttribute);
         assertNull(this.checkForSetAttribute);
@@ -157,6 +157,12 @@ public class FetchGroupTrackerWeavingTests extends EclipseLinkJPATest {
         @Override
         public void checkFetchedForSet(FetchGroupTracker entity, String attributeName) {
             checkForSetAttribute = attributeName;
+        }
+
+        // Bypass EntityFetchGroup wrapping done in FetchGroup
+        @Override
+        public void setOnEntity(FetchGroupTracker entity) {
+            entity._persistence_setFetchGroup(this);
         }
 
     }

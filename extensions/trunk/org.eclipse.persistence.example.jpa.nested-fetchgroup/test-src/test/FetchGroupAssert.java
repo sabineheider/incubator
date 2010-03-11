@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.Collection;
 import java.util.Map;
@@ -173,7 +172,7 @@ public class FetchGroupAssert {
                 assertTrue("PrimaryKey mapping not fetched: " + entity, tracker._persistence_isAttributeFetched(mapping.getAttributeName()));
             } else if (descriptor.usesOptimisticLocking() && descriptor.getOptimisticLockingPolicy() instanceof VersionLockingPolicy && ((VersionLockingPolicy) descriptor.getOptimisticLockingPolicy()).getVersionMapping() == mapping) {
                 assertTrue("Optimistic version mapping not fetched: " + entity, tracker._persistence_isAttributeFetched(mapping.getAttributeName()));
-            } else if (tracker._persistence_getFetchGroup().getFetchItems().containsKey(mapping.getAttributeName())) {
+            } else if (tracker._persistence_getFetchGroup().containsAttribute(mapping.getAttributeName())) {
                 assertTrue(tracker._persistence_isAttributeFetched(mapping.getAttributeName()));
                 FetchItem attrFI = tracker._persistence_getFetchGroup().getFetchItem(mapping.getAttributeName());
                 if (attrFI.getFetchGroup() != null) {

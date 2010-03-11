@@ -17,7 +17,6 @@ import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertSame;
 import static junit.framework.Assert.assertTrue;
-import static test.FetchGroupAssert.assertDefaultFetched;
 import static test.FetchGroupAssert.assertFetched;
 import static test.FetchGroupAssert.assertNoFetchGroup;
 
@@ -33,6 +32,7 @@ import model.PhoneNumber;
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.queries.EntityFetchGroup;
 import org.eclipse.persistence.queries.FetchGroup;
 import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.junit.After;
@@ -286,7 +286,7 @@ public class SimpleNamedFetchGroupTests extends BaseFetchGroupTests {
 
         assertNotNull("No FetchGroup found on read Employee", usedFG);
         assertEquals(fetchGroup.getName(), usedFG.getName());
-        assertSame(fetchGroup, usedFG);
+        assertSame(fetchGroup, ((EntityFetchGroup<?>) usedFG).getParent());
         assertEquals(2, fetchGroup.getFetchItems().size());
         assertTrue(tracker._persistence_isAttributeFetched("id"));
         assertTrue(tracker._persistence_isAttributeFetched("version"));
@@ -323,8 +323,7 @@ public class SimpleNamedFetchGroupTests extends BaseFetchGroupTests {
         FetchGroup usedFG = tracker._persistence_getFetchGroup();
 
         assertNotNull("No FetcGroup found on read Employee", fetchGroup);
-        assertEquals(fetchGroup.getName(), usedFG.getName());
-        assertSame(fetchGroup, usedFG);
+        assertSame(fetchGroup, ((EntityFetchGroup<?>) usedFG).getParent());
         assertEquals(4, fetchGroup.getFetchItems().size());
         assertTrue(tracker._persistence_isAttributeFetched("id"));
         assertTrue(tracker._persistence_isAttributeFetched("version"));

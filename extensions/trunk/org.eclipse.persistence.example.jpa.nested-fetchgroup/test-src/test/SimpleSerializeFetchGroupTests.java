@@ -129,7 +129,7 @@ public class SimpleSerializeFetchGroupTests extends BaseFetchGroupTests {
         assertNotFetchedAttribute(getEMF(), emp, "phoneNumbers");
         assertNotFetchedAttribute(getEMF(), emp, "projects");
 
-        assertTrue(getFetchGroup(emp).getClass() == FetchGroup.class);
+        assertTrue(getFetchGroup(emp).getClass() == EntityFetchGroup.class);
         Employee serEmp = serialize(emp);
 
         assertNotNull(serEmp);
@@ -148,7 +148,6 @@ public class SimpleSerializeFetchGroupTests extends BaseFetchGroupTests {
         assertNotFetchedAttribute(getEMF(), serEmp, "projects");
 
         assertTrue(getFetchGroup(serEmp) instanceof EntityFetchGroup<?>);
-        EntityFetchGroup.enableChangeTracking(serEmp);
 
         serEmp.setFirstName("Doug");
         assertFetchedAttribute(getEMF(), serEmp, "firstName");

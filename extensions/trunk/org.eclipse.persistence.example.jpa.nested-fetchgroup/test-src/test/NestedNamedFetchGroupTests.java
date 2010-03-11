@@ -12,12 +12,12 @@
  ******************************************************************************/
 package test;
 
-import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
-import static test.FetchGroupAssert.*;
+import static test.FetchGroupAssert.assertFetched;
+import static test.FetchGroupAssert.assertNotFetchedAttribute;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -321,14 +321,14 @@ public class NestedNamedFetchGroupTests extends BaseFetchGroupTests {
         fg.addAttribute("manager.firstName");
         fg.addAttribute("manager.salary");
         fg.addAttribute("manager.manager.gender");
-        
+
         FetchItem mgrItem = fg.getFetchItem("manager");
         assertNotNull(mgrItem);
         assertNotNull(mgrItem.getFetchGroup());
         FetchItem mgrMgrItem = fg.getFetchItem("manager.manager");
         assertNotNull(mgrMgrItem);
         assertNotNull(mgrMgrItem.getFetchGroup());
-        
+
         query.setHint(QueryHints.FETCH_GROUP, fg);
 
         List<Employee> emps = query.getResultList();
@@ -346,7 +346,7 @@ public class NestedNamedFetchGroupTests extends BaseFetchGroupTests {
             assertNotFetchedAttribute(getEMF(), emp, "startDate");
             loadedEmps.add(emp);
         }
-        //TODO assertEquals(1 + loadedEmps.size() - emps.size(), numSelect);
+        // TODO assertEquals(1 + loadedEmps.size() - emps.size(), numSelect);
     }
 
     @Before
@@ -369,9 +369,6 @@ public class NestedNamedFetchGroupTests extends BaseFetchGroupTests {
         FetchGroup phoneFG = new FetchGroup();
         phoneFG.addAttribute("number");
         ClassDescriptor phoneDescriptor = session.getClassDescriptor(PhoneNumber.class);
-        if (!phoneDescriptor.hasFetchGroupManager()) {
-            phoneDescriptor.setFetchGroupManager(new FetchGroupManager());
-        }
         phoneDescriptor.getFetchGroupManager().setDefaultFetchGroup(phoneFG);
 
         descriptor = session.getClassDescriptor(PhoneNumber.class);

@@ -39,6 +39,7 @@ import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.FetchGroupManager;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.queries.EntityFetchGroup;
 import org.eclipse.persistence.queries.FetchGroup;
 import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.junit.Before;
@@ -422,7 +423,7 @@ public class SimpleDefaultFetchGroupTests extends BaseFetchGroupTests {
 
         assertNotNull("No FetchGroup found on read Employee", fetchGroup);
         assertEquals(fetchGroup.getName(), usedFG.getName());
-        assertSame(fetchGroup, usedFG);
+        assertSame(fetchGroup, ((EntityFetchGroup<?>)usedFG).getParent());
         assertEquals(4, fetchGroup.getFetchItems().size());
         assertTrue(tracker._persistence_isAttributeFetched("id"));
         assertTrue(tracker._persistence_isAttributeFetched("version"));
