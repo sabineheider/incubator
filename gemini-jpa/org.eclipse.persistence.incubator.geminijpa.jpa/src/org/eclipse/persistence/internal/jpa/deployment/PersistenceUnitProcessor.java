@@ -117,7 +117,7 @@ public class PersistenceUnitProcessor {
         }        
         return entityList;
     }
-
+    
     /**
      * Determine the URL path to the persistence unit 
      * @param pxmlURL - Encoded URL containing the pu
@@ -421,9 +421,12 @@ public class PersistenceUnitProcessor {
         URL puRootURL = archive.getRootURL();
         try {
             // mkeith - if we have a URL use it
-            InputStream pxmlStream;
-          pxmlStream = archive.getDescriptorStream();
-//            pxmlStream = archive.getEntry(PersistenceUnitProperties.ECLIPSELINK_PERSISTENCE_XML_DEFAULT);
+            InputStream pxmlStream = null;
+            if (archive.getDescriptorStream() != null) {
+                pxmlStream = archive.getDescriptorStream();
+            } else {
+                pxmlStream = archive.getEntry(PersistenceUnitProperties.ECLIPSELINK_PERSISTENCE_XML_DEFAULT);
+            }
             return processPersistenceXML(puRootURL, pxmlStream, loader);
 //        } catch (IOException e) {
           } catch (Exception e) {

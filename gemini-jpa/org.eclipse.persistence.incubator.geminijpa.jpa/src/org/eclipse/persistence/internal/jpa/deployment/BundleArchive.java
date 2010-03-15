@@ -48,7 +48,7 @@ public class BundleArchive extends URLArchive {
     
     public InputStream getEntry(String entryPath) throws IOException {
         GeminiUtil.debug("BundleArchive - getEntry, path: ", entryPath);
-        URL subEntry = new URL(url, entryPath);
+        URL subEntry = new URL(getRootURL(), entryPath);
         GeminiUtil.debug("BundleArchive - getEntry, new url: ", subEntry);
         InputStream is = null;
         try {
@@ -62,7 +62,7 @@ public class BundleArchive extends URLArchive {
 
     public URL getEntryAsURL(String entryPath) throws IOException {
         GeminiUtil.debug("BundleArchive - getEntryAsURL, path: ", entryPath);
-        URL subEntry = new URL(url, entryPath);
+        URL subEntry = new URL(getRootURL(), entryPath);
         try {
             InputStream is = subEntry.openStream();
             if (is == null){
