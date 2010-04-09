@@ -93,7 +93,8 @@ public class ArchiveFactoryImpl implements ArchiveFactory {
         // mkeith - add bundle archive hook 
         // TODO Does this work for all OSGi frameworks?
         } else if ("bundleresource".equals(protocol)) { // NOI18N
-            return new BundleArchive(rootUrl, descriptorUrl);
+            // mkeith - for regular non-embedded descriptors
+            result = new BundleArchive(rootUrl, descriptorUrl);
             
         } else if ("jar".equals(protocol)) { // NOI18N
             JarURLConnection conn = JarURLConnection.class.cast(rootUrl.openConnection());

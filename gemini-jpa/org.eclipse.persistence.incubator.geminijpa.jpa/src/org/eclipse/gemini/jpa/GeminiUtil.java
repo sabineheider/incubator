@@ -65,7 +65,7 @@ public class GeminiUtil {
     public static void closeStream(Closeable c) {
         try { c.close(); } catch (Exception ex){}
     }
-        
+
     /*================================*/
     /* Status and debugging functions */
     /*================================*/

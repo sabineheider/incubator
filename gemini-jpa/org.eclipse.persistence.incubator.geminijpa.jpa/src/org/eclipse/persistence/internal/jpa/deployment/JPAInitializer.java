@@ -141,15 +141,12 @@ public abstract class JPAInitializer {
         // mkeith - get resource name from prop and include in subsequent call
         GeminiUtil.debug("JPAInit - findPersistenceUnitInfoInArchives, props = ", m);
         String descriptorPath = (String) m.get(PersistenceUnitProperties.ECLIPSELINK_PERSISTENCE_XML);
-        if (descriptorPath == null) {
-            descriptorPath = PersistenceUnitProperties.ECLIPSELINK_PERSISTENCE_XML_DEFAULT;
+        final Set<Archive> pars;
+        if (descriptorPath != null) {
+            pars = PersistenceUnitProcessor.findPersistenceArchives(initializationClassloader, descriptorPath);
+        } else {
+            pars = PersistenceUnitProcessor.findPersistenceArchives(initializationClassloader);
         }
-/*
-        String[] descriptorNames = (((descriptorPropertyValue == null) || (descriptorPropertyValue.isEmpty()))
-            ? new String[] { PersistenceUnitProperties.ECLIPSELINK_PERSISTENCE_XML_DEFAULT }
-            : (descriptorPropertyValue + "," + PersistenceUnitProperties.ECLIPSELINK_PERSISTENCE_XML_DEFAULT).split(","));
- */
-        final Set<Archive> pars = PersistenceUnitProcessor.findPersistenceArchives(initializationClassloader, descriptorPath);
         for (Archive archive: pars) {
             persistenceUnitInfo = findPersistenceUnitInfoInArchive(puName, archive, m, persistenceHelper);
             if(persistenceUnitInfo != null) {

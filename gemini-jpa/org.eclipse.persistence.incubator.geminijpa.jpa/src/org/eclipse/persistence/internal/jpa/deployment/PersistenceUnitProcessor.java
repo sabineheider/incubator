@@ -208,8 +208,7 @@ public class PersistenceUnitProcessor {
         // mkeith - change to use constant
         debug("New PP findPersistenceArchives - defaults");
         ClassLoader threadLoader = Thread.currentThread().getContextClassLoader();
-        return findPersistenceArchives(threadLoader, 
-                PersistenceUnitProperties.ECLIPSELINK_PERSISTENCE_XML_DEFAULT);
+        return findPersistenceArchives(threadLoader);
     }
 
     /**
@@ -221,20 +220,14 @@ public class PersistenceUnitProcessor {
      * 
      * @param loader the class loader to get the class path from
      */
-    // mkeith - add descriptorUrl argument
-    public static Set<Archive> findPersistenceArchives(ClassLoader loader, String descPath){
-        
-        debug("PUP findPersistenceArchives - desc path: ", descPath);
+    public static Set<Archive> findPersistenceArchives(ClassLoader loader){
         Set<Archive> pars = new HashSet<Archive>();
         try {
-            Enumeration<URL> resources = loader.getResources(descPath);
+            Enumeration<URL> resources = loader.getResources(PersistenceUnitProperties.ECLIPSELINK_PERSISTENCE_XML_DEFAULT);
             while (resources.hasMoreElements()){
                 URL pxmlURL = resources.nextElement();
-                debug("PUP findPersistenceArchives - enumerating ", pxmlURL);
                 URL puRootURL = computePURootURL(pxmlURL);
-                debug("PUP findPersistenceArchives - computedRootUrl ", puRootURL);
-                Archive archive = PersistenceUnitProcessor.getArchiveFactory(loader).createArchive(puRootURL, pxmlURL);
-                debug("PUP findPersistenceArchives - archive ", archive);
+                Archive archive = PersistenceUnitProcessor.getArchiveFactory(loader).createArchive(puRootURL);
                 pars.add(archive);
             }
         } catch (java.io.IOException exc){
@@ -250,7 +243,61 @@ public class PersistenceUnitProcessor {
             }
             throw PersistenceUnitLoadingException.exceptionSearchingForPersistenceResources(loader, exc);
         }
+        
         return pars;
+    }
+    
+    /**
+     * Return a list of Archives representing the root of the persistence descriptor. 
+     * It is the caller's responsibility to close all the archives.
+     * 
+     * @param loader the class loader to get the class path from
+     */
+    // mkeith - add descriptorPath argument
+    public static Set<Archive> findPersistenceArchives(ClassLoader loader, String descriptorPath){
+
+        debug("PUP findPersistenceArchives - desc path: ", descriptorPath);
+        Archive archive = null;
+        boolean embedded = false;
+
+        Set<Archive> archives = new HashSet<Archive>();
+
+        // See if we are talking about an embedded descriptor
+        int splitPosition = descriptorPath.indexOf("!/");
+
+        try {
+            // If not embedded descriptor then just use the regular descriptor path
+            if (splitPosition == -1) {
+                URL descUrl = loader.getResource(descriptorPath);
+                URL puRootUrl = computePURootURL(descUrl);
+                debug("PUP findPersistenceArchives - computedRootUrl ", puRootUrl);
+                archive = new BundleArchive(puRootUrl, descUrl);
+                debug("PUP findPersistenceArchives - archive ", archive);
+                if (archive != null)
+                    archives.add(archive);
+            } else {
+                // It is an embedded archive, so split up the parts
+                String jarPrefixPath = descriptorPath.substring(0, splitPosition);
+                debug("PUP - Embedded descriptor JAR prefix: ", jarPrefixPath);
+                String descPath = descriptorPath.substring(splitPosition+2);
+                debug("PUP - Embedded descriptor suffix: ", descPath);
+                // TODO This causes the bundle to be resolved (not what we want)!
+                URL prefixUrl = loader.getResource(jarPrefixPath);
+                archive = new BundleJarUrlArchive(prefixUrl, descPath);            
+                if (prefixUrl != null) {
+                    archives.add(archive);
+                }
+                debug("PUP findPersistenceArchives - archive ", archive);
+                if (archive != null)
+                    archives.add(archive);
+            } 
+        } catch (Exception ex){
+            //clean up first
+            for (Archive a : archives)
+                a.close();
+            throw PersistenceUnitLoadingException.exceptionSearchingForPersistenceResources(loader, ex);
+        }
+        return archives;
     }
 
     public static ArchiveFactory getArchiveFactory(ClassLoader loader){
