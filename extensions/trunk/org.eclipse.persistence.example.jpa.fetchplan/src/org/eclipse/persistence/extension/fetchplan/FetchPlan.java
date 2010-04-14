@@ -255,13 +255,13 @@ public class FetchPlan {
 
         return item;
     }
-    
+
     /**
-     * Add all of the attributes from the provided FetchGroup. 
+     * Add all of the attributes from the provided FetchGroup.
      */
     @SuppressWarnings("unchecked")
     public void addAttributes(FetchGroup fetchGroup) {
-        for (String attribute: (Set<String>) fetchGroup.getAttributes()) {
+        for (String attribute : (Set<String>) fetchGroup.getAttributes()) {
             addAttribute(attribute);
         }
     }
@@ -411,27 +411,9 @@ public class FetchPlan {
     }
 
     /**
-     * Create a new collection of the same type with the same size. This is done
-     * using reflection
-     */
-    protected static Collection<?> createEmptyContainer(Collection<?> source) {
-        Collection<?> newCollection = null;
-
-        try {
-            Constructor<?> constructor = source.getClass().getConstructor(int.class);
-            newCollection = (Collection<?>) constructor.newInstance(source.size());
-        } catch (Exception e) {
-            throw new RuntimeException("FetchPlan.copy: failed to create copy of result container for: " + source.getClass(), e);
-        }
-
-        return newCollection;
-    }
-
-    /**
      * Create a copy of the entity or collection of entities ensure identity
      * through maintenance of a map of copies (original -> copy).
      */
-    @SuppressWarnings("unchecked")
     protected Object copy(Object source, AbstractSession session, Map<Object, Object> copies) {
         if (source instanceof Object[]) {
             throw new IllegalArgumentException("Fetchplan.copy does not support Object[]");
@@ -443,28 +425,66 @@ public class FetchPlan {
         }
 
         if (source instanceof Collection<?>) {
-            Collection copiesCollection = createEmptyContainer((Collection<?>) source);
-
-            for (Object entity : (Collection<?>) source) {
-                copy = copy(entity, session, copies);
-                copiesCollection.add(copy);
-            }
-            copies.put(source, copiesCollection);
-            return copiesCollection;
+            return copyAll((Collection<?>) source, session, copies);
         }
 
-        copy = getDescriptor(session).getInstantiationPolicy().buildNewInstance();
+        ClassDescriptor descriptor = getDescriptor(session);
+        copy = descriptor.getInstantiationPolicy().buildNewInstance();
         copies.put(source, copy);
 
         ObjectCopyingPolicy policy = new ObjectCopyingPolicy();
         policy.setShouldResetPrimaryKey(false);
         policy.setSession(session);
 
+        // Copy all specified items
         for (Map.Entry<String, FetchItem> entry : getItems().entrySet()) {
             entry.getValue().copy(source, copy, session, policy, copies);
         }
 
         return copy;
+    }
+
+    /**
+     * Create copy of a collection
+     */
+    @SuppressWarnings("unchecked")
+    protected Object copyAll(Collection<?> source, AbstractSession session, Map<Object, Object> copies) {
+        Collection<Object> copiesCollection = null;
+
+        try {
+            Constructor<?> constructor = source.getClass().getConstructor(int.class);
+            copiesCollection = (Collection<Object>) constructor.newInstance(source.size());
+        } catch (Exception e) {
+            throw new RuntimeException("FetchPlan.copy: failed to create copy of result container for: " + source.getClass(), e);
+        }
+
+        for (Object entity : source) {
+            Object copy = copy(entity, session, copies);
+            copiesCollection.add(copy);
+        }
+        
+        copies.put(source, copiesCollection);
+        return copiesCollection;
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Object copyAllMapped(Collection<?> source, AbstractSession session, Map<Object, Object> copies) {
+        Collection<Object> copiesCollection = null;
+
+        try {
+            Constructor<?> constructor = source.getClass().getConstructor(int.class);
+            copiesCollection = (Collection<Object>) constructor.newInstance(source.size());
+        } catch (Exception e) {
+            throw new RuntimeException("FetchPlan.copy: failed to create copy of result container for: " + source.getClass(), e);
+        }
+
+        for (Object entity : (Collection<?>) source) {
+            Object copy = copy(entity, session, copies);
+            copiesCollection.add(copy);
+        }
+        
+        copies.put(source, copiesCollection);
+        return copiesCollection;
     }
 
     /**

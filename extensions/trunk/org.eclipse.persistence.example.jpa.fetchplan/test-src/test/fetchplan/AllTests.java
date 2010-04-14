@@ -23,7 +23,8 @@ import org.junit.runners.Suite;
                        FetchPlanCopyTests.class,
                        FetchPlanMergeTests.class,
                        DetachedResultsTests.class,
-                       SerializedResultsTests.class}) 
+                       SerializedResultsTests.class,
+                       TestOTTO.class}) 
 public class AllTests {
 
 }

@@ -13,6 +13,7 @@
  ******************************************************************************/
 package org.eclipse.persistence.extension.fetchplan;
 
+import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.Map;
 
@@ -167,7 +168,7 @@ public class FetchItem {
                 if (targetFetchPlan != null) {
                     copyValue = targetFetchPlan.copy(sourceValue, session, copies);
                 } else {
-                    copyValue = copyAll(sourceValue, mapping.getReferenceDescriptor(), session, policy, copies);
+                    copyValue = copyByMappings(sourceValue, mapping.getReferenceDescriptor(), session, policy, copies);
                 }
             }
 
@@ -182,32 +183,59 @@ public class FetchItem {
      * uninstantiated lazy relationships and using the copies map to conform
      * results.
      */
-    @SuppressWarnings("unchecked")
-    private Object copyAll(Object source, ClassDescriptor descriptor, AbstractSession session, ObjectCopyingPolicy policy, Map<Object, Object> copies) {
+    private Object copyByMappings(Object source, ClassDescriptor descriptor, AbstractSession session, ObjectCopyingPolicy policy, Map<Object, Object> copies) {
         Object copy = copies.get(source);
         if (copy != null) {
             return copy;
         }
 
         if (source instanceof Collection<?>) {
-            Collection copiesCollection = FetchPlan.createEmptyContainer((Collection<?>) source);
-
-            for (Object entity : (Collection<?>) source) {
-                copy = copyAll(entity, descriptor, session, policy, copies);
-                copiesCollection.add(copy);
-            }
-            copies.put(source, copiesCollection);
-            return copiesCollection;
+            return copyCollectionByMappings((Collection<?>) source, descriptor, session, policy, copies);
         }
 
-        copy = descriptor.getInstantiationPolicy().buildNewInstance();
+        // Handle inheritance here for now.
+        ClassDescriptor concreteDescriptor = descriptor;
+        if (descriptor.hasInheritance() && descriptor.getJavaClass() != source.getClass()) {
+            concreteDescriptor = session.getClassDescriptor(source);
+        }
+
+        copy = concreteDescriptor.getInstantiationPolicy().buildNewInstance();
         copies.put(source, copy);
 
-        for (DatabaseMapping mapping : descriptor.getMappings()) {
+        for (DatabaseMapping mapping : concreteDescriptor.getMappings()) {
             copy(source, copy, mapping, null, session, policy, copies);
         }
 
         return copy;
+    }
+
+    /**
+     * Copy source object with all of its mapped fields stopping at
+     * uninstantiated lazy relationships and using the copies map to conform
+     * results.
+     */
+    @SuppressWarnings("unchecked")
+    private Collection<?> copyCollectionByMappings(Collection<?> source, ClassDescriptor descriptor, AbstractSession session, ObjectCopyingPolicy policy, Map<Object, Object> copies) {
+        Collection<Object> copiesCollection = (Collection<Object>) copies.get(source);
+        if (copiesCollection != null) {
+            return copiesCollection;
+        }
+
+        try {
+            Constructor<?> constructor = source.getClass().getConstructor(int.class);
+            copiesCollection = (Collection<Object>) constructor.newInstance(source.size());
+        } catch (Exception e) {
+            throw new RuntimeException("FetchPlan.copy: failed to create copy of result container for: " + source.getClass(), e);
+        }
+
+        for (Object entity : source) {
+            Object copy = copyByMappings(entity, descriptor, session, policy, copies);
+            copiesCollection.add(copy);
+        }
+
+        copies.put(source, copiesCollection);
+
+        return copiesCollection;
     }
 
     public String toString() {

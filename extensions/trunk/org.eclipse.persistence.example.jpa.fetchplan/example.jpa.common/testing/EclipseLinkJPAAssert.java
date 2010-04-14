@@ -52,6 +52,7 @@ public abstract class EclipseLinkJPAAssert {
     }
 
     public static void assertWoven(ClassDescriptor descriptor) {
+        Assert.assertNotNull("Null descriptor provided", descriptor);
         Assert.assertTrue("Entity type not woven: " + descriptor, PersistenceEntity.class.isAssignableFrom(descriptor.getJavaClass()));
     }
 

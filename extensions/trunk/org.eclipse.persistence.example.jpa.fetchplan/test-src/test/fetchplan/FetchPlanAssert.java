@@ -17,7 +17,6 @@ import static org.junit.Assert.assertTrue;
 import java.lang.reflect.Method;
 import java.util.Collection;
 
-import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 
 import junit.framework.Assert;
@@ -91,40 +90,6 @@ public class FetchPlanAssert {
             Assert.assertTrue(((IndirectContainer) value).isInstantiated());
         } else if (value instanceof ValueHolderInterface) {
             Assert.assertTrue(((ValueHolderInterface) value).isInstantiated());
-        }
-    }
-
-    public static void assertNotFetched(FetchPlan fetchPlan, Object result) {
-        Assert.assertNotNull("Null FetchPlan", fetchPlan);
-        Assert.assertNotNull("Null Result", result);
-
-        for (FetchItem item : fetchPlan.getFetchItems()) {
-            assertNotFetched(item, result);
-        }
-    }
-
-    public static void assertNotFetched(FetchPlan fetchPlan, Collection<?> results) {
-        for (Object result : results) {
-            assertNotFetched(fetchPlan, result);
-        }
-    }
-
-    private static void assertNotFetched(FetchItem fetchItem, Object result) {
-        Assert.assertNotNull("Null FetchItem", fetchItem);
-        Assert.assertNotNull("Null Result", result);
-
-        // Check FetchGroup
-        if (result instanceof FetchGroupTracker && ((FetchGroupTracker) result)._persistence_getFetchGroup() != null) {
-            Assert.assertFalse(((FetchGroupTracker) result)._persistence_isAttributeFetched(fetchItem.getName()));
-            return;
-        }
-
-        // Check actual value
-        Object value = getMapping(fetchItem, null).getAttributeValueFromObject(result);
-        if (value instanceof IndirectContainer) {
-            Assert.assertFalse(((IndirectContainer) value).isInstantiated());
-        } else if (value instanceof ValueHolderInterface) {
-            Assert.assertFalse(((ValueHolderInterface) value).isInstantiated());
         }
     }
 

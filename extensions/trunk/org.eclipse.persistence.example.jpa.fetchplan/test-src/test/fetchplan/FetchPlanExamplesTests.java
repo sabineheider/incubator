@@ -30,7 +30,6 @@ import junit.framework.Assert;
 import model.Employee;
 
 import org.eclipse.persistence.config.QueryHints;
-import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
@@ -39,7 +38,6 @@ import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.junit.After;
 import org.junit.Test;
 
-import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 import example.FetchPlanExamples;
 

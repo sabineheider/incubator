@@ -30,7 +30,6 @@ import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.junit.After;
 import org.junit.Test;
 
@@ -49,8 +48,37 @@ import testing.EclipseLinkJPATest;
 @PersistenceContext(unitName = "employee")
 public class FetchPlanCopyTests extends EclipseLinkJPATest {
 
+    /**
+     * Verify the behavior of a new entity
+     */
     @Test
-    public void allEmployees_copyNames() throws Exception {
+    public void verifyDetachedEntity_DefaultConstructor() {
+        Employee newEmp = new Employee();
+
+        assertNotNull(newEmp.getPhoneNumbers());
+        assertTrue(newEmp.getPhoneNumbers() instanceof List);
+        assertNotNull(newEmp.getProjects());
+        assertTrue(newEmp.getProjects() instanceof List);
+        assertNotNull(newEmp.getManagedEmployees());
+        assertTrue(newEmp.getManagedEmployees() instanceof List);
+    }
+
+    /**
+     * Verify the behavior of a new entity
+     */
+    @Test
+    public void verifyDetachedEntity_InstantiationPolicy() {
+        ClassDescriptor descriptor = getDescriptor("Employee");
+
+        Employee newEmp = (Employee) descriptor.getInstantiationPolicy().buildNewInstance();
+
+        assertNull(newEmp.getPhoneNumbers());
+        assertNull(newEmp.getProjects());
+        assertNull(newEmp.getManagedEmployees());
+    }
+
+    @Test
+    public void allEmployees_copyNames() {
         EntityManager em = getEntityManager();
 
         List<Employee> emps = em.createQuery("SELECT e FROM Employee e").getResultList();
@@ -67,22 +95,18 @@ public class FetchPlanCopyTests extends EclipseLinkJPATest {
             Employee emp = emps.get(index);
             Employee copy = copies.get(index);
 
-            assertTrue(emp.getId() > 0);
             assertEquals(0, copy.getId());
-            assertTrue(emp.getVersion() > 0);
             assertEquals(new Long(0), copy.getVersion());
 
             assertEquals(emp.getFirstName(), copy.getFirstName());
             assertEquals(emp.getLastName(), copy.getLastName());
 
-            assertNotNull(emp.getGender());
             assertNull(copy.getGender());
-
-            assertNotNull(emp.getAddress());
+            assertNull(copy.getPeriod());
             assertNull(copy.getAddress());
-
-            assertNotNull(emp.getPhoneNumbers());
             assertNull(copy.getPhoneNumbers());
+            assertNull(copy.getProjects());
+            assertNull(copy.getManagedEmployees());
         }
     }
 
@@ -104,21 +128,18 @@ public class FetchPlanCopyTests extends EclipseLinkJPATest {
             Employee emp = emps.get(index);
             Employee copy = copies.get(index);
 
-            assertTrue(emp.getId() > 0);
             assertEquals(emp.getId(), copy.getId());
             assertEquals(emp.getVersion(), copy.getVersion());
 
             assertEquals(emp.getFirstName(), copy.getFirstName());
             assertEquals(emp.getLastName(), copy.getLastName());
 
-            assertNotNull(emp.getGender());
             assertNull(copy.getGender());
-
-            assertNotNull(emp.getAddress());
+            assertNull(copy.getPeriod());
             assertNull(copy.getAddress());
-
-            assertNotNull(emp.getPhoneNumbers());
             assertNull(copy.getPhoneNumbers());
+            assertNull(copy.getProjects());
+            assertNull(copy.getManagedEmployees());
         }
     }
 
@@ -141,29 +162,18 @@ public class FetchPlanCopyTests extends EclipseLinkJPATest {
             Employee emp = emps.get(index);
             Employee copy = copies.get(index);
 
-            assertTrue(emp.getId() > 0);
             assertEquals(0, copy.getId());
-            assertTrue(emp.getVersion() > 0);
             assertEquals(new Long(0), copy.getVersion());
 
             assertEquals(emp.getFirstName(), copy.getFirstName());
             assertEquals(emp.getLastName(), copy.getLastName());
 
-            assertNotNull(emp.getGender());
             assertNull(copy.getGender());
-
-            assertNotNull(emp.getPhoneNumbers());
-            assertNull(copy.getPhoneNumbers());
-
-            assertNotNull(emp.getAddress());
+            assertNull(copy.getPeriod());
             assertNotNull(copy.getAddress());
-
-            assertEquals(emp.getAddress().getId(), copy.getAddress().getId());
-            assertEquals(emp.getAddress().getCity(), copy.getAddress().getCity());
-            assertEquals(emp.getAddress().getCountry(), copy.getAddress().getCountry());
-            assertEquals(emp.getAddress().getPostalCode(), copy.getAddress().getPostalCode());
-            assertEquals(emp.getAddress().getProvince(), copy.getAddress().getProvince());
-            assertEquals(emp.getAddress().getStreet(), copy.getAddress().getStreet());
+            assertNull(copy.getPhoneNumbers());
+            assertNull(copy.getProjects());
+            assertNull(copy.getManagedEmployees());
         }
     }
 
@@ -173,7 +183,7 @@ public class FetchPlanCopyTests extends EclipseLinkJPATest {
 
         List<Employee> emps = em.createQuery("SELECT e FROM Employee e").getResultList();
 
-        FetchPlan fp = new FetchPlan("Just Names", Employee.class, false);
+        FetchPlan fp = new FetchPlan("Just Names", Employee.class);
         fp.addAttribute("firstName");
         fp.addAttribute("lastName");
         fp.addAttribute("address.city");
@@ -186,29 +196,18 @@ public class FetchPlanCopyTests extends EclipseLinkJPATest {
             Employee emp = emps.get(index);
             Employee copy = copies.get(index);
 
-            assertTrue(emp.getId() > 0);
-            assertEquals(0, copy.getId());
-            assertTrue(emp.getVersion() > 0);
-            assertEquals(new Long(0), copy.getVersion());
+            assertEquals(emp.getId(), copy.getId());
+            assertEquals(emp.getVersion(), copy.getVersion());
 
             assertEquals(emp.getFirstName(), copy.getFirstName());
             assertEquals(emp.getLastName(), copy.getLastName());
 
-            assertNotNull(emp.getGender());
             assertNull(copy.getGender());
-
-            assertNotNull(emp.getPhoneNumbers());
-            assertNull(copy.getPhoneNumbers());
-
-            assertNotNull(emp.getAddress());
+            assertNull(copy.getPeriod());
             assertNotNull(copy.getAddress());
-
-            assertNotNull(copy.getAddress().getId());
-            assertEquals(emp.getAddress().getCity(), copy.getAddress().getCity());
-            assertNull(copy.getAddress().getCountry());
-            assertNull(copy.getAddress().getPostalCode());
-            assertNull(copy.getAddress().getProvince());
-            assertNull(copy.getAddress().getStreet());
+            assertNull(copy.getPhoneNumbers());
+            assertNull(copy.getProjects());
+            assertNull(copy.getManagedEmployees());
         }
     }
 
@@ -375,6 +374,55 @@ public class FetchPlanCopyTests extends EclipseLinkJPATest {
         }
     }
 
+    /**
+     * Test that copying handles entities in the root collection also existing
+     * within the graph. In this case the initial query retrieves a collection
+     * of entities populating their managedEmployees list. The employees in this
+     * list only have their id copied. The challenge is that when an entity
+     * exists in the root query as well as in one of the entity's
+     * managedEmployees list then the copy operation must ensure that the root
+     * entities are properly populated.
+     */
+    @Test
+    public void selfReferencedRelationshipCopying() {
+        EntityManager em = getEntityManager();
+
+        List<Employee> emps = em.createQuery("SELECT e FROM Employee e where e.managedEmployees is not empty").getResultList();
+
+        FetchPlan fetchplan = new FetchPlan("f", Employee.class, true);
+        fetchplan.addAttribute("managedEmployees");
+        fetchplan.addAttribute("managedEmployees.id");
+
+        List<Employee> detachedEmps = JpaFetchPlanHelper.copy(em, fetchplan, emps);
+
+        for (Employee emp : detachedEmps) {
+            assertNull(emp.getAddress());
+            assertNull(emp.getPhoneNumbers());
+            assertNull(emp.getManager());
+            assertNull(emp.getPeriod());
+            assertNull(emp.getProjects());
+
+            assertNotNull(emp.getManagedEmployees());
+
+            for (Employee managedEmp : emp.getManagedEmployees()) {
+                assertNull(managedEmp.getAddress());
+                assertNull(managedEmp.getPhoneNumbers());
+                assertNull(managedEmp.getManager());
+                assertNull(managedEmp.getPeriod());
+                assertNull(managedEmp.getProjects());
+
+                // If the managedEmp is part of the original result then it will
+                // have a list of managed employees. Otherwise it will be null.
+                if (detachedEmps.contains(managedEmp)) {
+                    assertNotNull(managedEmp.getManagedEmployees());
+                } else {
+                    assertNull(managedEmp.getManagedEmployees());
+                }
+            }
+
+        }
+    }
+
     @After
     public void clearCache() {
         JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
@@ -383,6 +431,8 @@ public class FetchPlanCopyTests extends EclipseLinkJPATest {
     @Override
     protected void verifyConfig(EntityManager em) {
         super.verifyConfig(em);
+
+        EclipseLinkJPAAssert.assertWoven(getDescriptor("Employee"));
         FetchPlanAssert.verifyEmployeeConfig(getEMF());
     }
 
