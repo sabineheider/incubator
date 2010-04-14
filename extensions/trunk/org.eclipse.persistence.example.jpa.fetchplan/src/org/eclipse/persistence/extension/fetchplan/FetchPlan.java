@@ -421,7 +421,7 @@ public class FetchPlan {
 
         Object copy = copies.get(source);
         if (copy != null) {
-            return copy;
+            // return copy;
         }
 
         if (source instanceof Collection<?>) {
@@ -429,8 +429,11 @@ public class FetchPlan {
         }
 
         ClassDescriptor descriptor = getDescriptor(session);
-        copy = descriptor.getInstantiationPolicy().buildNewInstance();
-        copies.put(source, copy);
+
+        if (copy == null) {
+            copy = descriptor.getInstantiationPolicy().buildNewInstance();
+            copies.put(source, copy);
+        }
 
         ObjectCopyingPolicy policy = new ObjectCopyingPolicy();
         policy.setShouldResetPrimaryKey(false);
@@ -449,27 +452,37 @@ public class FetchPlan {
      */
     @SuppressWarnings("unchecked")
     protected Object copyAll(Collection<?> source, AbstractSession session, Map<Object, Object> copies) {
-        Collection<Object> copiesCollection = null;
+        Collection<Object> copiesCollection = (Collection<Object>) copies.get(source);
+        boolean newCollection = false;
 
-        try {
-            Constructor<?> constructor = source.getClass().getConstructor(int.class);
-            copiesCollection = (Collection<Object>) constructor.newInstance(source.size());
-        } catch (Exception e) {
-            throw new RuntimeException("FetchPlan.copy: failed to create copy of result container for: " + source.getClass(), e);
+        if (copiesCollection == null) {
+            try {
+                Constructor<?> constructor = source.getClass().getConstructor(int.class);
+                copiesCollection = (Collection<Object>) constructor.newInstance(source.size());
+            } catch (Exception e) {
+                throw new RuntimeException("FetchPlan.copy: failed to create copy of result container for: " + source.getClass(), e);
+            }
+            newCollection = true;
         }
 
         for (Object entity : source) {
             Object copy = copy(entity, session, copies);
-            copiesCollection.add(copy);
+            if (newCollection) {
+                copiesCollection.add(copy);
+            }
         }
-        
+
         copies.put(source, copiesCollection);
         return copiesCollection;
     }
 
     @SuppressWarnings("unchecked")
     protected Object copyAllMapped(Collection<?> source, AbstractSession session, Map<Object, Object> copies) {
-        Collection<Object> copiesCollection = null;
+        Collection<Object> copiesCollection = (Collection<Object>) copies.get(source);
+
+        if (copiesCollection != null) {
+            return copiesCollection;
+        }
 
         try {
             Constructor<?> constructor = source.getClass().getConstructor(int.class);
@@ -482,7 +495,7 @@ public class FetchPlan {
             Object copy = copy(entity, session, copies);
             copiesCollection.add(copy);
         }
-        
+
         copies.put(source, copiesCollection);
         return copiesCollection;
     }

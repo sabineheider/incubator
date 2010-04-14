@@ -97,7 +97,7 @@ public class FetchItem {
         return fetchPlan;
     }
 
-    protected void setFetchPlan(FetchPlan fetchPlan) {
+    public void setFetchPlan(FetchPlan fetchPlan) {
         this.fetchPlan = fetchPlan;
     }
 
@@ -217,6 +217,7 @@ public class FetchItem {
     @SuppressWarnings("unchecked")
     private Collection<?> copyCollectionByMappings(Collection<?> source, ClassDescriptor descriptor, AbstractSession session, ObjectCopyingPolicy policy, Map<Object, Object> copies) {
         Collection<Object> copiesCollection = (Collection<Object>) copies.get(source);
+
         if (copiesCollection != null) {
             return copiesCollection;
         }

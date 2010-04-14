@@ -16,13 +16,10 @@ import model.Employee;
 import model.PhoneNumber;
 
 import org.eclipse.persistence.config.QueryHints;
-import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.exceptions.ValidationException;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
-import org.eclipse.persistence.internal.helper.Helper;
 import org.eclipse.persistence.internal.helper.SerializationHelper;
-import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -79,6 +76,7 @@ public class TestOTTO extends EclipseLinkJPATest {
      * This test throws an InstantiationException for a reason i want to
      * understand.
      */
+    @SuppressWarnings("unchecked")
     @Test
     public void testThrowsInstantiationException() throws Exception {
         EntityManager em = getEntityManager();
@@ -87,7 +85,10 @@ public class TestOTTO extends EclipseLinkJPATest {
 
         FetchPlan fetchplan = new FetchPlan("f", Employee.class, true);
         fetchplan.addAttribute("managedEmployees");
+        
         List<Employee> detachedEmps = JpaFetchPlanHelper.copy(em, fetchplan, emps);
+        
+        assertNotNull(detachedEmps);
     }
 
     /**
@@ -103,17 +104,13 @@ public class TestOTTO extends EclipseLinkJPATest {
 
         List<Employee> emps = em.createQuery("SELECT e FROM Employee e where e.managedEmployees is not empty").getResultList();
 
-        FetchPlan fetchplan = new FetchPlan("f", Employee.class, true);
-        fetchplan.addAttribute("managedEmployees");
-        fetchplan.addAttribute("managedEmployees.id");
-
-        // Note: Performing a Fetch before the copy ensures that TODO
-        JpaFetchPlanHelper.fetch(em, fetchplan, emps);
+        FetchPlan fetchplan = new FetchPlan(Employee.class);
+        fetchplan.addAttribute("managedEmployees").setFetchPlan(new FetchPlan(Employee.class));
 
         List<Employee> detachedEmps = JpaFetchPlanHelper.copy(em, fetchplan, emps);
 
         for (Employee emp : detachedEmps) {
-            logMappedValues(emp, "");
+            //logMappedValues(emp, "");
             assertNull(emp.getAddress());
             assertNull(emp.getPhoneNumbers());
             assertNull(emp.getManager());
@@ -121,7 +118,7 @@ public class TestOTTO extends EclipseLinkJPATest {
             assertNull(emp.getProjects());
             Assert.assertNotNull(emp.getManagedEmployees());
 
-            logMappedValues(emp, "");
+            //logMappedValues(emp, "");
 
             for (Employee managedEmp : emp.getManagedEmployees()) {
                 assertNull(managedEmp.getAddress());
@@ -148,10 +145,9 @@ public class TestOTTO extends EclipseLinkJPATest {
      * in Fetchplan (=> should throw a "lazy" exception which would lead to
      * successful test).
      */
+    @SuppressWarnings("unchecked")
     @Test
     public void testAddOnRelationNotDetached() throws Exception {
-
-        int cntPhones = 0;
         EntityManager em = getEntityManager();
         em.getTransaction().begin();
         // Find
@@ -185,9 +181,9 @@ public class TestOTTO extends EclipseLinkJPATest {
      * fails because the copy does not "unload" relations which are not
      * configured in Fetchplan but are loaded in the source of the copy.
      */
+    @SuppressWarnings("unchecked")
     @Test
     public void testAddOnRelationNotDetached2() throws Exception {
-        int cntSQL = 0;
         EntityManager em = getEntityManager();
         em.getTransaction().begin();
         // Find
@@ -228,6 +224,7 @@ public class TestOTTO extends EclipseLinkJPATest {
      * This test shows that reading, detaching, changing and re-attaching
      * relations contained in Fetchplan works.
      */
+    @SuppressWarnings("unchecked")
     @Test
     public void testFindDetachChangeAttachCompleteProcessWithBiggerFetchplan() throws Exception {
         int cntSQL = 0;
@@ -253,7 +250,7 @@ public class TestOTTO extends EclipseLinkJPATest {
         // if fetched with large fetchplan, for fetchplan entries is no lazy
         // load recommended
         cntSQL = getQuerySQLTracker(em).getTotalSQLCalls();
-        String a = empToDetach.getPhoneNumbers().get(0).getNumber();
+        empToDetach.getPhoneNumbers().get(0).getNumber();
         assertEquals(cntSQL, getQuerySQLTracker(em).getTotalSQLCalls());
 
         // Detach with "bigger" FetchPlan containing FG
@@ -340,20 +337,4 @@ public class TestOTTO extends EclipseLinkJPATest {
         }
         fail("serialize employee getAddress should thrown ValidationException");
     }
-
-    protected void logMappedValues(Object entity, String prefix) {
-        ClassDescriptor descriptor = getDescriptor(entity);
-        System.out.println(prefix + entity);
-
-        for (DatabaseMapping mapping : descriptor.getMappings()) {
-            Object value = mapping.getAttributeValueFromObject(entity);
-
-            System.out.println(prefix + "> " + mapping.getAttributeName() + " = " + value);
-
-            if (value != null) {
-
-            }
-        }
-    }
-
 }
