@@ -174,6 +174,11 @@ public class BatchInConfig {
      * Customize the query for a 1:M
      */
     private static void configBatchInQuery(Server session, OneToManyMapping mapping, ReadAllQuery raq, List<?> results) {
+        if (raq == null) {
+            // TODO: This occurs when there is no query available.
+            return;
+        }
+        
         if (mapping.getTargetForeignKeyFields().size() != 1) {
             throw new IllegalArgumentException("Cannot configure batch using IN with composite FK: " + mapping);
         }

@@ -31,6 +31,8 @@ import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.extension.query.BatchInConfig;
+import org.eclipse.persistence.jpa.JpaHelper;
+import org.junit.After;
 import org.junit.Test;
 
 import test.fetchplan.FetchPlanAssert;
@@ -139,10 +141,10 @@ public class FetchPlanFetchWithBatchInTests extends EclipseLinkJPATest {
         q.setHint(QueryHints.BATCH, "em.managedEmployees.address");
 
         List<Employee> ems = q.getResultList();
-        
+
         // Display initial Employees read:
         System.out.println("Employees Read - " + ems.size());
-        for (Employee emp: ems) {
+        for (Employee emp : ems) {
             System.out.println("\t> " + emp);
         }
 
@@ -196,8 +198,8 @@ public class FetchPlanFetchWithBatchInTests extends EclipseLinkJPATest {
         super.cleanupClosedEMF();
         em = getEntityManager();
         System.out.println(deserializedEmployee.getAddress());// Would throw
-                                                              // exception,
-                                                              // because
+        // exception,
+        // because
         // relation not instantiated. But only on clone object. On copied
         // object, null is returned.
         em.getTransaction().begin();
@@ -207,6 +209,11 @@ public class FetchPlanFetchWithBatchInTests extends EclipseLinkJPATest {
         System.out.println(mergedEmployee.getAddress());
 
         em.getTransaction().commit();
+    }
+
+    @After
+    public void clearCache() {
+        JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
     }
 
     @Override
