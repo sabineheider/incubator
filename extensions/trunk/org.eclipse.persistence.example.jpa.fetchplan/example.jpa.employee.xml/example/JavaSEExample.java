@@ -20,11 +20,6 @@ public class JavaSEExample {
 
         em.createQuery("SELECT e FROM Employee e").getResultList();
 
-        em.getTransaction().begin();
-
-        //em.createNamedQuery("Employee.findMin").setLockMode(LockModeType.OPTIMISTIC_FORCE_INCREMENT).getSingleResult();
-
-        em.getTransaction().commit();
         em.close();
         emf.close();
     }

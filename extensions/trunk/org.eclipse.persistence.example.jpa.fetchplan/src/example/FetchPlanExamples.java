@@ -100,7 +100,7 @@ public class FetchPlanExamples {
 
         query.setHint(QueryHints.BATCH, "e.address");
         query.setHint(QueryHints.BATCH, "e.phoneNumbers");
-        
+
         // Configure redirector so the FetchPlan.fetch is executed automatically
         fetchPlan.fetchOnExecute(JpaHelper.getReadAllQuery(query));
 
@@ -128,6 +128,35 @@ public class FetchPlanExamples {
         // This ensures all required relationships are loaded
         // In this case it does nothing
         JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
+
+        // Get a set of copies with only the names and required attributes
+        // populated
+        List<Employee> copies = JpaFetchPlanHelper.copy(em, fetchPlan, emps);
+
+        return copies;
+    }
+
+    /**
+     * This example illustrates how a FetchPlan can be constructed based on the
+     * default fetch configuration of the mappings and used to copy the
+     * resulting entities. This can be used to create a detached entity graph
+     * where all EAGER attributes are loaded and all LAZY attributes are
+     * returned as NULL.
+     */
+    public List<Employee> copyEagerAttributesOnly(EntityManager em) {
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.firstName IS NOT NULL AND e.lastName IS NOT NULL AND e.salary > 0 ");
+
+        // The result of this query is a collection of Employee instances where
+        // all EAGER attributes are populated and all LAZY attributes are
+        // available
+        // for loading with proxy objects (FetchGroup for basics, ValueHolders
+        // for 1:1 and M:1, and IndirectList/Map/Set for collections). If
+        // serialized at this point these will not appear as null.
+        List<Employee> emps = query.getResultList();
+
+        // Create a FetchPlan based on the default FetchGroup
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        JpaFetchPlanHelper.addDefaultFetchAttributes(em, fetchPlan);
 
         // Get a set of copies with only the names and required attributes
         // populated
@@ -235,34 +264,34 @@ public class FetchPlanExamples {
 
         return results;
     }
-    
+
     /**
-     * Example of using a {@link FetchPlan} to fetch, then copy, then merge a single entity
+     * Example of using a FetchPlan to retrieve an entity and copy a partial
+     * unmanaged graph of the entity which is then modified and merged back into
+     * the persistence context.
      * 
      * Note: caller manages transactions
      */
-    public void fetchCopyMergeExample(EntityManager em) {
+    public void copyMergeExample(EntityManager em, boolean clear) {
         FetchPlan fetchPlan = new FetchPlan(Employee.class);
         fetchPlan.addAttribute("firstName");
         fetchPlan.addAttribute("lastName");
         fetchPlan.addAttribute("address");
         fetchPlan.addAttribute("phoneNumbers");
-        
+
         int minId = ((Number) em.createQuery("SELECT MIN(e.id) FROM Employee e").getSingleResult()).intValue();
-        
+
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = " + minId);
         query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());
-        
+
         Employee emp = (Employee) query.getSingleResult();
-        
-        JpaFetchPlanHelper.fetch(em, fetchPlan, emp);
-        
+
         Employee copy = JpaFetchPlanHelper.copy(em, fetchPlan, emp);
-        
+
         copy.setSalary(Integer.MAX_VALUE);
         copy.setFirstName(emp.getLastName());
         copy.setLastName(emp.getFirstName());
-        
+
         JpaFetchPlanHelper.merge(em, fetchPlan, copy);
     }
 
@@ -271,13 +300,13 @@ public class FetchPlanExamples {
      */
     public List<Employee> createFetchPlanFromDefaultFetchGroup(EntityManager em) {
         FetchPlan fetchPlan = new FetchPlan(Employee.class);
-        JpaFetchPlanHelper.addDefaultFetchGroupAttributes(em, fetchPlan);
-        
+        JpaFetchPlanHelper.addDefaultFetchAttributes(em, fetchPlan);
+
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.salary > 0");
         query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());
-        
+
         List<Employee> emps = query.getResultList();
-        
+
         JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
 
         return emps;

@@ -69,7 +69,7 @@
 			<basic name="number">
 				<column name="P_NUMBER" />
 			</basic>
-			<many-to-one name="owner" fetch="LAZY">
+			<many-to-one name="owner" fetch="EAGER">
 				<join-column name="EMP_ID" />
 			</many-to-one>
 		</attributes>

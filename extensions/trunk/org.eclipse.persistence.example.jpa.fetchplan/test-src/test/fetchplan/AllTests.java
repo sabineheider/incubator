@@ -24,6 +24,7 @@ import org.junit.runners.Suite;
                        FetchPlanMergeTests.class,
                        DetachedResultsTests.class,
                        SerializedResultsTests.class,
+                       DefaultFetchPlanTests.class,
                        TestOTTO.class}) 
 public class AllTests {
 

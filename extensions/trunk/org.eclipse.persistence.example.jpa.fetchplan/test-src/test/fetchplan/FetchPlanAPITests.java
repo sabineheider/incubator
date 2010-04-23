@@ -25,15 +25,15 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 
 import model.Employee;
+import model.PhoneNumber;
 
-import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.extension.fetchplan.FetchItem;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
+import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.queries.FetchGroup;
 import org.junit.Test;
 
-import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 
 /**
@@ -377,7 +377,7 @@ public class FetchPlanAPITests extends EclipseLinkJPATest {
     @Test
     public void jpaFetchGroupHelper_addDefaultFetchGroup_nullEM_null() {
         try {
-            JpaFetchPlanHelper.addDefaultFetchGroupAttributes((EntityManager) null, null);
+            JpaFetchPlanHelper.addDefaultFetchAttributes((EntityManager) null, null);
         } catch (NullPointerException e) {
             return;
         }
@@ -387,7 +387,7 @@ public class FetchPlanAPITests extends EclipseLinkJPATest {
     @Test
     public void jpaFetchGroupHelper_addDefaultFetchGroup_nullEMF_null() {
         try {
-            JpaFetchPlanHelper.addDefaultFetchGroupAttributes((EntityManagerFactory) null, null);
+            JpaFetchPlanHelper.addDefaultFetchAttributes((EntityManagerFactory) null, null);
         } catch (NullPointerException e) {
             return;
         }
@@ -397,7 +397,7 @@ public class FetchPlanAPITests extends EclipseLinkJPATest {
     @Test
     public void jpaFetchGroupHelper_addDefaultFetchGroup_EM_null() {
         try {
-            JpaFetchPlanHelper.addDefaultFetchGroupAttributes(getEntityManager(), null);
+            JpaFetchPlanHelper.addDefaultFetchAttributes(getEntityManager(), null);
         } catch (NullPointerException e) {
             return;
         }
@@ -409,7 +409,7 @@ public class FetchPlanAPITests extends EclipseLinkJPATest {
         FetchPlan fp = new FetchPlan(null);
 
         try {
-            JpaFetchPlanHelper.addDefaultFetchGroupAttributes(getEntityManager(), fp);
+            JpaFetchPlanHelper.addDefaultFetchAttributes(getEntityManager(), fp);
         } catch (IllegalArgumentException e) {
             return;
         }
@@ -421,19 +421,7 @@ public class FetchPlanAPITests extends EclipseLinkJPATest {
         FetchPlan fp = new FetchPlan(Object.class);
 
         try {
-            JpaFetchPlanHelper.addDefaultFetchGroupAttributes(getEntityManager(), fp);
-        } catch (IllegalArgumentException e) {
-            return;
-        }
-        fail("IllegalArgumentException expected");
-    }
-
-    @Test
-    public void jpaFetchGroupHelper_addDefaultFetchGroup_NoDefault() {
-        FetchPlan fp = new FetchPlan(Employee.class);
-
-        try {
-            JpaFetchPlanHelper.addDefaultFetchGroupAttributes(getEntityManager(), fp);
+            JpaFetchPlanHelper.addDefaultFetchAttributes(getEntityManager(), fp);
         } catch (IllegalArgumentException e) {
             return;
         }
@@ -504,6 +492,14 @@ public class FetchPlanAPITests extends EclipseLinkJPATest {
             return;
         }
         fail("IllegalArgumentException expected");
+    }
+
+    @Test
+    public void requiredAttributesPhoneNumber() {
+        FetchPlan fp = new FetchPlan(PhoneNumber.class);
+        fp.initialize(JpaHelper.getServerSession(getEMF()));
+        
+        assertEquals(2, fp.getFetchItems().size());
     }
 
 }

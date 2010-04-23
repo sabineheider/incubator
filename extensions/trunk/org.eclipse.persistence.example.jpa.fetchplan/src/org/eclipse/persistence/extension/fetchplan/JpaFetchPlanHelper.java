@@ -20,6 +20,7 @@ import javax.persistence.EntityManagerFactory;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.internal.jpa.EntityManagerImpl;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.queries.FetchGroup;
 import org.eclipse.persistence.sessions.Session;
 
@@ -74,37 +75,37 @@ public class JpaFetchPlanHelper {
     }
 
     /**
-     * Add all of the attributes from the default FetchGroup to the FetchPlan.
-     * The default FetchGroup contains all of the non-lazy attributes assuming
-     * at least one basic (direct) mapped attribute is lazy.
+     * @see #addDefaultFetchGroupAttributes(EntityManagerFactory, FetchPlan)
      */
-    public static void addDefaultFetchGroupAttributes(EntityManager em, FetchPlan fetchPlan) {
+    public static void addDefaultFetchAttributes(EntityManager em, FetchPlan fetchPlan) {
         EntityManagerImpl emImpl = (EntityManagerImpl) JpaHelper.getEntityManager(em);
 
         if (emImpl == null) {
-            throw new IllegalArgumentException("JpaFetchPlanHelper.addDefaultFetchGroupAttributes: could not unwrap EntityManager: " + em); 
+            throw new IllegalArgumentException("JpaFetchPlanHelper.addDefaultFetchGroupAttributes: could not unwrap EntityManager: " + em);
         }
-        addDefaultFetchGroupAttributes(emImpl.getEntityManagerFactory(), fetchPlan);
+        addDefaultFetchAttributes(emImpl.getEntityManagerFactory(), fetchPlan);
     }
 
     /**
-     * Add all of the attributes from the default FetchGroup to the FetchPlan.
-     * The default FetchGroup contains all of the non-lazy attributes assuming
-     * at least one basic (direct) mapped attribute is lazy.
+     * Add all of the EAGER mapped attributes to the FetchPlan. This will match
+     * the default FetchGroup if one is configured on the entity type's
+     * descriptor (using the entityClass in the provided FetchPlan) or the
+     * mappings if no default FetchGroup is available.
+     * 
+     * @throws IllegalArgumentException
+     *             if no descriptor can be found for the entityClass of the
+     *             FetchPlan provided.
      */
-    public static void addDefaultFetchGroupAttributes(EntityManagerFactory emf, FetchPlan fetchPlan) {
+    public static void addDefaultFetchAttributes(EntityManagerFactory emf, FetchPlan fetchPlan) {
         Session session = JpaHelper.getServerSession(emf);
         ClassDescriptor descriptor = session.getClassDescriptor(fetchPlan.getEntityClass());
 
-        if (descriptor != null && descriptor.hasFetchGroupManager()) {
-            FetchGroup fg = descriptor.getFetchGroupManager().getDefaultFetchGroup();
-            
-            if (fg != null) {
-                fetchPlan.addAttributes(fg);
-                return;
-            } 
+        if (descriptor == null) {
+            throw new IllegalArgumentException("No descriptor found for: " + fetchPlan.getEntityClass());
         }
-        throw new IllegalArgumentException("JpaFetchPlanHelper.addDefaultFetchGroupAttributes: No descriptor or default FetchGroup on: " + fetchPlan.getEntityClass()); 
+        // TODO - is this really required?
+        fetchPlan.initialize(session);
+        fetchPlan.addDefaultMappings();
     }
 
     /**
@@ -114,7 +115,7 @@ public class JpaFetchPlanHelper {
         EntityManagerImpl emImpl = (EntityManagerImpl) JpaHelper.getEntityManager(em);
 
         if (emImpl == null) {
-            throw new IllegalArgumentException("JpaFetchPlanHelper.addNamedFetchGroupAttributes: could not unwrap EntityManager: " + em); 
+            throw new IllegalArgumentException("JpaFetchPlanHelper.addNamedFetchGroupAttributes: could not unwrap EntityManager: " + em);
         }
         addNamedFetchGroupAttributes(emImpl.getEntityManagerFactory(), fetchGroupName, fetchPlan);
     }
@@ -133,6 +134,6 @@ public class JpaFetchPlanHelper {
                 return;
             }
         }
-        throw new IllegalArgumentException("JpaFetchPlanHelper.addNamedFetchGroupAttributes: No descriptor or default FetchGroup on: " + fetchPlan.getEntityClass()); 
+        throw new IllegalArgumentException("JpaFetchPlanHelper.addNamedFetchGroupAttributes: No descriptor or default FetchGroup on: " + fetchPlan.getEntityClass());
     }
 }

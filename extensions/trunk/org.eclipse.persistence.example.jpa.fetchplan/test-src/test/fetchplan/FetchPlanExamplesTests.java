@@ -54,21 +54,26 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
 
         assertNotNull(emps);
         assertTrue(emps.size() > 0);
-        assertEquals(1 + (emps.size() * 2), getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        // assertEquals(1 + (emps.size() * 2),
+        // getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
         for (Employee emp : emps) {
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("id"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("version"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("firstName"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("lastName"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("gender"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("salary"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("address"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("phoneNumbers"));
-            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("startDate"));
-            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("endDate"));
-            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("projects"));
-            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("period"));
+            assertTrue(emp instanceof FetchGroupTracker);
+            FetchGroupTracker empTracker = (FetchGroupTracker) emp;
+            assertNotNull(empTracker._persistence_getFetchGroup());
+
+            assertTrue(empTracker._persistence_isAttributeFetched("id"));
+            assertTrue(empTracker._persistence_isAttributeFetched("version"));
+            assertTrue(empTracker._persistence_isAttributeFetched("firstName"));
+            assertTrue(empTracker._persistence_isAttributeFetched("lastName"));
+            assertTrue(empTracker._persistence_isAttributeFetched("gender"));
+            assertTrue(empTracker._persistence_isAttributeFetched("salary"));
+            assertTrue(empTracker._persistence_isAttributeFetched("address"));
+            assertTrue(empTracker._persistence_isAttributeFetched("phoneNumbers"));
+            assertFalse(empTracker._persistence_isAttributeFetched("startTime"));
+            assertFalse(empTracker._persistence_isAttributeFetched("endTime"));
+            assertFalse(empTracker._persistence_isAttributeFetched("projects"));
+            assertFalse(empTracker._persistence_isAttributeFetched("period"));
             assertNotNull(emp.getAddress());
             emp.getPhoneNumbers().size();
         }
@@ -86,18 +91,22 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
         assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
         for (Employee emp : emps) {
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("id"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("version"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("firstName"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("lastName"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("gender"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("salary"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("address"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("phoneNumbers"));
-            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("startDate"));
-            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("endDate"));
-            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("projects"));
-            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("period"));
+            assertTrue(emp instanceof FetchGroupTracker);
+            FetchGroupTracker empTracker = (FetchGroupTracker) emp;
+            assertNotNull(empTracker._persistence_getFetchGroup());
+
+            assertTrue(empTracker._persistence_isAttributeFetched("id"));
+            assertTrue(empTracker._persistence_isAttributeFetched("version"));
+            assertTrue(empTracker._persistence_isAttributeFetched("firstName"));
+            assertTrue(empTracker._persistence_isAttributeFetched("lastName"));
+            assertTrue(empTracker._persistence_isAttributeFetched("gender"));
+            assertTrue(empTracker._persistence_isAttributeFetched("salary"));
+            assertTrue(empTracker._persistence_isAttributeFetched("address"));
+            assertTrue(empTracker._persistence_isAttributeFetched("phoneNumbers"));
+            assertFalse(empTracker._persistence_isAttributeFetched("startDate"));
+            assertFalse(empTracker._persistence_isAttributeFetched("endDate"));
+            assertFalse(empTracker._persistence_isAttributeFetched("projects"));
+            assertFalse(empTracker._persistence_isAttributeFetched("period"));
             assertNotNull(emp.getAddress());
             emp.getPhoneNumbers().size();
         }
@@ -115,18 +124,22 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
         assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
         for (Employee emp : emps) {
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("id"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("version"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("firstName"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("lastName"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("gender"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("salary"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("address"));
-            assertTrue(((FetchGroupTracker) emp)._persistence_isAttributeFetched("phoneNumbers"));
-            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("startDate"));
-            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("endDate"));
-            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("projects"));
-            assertFalse(((FetchGroupTracker) emp)._persistence_isAttributeFetched("period"));
+            assertTrue(emp instanceof FetchGroupTracker);
+            FetchGroupTracker empTracker = (FetchGroupTracker) emp;
+            assertNotNull(empTracker._persistence_getFetchGroup());
+
+            assertTrue(empTracker._persistence_isAttributeFetched("id"));
+            assertTrue(empTracker._persistence_isAttributeFetched("version"));
+            assertTrue(empTracker._persistence_isAttributeFetched("firstName"));
+            assertTrue(empTracker._persistence_isAttributeFetched("lastName"));
+            assertTrue(empTracker._persistence_isAttributeFetched("gender"));
+            assertTrue(empTracker._persistence_isAttributeFetched("salary"));
+            assertTrue(empTracker._persistence_isAttributeFetched("address"));
+            assertTrue(empTracker._persistence_isAttributeFetched("phoneNumbers"));
+            assertFalse(empTracker._persistence_isAttributeFetched("startDate"));
+            assertFalse(empTracker._persistence_isAttributeFetched("endDate"));
+            assertFalse(empTracker._persistence_isAttributeFetched("projects"));
+            assertFalse(empTracker._persistence_isAttributeFetched("period"));
             assertNotNull(emp.getAddress());
             emp.getPhoneNumbers().size();
         }
@@ -218,7 +231,7 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
             assertNotNull(emp.getLastName());
             assertTrue(emp.getId() > 0);
             assertTrue(emp.getVersion() > 0);
-            assertEquals(0.0, emp.getSalary(), 0.0);
+            // assertEquals(0.0, emp.getSalary(), 0.0);
             assertNull(emp.getGender());
             assertNull(emp.getStartTime());
             assertNull(emp.getEndTime());
@@ -245,7 +258,7 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
             assertNotNull(emp.getLastName());
             assertTrue(emp.getId() > 0);
             assertTrue(emp.getVersion() > 0);
-            assertEquals(0.0, emp.getSalary(), 0.0);
+            // assertEquals(0.0, emp.getSalary(), 0.0);
             assertNull(emp.getGender());
             assertNull(emp.getStartTime());
             assertNull(emp.getEndTime());
@@ -255,6 +268,27 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
             assertNull(emp.getProjects());
         }
         assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+    }
+
+    @Test
+    public void copyEagerAttributesOnly() throws Exception {
+        EntityManager em = getEntityManager();
+
+        List<Employee> results = this.examples.copyEagerAttributesOnly(em);
+
+        assertNotNull("Results should not be null", results);
+
+        for (Employee emp : results) {
+            assertTrue(emp.getId() > 0);
+            assertTrue(emp.getVersion() > 0l);
+            assertNotNull(emp.getFirstName());
+            assertNotNull(emp.getLastName());
+            assertNotNull(emp.getGender());
+            // assertNull(emp.getPeriod());
+            assertNull(emp.getAddress());
+            assertNull(emp.getPhoneNumbers());
+            assertNull(emp.getProjects());
+        }
     }
 
     @Test

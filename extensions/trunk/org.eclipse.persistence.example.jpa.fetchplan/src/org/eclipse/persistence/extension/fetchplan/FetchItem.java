@@ -13,14 +13,10 @@
  ******************************************************************************/
 package org.eclipse.persistence.extension.fetchplan;
 
-import java.lang.reflect.Constructor;
-import java.util.Collection;
-import java.util.Map;
-
 import javax.persistence.Transient;
 
-import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.exceptions.QueryException;
+import org.eclipse.persistence.extension.fetchplan.FetchPlan.CopyTrace;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.sessions.ObjectCopyingPolicy;
@@ -69,7 +65,12 @@ public class FetchItem {
         this.parent = parent;
         this.name = name;
     }
-
+    
+    protected FetchItem(FetchPlan parent, DatabaseMapping mapping) {
+        this(parent, mapping.getAttributeName());
+        this.mapping = mapping;
+    }
+    
     /**
      * Name of the attribute. This is a simple name corresponding to a mapped
      * attribute of the entity type this FetchItem is applied to.
@@ -128,7 +129,7 @@ public class FetchItem {
 
             getFetchPlan().setEntityClass(this.mapping.getReferenceDescriptor().getJavaClass());
             getFetchPlan().initialize(session);
-        }
+        } 
     }
 
     /**
@@ -152,91 +153,28 @@ public class FetchItem {
      * Populate the copy with a copy or value (depending on type) of this mapped
      * attribute
      */
-    protected void copy(Object source, Object target, AbstractSession session, ObjectCopyingPolicy policy, Map<Object, Object> copies) {
+    protected void copy(Object source, Object target, AbstractSession session, ObjectCopyingPolicy policy, CopyTrace copies) {
         copy(source, target, getMapping(session), getFetchPlan(), session, policy, copies);
     }
 
     /**
-     * Copy mapped attribute
+     * 
      */
-    private void copy(Object source, Object target, DatabaseMapping mapping, FetchPlan targetFetchPlan, AbstractSession session, ObjectCopyingPolicy policy, Map<Object, Object> copies) {
+    private void copy(Object source, Object target, DatabaseMapping mapping, FetchPlan targetFetchPlan, AbstractSession session, ObjectCopyingPolicy policy, CopyTrace copies) {
         if (mapping.getReferenceDescriptor() != null) {
             Object sourceValue = mapping.getRealAttributeValueFromObject(source, session);
             Object copyValue = null;
 
             if (sourceValue != null) {
-                if (targetFetchPlan != null) {
-                    copyValue = targetFetchPlan.copy(sourceValue, session, copies);
-                } else {
-                    copyValue = copyByMappings(sourceValue, mapping.getReferenceDescriptor(), session, policy, copies);
+                if (targetFetchPlan == null) {
+                    targetFetchPlan = FetchPlan.defaultFetchPlan(mapping);
                 }
+                copyValue = targetFetchPlan.copy(sourceValue, session, copies);
+                mapping.setRealAttributeValueInObject(target, copyValue);
             }
-
-            mapping.setRealAttributeValueInObject(target, copyValue);
         } else {
             mapping.buildCopy(target, source, policy);
         }
-    }
-
-    /**
-     * Copy source object with all of its mapped fields stopping at
-     * uninstantiated lazy relationships and using the copies map to conform
-     * results.
-     */
-    private Object copyByMappings(Object source, ClassDescriptor descriptor, AbstractSession session, ObjectCopyingPolicy policy, Map<Object, Object> copies) {
-        Object copy = copies.get(source);
-        if (copy != null) {
-            return copy;
-        }
-
-        if (source instanceof Collection<?>) {
-            return copyCollectionByMappings((Collection<?>) source, descriptor, session, policy, copies);
-        }
-
-        // Handle inheritance here for now.
-        ClassDescriptor concreteDescriptor = descriptor;
-        if (descriptor.hasInheritance() && descriptor.getJavaClass() != source.getClass()) {
-            concreteDescriptor = session.getClassDescriptor(source);
-        }
-
-        copy = concreteDescriptor.getInstantiationPolicy().buildNewInstance();
-        copies.put(source, copy);
-
-        for (DatabaseMapping mapping : concreteDescriptor.getMappings()) {
-            copy(source, copy, mapping, null, session, policy, copies);
-        }
-
-        return copy;
-    }
-
-    /**
-     * Copy source object with all of its mapped fields stopping at
-     * uninstantiated lazy relationships and using the copies map to conform
-     * results.
-     */
-    @SuppressWarnings("unchecked")
-    private Collection<?> copyCollectionByMappings(Collection<?> source, ClassDescriptor descriptor, AbstractSession session, ObjectCopyingPolicy policy, Map<Object, Object> copies) {
-        Collection<Object> copiesCollection = (Collection<Object>) copies.get(source);
-
-        if (copiesCollection != null) {
-            return copiesCollection;
-        }
-
-        try {
-            Constructor<?> constructor = source.getClass().getConstructor(int.class);
-            copiesCollection = (Collection<Object>) constructor.newInstance(source.size());
-        } catch (Exception e) {
-            throw new RuntimeException("FetchPlan.copy: failed to create copy of result container for: " + source.getClass(), e);
-        }
-
-        for (Object entity : source) {
-            Object copy = copyByMappings(entity, descriptor, session, policy, copies);
-            copiesCollection.add(copy);
-        }
-
-        copies.put(source, copiesCollection);
-
-        return copiesCollection;
     }
 
     public String toString() {

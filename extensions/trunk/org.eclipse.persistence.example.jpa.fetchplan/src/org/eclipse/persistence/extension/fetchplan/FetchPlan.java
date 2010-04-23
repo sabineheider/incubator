@@ -15,6 +15,7 @@ package org.eclipse.persistence.extension.fetchplan;
 import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,6 +30,7 @@ import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.logging.SessionLogEntry;
 import org.eclipse.persistence.mappings.DatabaseMapping;
+import org.eclipse.persistence.mappings.ForeignReferenceMapping;
 import org.eclipse.persistence.queries.DatabaseQuery;
 import org.eclipse.persistence.queries.FetchGroup;
 import org.eclipse.persistence.queries.ObjectLevelReadQuery;
@@ -40,8 +42,10 @@ import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.sessions.UnitOfWork;
 
 /**
- * A FetchPlan is an extension to EclipseLink that allows an entity to have
- * specified attributes forced to be loaded or copied into unmanaged copies.
+ * A FetchPlan is an extension to EclipseLink that allows a required graph of
+ * entities to be returned from a query execution or copy operation as well as
+ * being used to do a sparse merge of an unmanaged graph of entities into a
+ * persistence context.
  * <p>
  * A FetchPlan is created/retrieved from a query using the
  * {@link #getFetchPlan(Query)} or {@link #getFetchPlan(ObjectLevelReadQuery)}
@@ -50,7 +54,7 @@ import org.eclipse.persistence.sessions.UnitOfWork;
  * plan for the requested relationship in the results graph.
  * 
  * @author dclarke
- * @since EclipseLink 2.1
+ * @since TBD
  */
 public class FetchPlan {
 
@@ -80,12 +84,6 @@ public class FetchPlan {
     private ClassDescriptor descriptor;
 
     /**
-     * Indicates if the minimal attributes required of a {@link FetchGroup}
-     * should be added to this FetchPlan automatically when initialized.
-     */
-    private boolean addRequiredAttributes = true;
-
-    /**
      * {@link SessionLog} category used for messages logged during the use of a
      * FetchPlan. To enable all messages in this category configure the
      * persistence unit property:
@@ -96,23 +94,64 @@ public class FetchPlan {
      */
     public static final String LOG_CATEGORY = "fetch_plan";
 
-    public FetchPlan(String name, Class<?> entityClass, boolean addRequiredAttributes) {
+    public FetchPlan(String name, Class<?> entityClass) {
         this.name = name;
         this.entityClass = entityClass;
-        this.addRequiredAttributes = addRequiredAttributes;
         this.items = new HashMap<String, FetchItem>();
     }
 
-    public FetchPlan(String name, Class<?> entityClass) {
-        this(name, entityClass, true);
-    }
-
-    public FetchPlan(Class<?> entityClass, boolean addRequiredAttributes) {
-        this(null, entityClass, addRequiredAttributes);
-    }
-
     public FetchPlan(Class<?> entityClass) {
-        this(null, entityClass, true);
+        this(null, entityClass);
+    }
+
+    /**
+     * TODO Create an initialized {@link FetchPlan} (meaning its descriptor,
+     * required mappings, and items are configured when returned so that
+     * {@link #initialize(Session)} will not do anything).
+     */
+    protected FetchPlan(ClassDescriptor descriptor) {
+        this(descriptor.getJavaClass());
+        this.descriptor = descriptor;
+    }
+
+    /**
+     * TODO
+     */
+    @SuppressWarnings("unchecked")
+    protected void addDefaultMappings() {
+        if (descriptor.hasFetchGroupManager() && descriptor.getFetchGroupManager().getDefaultFetchGroup() != null) {
+            FetchGroup fg = descriptor.getFetchGroupManager().getDefaultFetchGroup();
+
+            for (String attr : (Set<String>) fg.getAttributes()) {
+                addAttribute(descriptor.getMappingForAttributeName(attr));
+            }
+            return;
+        }
+
+        for (DatabaseMapping mapping : descriptor.getMappings()) {
+            if (!mapping.isLazy()) {
+                addAttribute(mapping);
+            }
+        }
+
+        // Add identifier and optimistic locking version attributes
+        if (!descriptor.isAggregateDescriptor()) {
+            for (DatabaseMapping pkMapping : descriptor.getObjectBuilder().getPrimaryKeyMappings()) {
+                if (!getItems().containsKey(pkMapping.getAttributeName())) {
+                    addAttribute(pkMapping);
+                }
+            }
+
+            if (descriptor.usesOptimisticLocking()) {
+                DatabaseField lockField = descriptor.getOptimisticLockingPolicy().getWriteLockField();
+                if (lockField != null) {
+                    DatabaseMapping lockMapping = descriptor.getObjectBuilder().getMappingForField(lockField);
+                    if (lockMapping != null && !getItems().containsKey(lockMapping.getAttributeName())) {
+                        addAttribute(lockMapping);
+                    }
+                }
+            }
+        }
     }
 
     public String getName() {
@@ -123,14 +162,6 @@ public class FetchPlan {
         return this.entityClass;
     }
 
-    public boolean addRequiredAttributes() {
-        return this.addRequiredAttributes;
-    }
-
-    public void setAddRequiredAttributes(boolean value) {
-        this.addRequiredAttributes = value;
-    }
-
     /*
      * Used in {@link FetchItem#initialize(Session)} to populate the target
      * entity type of relationships from the mapping.
@@ -139,7 +170,7 @@ public class FetchPlan {
         this.entityClass = entityClass;
     }
 
-    protected Map<String, FetchItem> getItems() {
+    public Map<String, FetchItem> getItems() {
         return this.items;
     }
 
@@ -187,29 +218,27 @@ public class FetchPlan {
         }
 
         // Add identifier and optimistic locking version attributes
-        if (addRequiredAttributes()) {
-            for (DatabaseMapping mapping : this.descriptor.getObjectBuilder().getPrimaryKeyMappings()) {
-                if (!getItems().containsKey(mapping.getAttributeName())) {
-                    addAttribute(mapping.getAttributeName());
+        for (DatabaseMapping mapping : this.descriptor.getObjectBuilder().getPrimaryKeyMappings()) {
+            if (!getItems().containsKey(mapping.getAttributeName())) {
+                addAttribute(mapping.getAttributeName());
 
-                    if (session.getSessionLog().shouldLog(SessionLog.FINEST, LOG_CATEGORY)) {
-                        SessionLogEntry entry = new SessionLogEntry(SessionLog.FINEST, LOG_CATEGORY, (AbstractSession) session, "FetchPlan: Added required id attribute {0} to {1}", new Object[] { mapping.getAttributeName(), this }, null, false);
-                        session.getSessionLog().log(entry);
-                    }
+                if (session.getSessionLog().shouldLog(SessionLog.FINEST, LOG_CATEGORY)) {
+                    SessionLogEntry entry = new SessionLogEntry(SessionLog.FINEST, LOG_CATEGORY, (AbstractSession) session, "FetchPlan: Added required id attribute {0} to {1}", new Object[] { mapping.getAttributeName(), this }, null, false);
+                    session.getSessionLog().log(entry);
                 }
             }
+        }
 
-            if (this.descriptor.usesOptimisticLocking()) {
-                DatabaseField lockField = this.descriptor.getOptimisticLockingPolicy().getWriteLockField();
-                if (lockField != null) {
-                    DatabaseMapping lockMapping = this.descriptor.getObjectBuilder().getMappingForField(lockField);
-                    if (lockMapping != null && !getItems().containsKey(lockMapping.getAttributeName())) {
-                        addAttribute(lockMapping.getAttributeName());
+        if (this.descriptor.usesOptimisticLocking()) {
+            DatabaseField lockField = this.descriptor.getOptimisticLockingPolicy().getWriteLockField();
+            if (lockField != null) {
+                DatabaseMapping lockMapping = this.descriptor.getObjectBuilder().getMappingForField(lockField);
+                if (lockMapping != null && !getItems().containsKey(lockMapping.getAttributeName())) {
+                    addAttribute(lockMapping.getAttributeName());
 
-                        if (session.getSessionLog().shouldLog(SessionLog.FINEST, LOG_CATEGORY)) {
-                            SessionLogEntry entry = new SessionLogEntry(SessionLog.FINEST, LOG_CATEGORY, (AbstractSession) session, "FetchPlan: Added required lock attribute {0} to {1}", new Object[] { lockMapping.getAttributeName(), this }, null, false);
-                            session.getSessionLog().log(entry);
-                        }
+                    if (session.getSessionLog().shouldLog(SessionLog.FINEST, LOG_CATEGORY)) {
+                        SessionLogEntry entry = new SessionLogEntry(SessionLog.FINEST, LOG_CATEGORY, (AbstractSession) session, "FetchPlan: Added required lock attribute {0} to {1}", new Object[] { lockMapping.getAttributeName(), this }, null, false);
+                        session.getSessionLog().log(entry);
                     }
                 }
             }
@@ -248,11 +277,17 @@ public class FetchPlan {
 
             currentFP = item.getFetchPlan();
             if (currentFP == null && index < (attributePaths.length - 1)) {
-                currentFP = new FetchPlan(getName() + "-" + attrName, null, addRequiredAttributes());
+                currentFP = new FetchPlan(getName() + "-" + attrName, null);
                 item.setFetchPlan(currentFP);
             }
         }
 
+        return item;
+    }
+
+    private FetchItem addAttribute(DatabaseMapping mapping) {
+        FetchItem item = new FetchItem(this, mapping);
+        getItems().put(mapping.getAttributeName(), item);
         return item;
     }
 
@@ -407,21 +442,21 @@ public class FetchPlan {
             return null;
         }
 
-        return (T) copy(source, session, new HashMap<Object, Object>());
+        return (T) copy(source, session, new CopyTrace());
     }
 
     /**
      * Create a copy of the entity or collection of entities ensure identity
      * through maintenance of a map of copies (original -> copy).
      */
-    protected Object copy(Object source, AbstractSession session, Map<Object, Object> copies) {
+    protected Object copy(Object source, AbstractSession session, CopyTrace copies) {
         if (source instanceof Object[]) {
             throw new IllegalArgumentException("Fetchplan.copy does not support Object[]");
         }
 
-        Object copy = copies.get(source);
-        if (copy != null) {
-            // return copy;
+        CopyFetchPlans copyPlans = copies.get(source);
+        if (copyPlans.isCopied(this)) {
+            return copyPlans.getCopy();
         }
 
         if (source instanceof Collection<?>) {
@@ -430,10 +465,13 @@ public class FetchPlan {
 
         ClassDescriptor descriptor = getDescriptor(session);
 
+        Object copy = copyPlans.getCopy();
+
         if (copy == null) {
             copy = descriptor.getInstantiationPolicy().buildNewInstance();
-            copies.put(source, copy);
+            copyPlans.setCopy(copy);
         }
+        copyPlans.addCopied(this);
 
         ObjectCopyingPolicy policy = new ObjectCopyingPolicy();
         policy.setShouldResetPrimaryKey(false);
@@ -451,8 +489,9 @@ public class FetchPlan {
      * Create copy of a collection
      */
     @SuppressWarnings("unchecked")
-    protected Object copyAll(Collection<?> source, AbstractSession session, Map<Object, Object> copies) {
-        Collection<Object> copiesCollection = (Collection<Object>) copies.get(source);
+    protected Object copyAll(Collection<?> source, AbstractSession session, CopyTrace copies) {
+        CopyFetchPlans copyPlans = copies.get(source);
+        Collection<Object> copiesCollection = (Collection<Object>) copyPlans.getCopy();
         boolean newCollection = false;
 
         if (copiesCollection == null) {
@@ -472,31 +511,9 @@ public class FetchPlan {
             }
         }
 
-        copies.put(source, copiesCollection);
-        return copiesCollection;
-    }
+        copyPlans.setCopy(copiesCollection);
+        copyPlans.addCopied(this);
 
-    @SuppressWarnings("unchecked")
-    protected Object copyAllMapped(Collection<?> source, AbstractSession session, Map<Object, Object> copies) {
-        Collection<Object> copiesCollection = (Collection<Object>) copies.get(source);
-
-        if (copiesCollection != null) {
-            return copiesCollection;
-        }
-
-        try {
-            Constructor<?> constructor = source.getClass().getConstructor(int.class);
-            copiesCollection = (Collection<Object>) constructor.newInstance(source.size());
-        } catch (Exception e) {
-            throw new RuntimeException("FetchPlan.copy: failed to create copy of result container for: " + source.getClass(), e);
-        }
-
-        for (Object entity : (Collection<?>) source) {
-            Object copy = copy(entity, session, copies);
-            copiesCollection.add(copy);
-        }
-
-        copies.put(source, copiesCollection);
         return copiesCollection;
     }
 
@@ -518,14 +535,20 @@ public class FetchPlan {
     }
 
     /**
-     * Helper method that will create a dynamic FetchGroup based on the first
-     * level attributes of the FetchPlan at the time this method is called. This
-     * is provided to simplify creating a FetchGroup that matches the first
-     * level of the FetchPlan.
+     * Create a dynamic {@link FetchGroup} that includes all of the mapped
+     * attributes on the {@link #entityClass}. The returned FetchGroup will not
+     * cause relationships to be loaded or any nested FetchItems to be applied.
+     * This is generally used in combination with the fetch/copy methods on
+     * FetchPlan or {@link JpaFetchPlanHelper} to post process the query results
+     * ensuring that all requested attributes in the graph are loaded (or
+     * copied).
      * <p>
-     * Usage Example:<br/>
+     * <b>JPA Usage Example</b>:
+     * <p>
      * <code>
      * query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());<br/>
+     * List<Employee> emps = query.getResultList();<br/>
+     * JpaFetchPlanHelper.fetch(em, fetchPlan, emps);<br/>
      * </code>
      */
     public FetchGroup createFetchGroup() {
@@ -538,5 +561,107 @@ public class FetchPlan {
 
     public String toString() {
         return "FetchPlan(" + getName() + ")";
+    }
+
+    /**
+     * Utility class that tracks the copying of the graph to ensure the identity
+     * of the entities based on source so that only one copy per source is
+     * created
+     */
+    protected class CopyTrace {
+
+        private Map<Object, CopyFetchPlans> copies = new HashMap<Object, CopyFetchPlans>();
+
+        public CopyFetchPlans get(Object source) {
+            CopyFetchPlans copyFetchPlans = this.copies.get(source);
+
+            if (copyFetchPlans == null) {
+                copyFetchPlans = new CopyFetchPlans();
+                this.copies.put(source, copyFetchPlans);
+            }
+            return copyFetchPlans;
+        }
+
+    }
+
+    /**
+     * TODO
+     */
+    protected class CopyFetchPlans {
+
+        /**
+         * Entity being copied
+         */
+        private Object copy;
+
+        /**
+         * Plans processed for this copy
+         */
+        private Set<FetchPlan> plans;
+
+        CopyFetchPlans() {
+            this.plans = new HashSet<FetchPlan>();
+        }
+
+        protected Object getCopy() {
+            return this.copy;
+        }
+
+        protected boolean hasCopy() {
+            return this.copy != null;
+        }
+
+        protected void setCopy(Object copy) {
+            this.copy = copy;
+        }
+
+        protected boolean isCopied(FetchPlan fetchPlan) {
+            return hasCopy() && this.plans.contains(fetchPlan);
+        }
+
+        protected void addCopied(FetchPlan fetchPlan) {
+            this.plans.add(fetchPlan);
+        }
+    }
+
+    private static final String PROPERTY = "DEFAULT-FETCH-PLAN";
+
+    /**
+     * TODO
+     */
+    @SuppressWarnings("unchecked")
+    protected static FetchPlan defaultFetchPlan(DatabaseMapping mapping) {
+        if (mapping.getReferenceDescriptor() == null) {
+            return null;
+        }
+
+        ClassDescriptor targetDescriptor = mapping.getReferenceDescriptor();
+        FetchPlan fp = (FetchPlan) mapping.getProperty(PROPERTY);
+
+        if (fp == null) {
+            fp = new FetchPlan(targetDescriptor);
+            mapping.setProperty(PROPERTY, fp);
+
+            if (mapping.isForeignReferenceMapping()) {
+                FetchGroup mappingFG = null;
+                ForeignReferenceMapping frMapping = (ForeignReferenceMapping) mapping;
+                ObjectLevelReadQuery mappingQuery = (ObjectLevelReadQuery) frMapping.getSelectionQuery();
+
+                if (mappingQuery.getFetchGroup() != null) {
+                    mappingFG = mappingQuery.getFetchGroup();
+                } else if (mappingQuery.getFetchGroupName() != null && targetDescriptor.hasFetchGroupManager()) {
+                    mappingFG = targetDescriptor.getFetchGroupManager().getFetchGroup(mappingQuery.getFetchGroupName());
+                }
+
+                if (mappingFG != null) {
+                    for (String attr : (Set<String>) mappingFG.getAttributes()) {
+                        fp.addAttribute(targetDescriptor.getMappingForAttributeName(attr));
+                    }
+                    return fp;
+                }
+            }
+            fp.addDefaultMappings();
+        }
+        return fp;
     }
 }

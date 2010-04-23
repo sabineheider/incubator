@@ -58,7 +58,7 @@ public class FetchPlanMergeManager extends MergeManager {
     }
 
     @Override
-    protected Object mergeChangesOfCloneIntoWorkingCopy(Object rmiClone) {        
+    protected Object mergeChangesOfCloneIntoWorkingCopy(Object rmiClone) {
         Object registeredObject = registerObjectForMergeCloneIntoWorkingCopy(rmiClone);
 
         if (registeredObject == rmiClone && !shouldForceCascade()) {
@@ -119,7 +119,7 @@ public class FetchPlanMergeManager extends MergeManager {
         for (FetchItem item : plan.getItems().values()) {
             DatabaseMapping mapping = item.getMapping(getSession());
 
-            if (mapping.getReferenceDescriptor() != null && item.getFetchPlan() != null) {
+            if (mapping.getReferenceDescriptor() != null) {
                 Object sourceValue = mapping.getAttributeValueFromObject(source);
 
                 if (sourceValue instanceof IndirectContainer && ((IndirectContainer) sourceValue).isInstantiated()) {
@@ -130,13 +130,18 @@ public class FetchPlanMergeManager extends MergeManager {
                 }
 
                 // Configure FetchPlan usage for related objects
-                if (sourceValue != null) {
+                if (sourceValue != null && !getFetchPlans().containsKey(sourceValue)) {
+                    FetchPlan fp = item.getFetchPlan();
+
+                    if (fp == null && mapping.getReferenceDescriptor() != null) {
+                        fp = FetchPlan.defaultFetchPlan(mapping);
+                    }
                     if (sourceValue instanceof Collection<?>) {
                         for (Object obj : (Collection<?>) sourceValue) {
-                            getFetchPlans().put(obj, item.getFetchPlan());
+                            getFetchPlans().put(obj, fp);
                         }
                     } else {
-                        getFetchPlans().put(sourceValue, item.getFetchPlan());
+                        getFetchPlans().put(sourceValue, fp);
                     }
                 }
             }

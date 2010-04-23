@@ -24,20 +24,19 @@ import java.util.List;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 
 import model.Address;
 import model.Employee;
 import model.PhoneNumber;
 
-import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.extension.fetchplan.FetchPlan;
 import org.eclipse.persistence.extension.fetchplan.JpaFetchPlanHelper;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.queries.FetchGroupTracker;
 import org.junit.After;
 import org.junit.Test;
 
-import testing.EclipseLinkJPAAssert;
 import testing.EclipseLinkJPATest;
 import example.Queries;
 
@@ -224,32 +223,34 @@ public class FetchPlanMergeTests extends EclipseLinkJPATest {
     /**
      * Delete the employee's address by setting it to null in the copy being
      * merged and the FetchPlan's merge combined with the mapping's
-     * private-owned configuration will cause it to be deleted.
+     * private-owned configuration will cause it to be deleted. For this to work
+     * the PhoneNumber.owner relationship needs to be fetch=EAGER so that is is
+     * loaded using the default mappings fetch. Without this the owner is null
+     * and PK is incomplete in the partial entity.
      */
     @SuppressWarnings("unchecked")
     @Test
     public void removeOnePhone() throws Exception {
         EntityManager em = getEntityManager();
 
-        List<Object[]> phoneIds = em.createQuery("SELECT p.id, COUNT(p.id) FROM PhoneNumber p GROUP BY p.id").getResultList();
-        int empId = -1;
-        for (Object[] values : phoneIds) {
-            if (empId == -1 && ((Number) values[1]).intValue() > 1) {
-                empId = ((Number) values[0]).intValue();
-            }
-        }
-
-        Employee emp = (Employee) em.createQuery("SELECT e FROM Employee e JOIN FETCH e.address WHERE e.id = " + empId).getSingleResult();
+        List<Employee> emps = em.createQuery("SELECT e FROM Employee e WHERE SIZE(e.phoneNumbers) > 1").setMaxResults(1).getResultList();
+        Employee emp = emps.get(0);
         int numPhones = emp.getPhoneNumbers().size();
 
         assertNotNull(emp);
         assertTrue(numPhones > 1);
-        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
 
         FetchPlan plan = new FetchPlan(Employee.class);
         plan.addAttribute("phoneNumbers");
 
         Employee minimalEmp = JpaFetchPlanHelper.copy(em, plan, emp);
+
+        assertNotNull(minimalEmp.getPhoneNumbers());
+        assertEquals(emp.getPhoneNumbers().size(), minimalEmp.getPhoneNumbers().size());
+        for (PhoneNumber phone: minimalEmp.getPhoneNumbers()) {
+            assertSame(minimalEmp, phone.getOwner());
+        }
 
         minimalEmp.getPhoneNumbers().remove(0);
 
@@ -262,6 +263,215 @@ public class FetchPlanMergeTests extends EclipseLinkJPATest {
         assertEquals(minimalEmp.getPhoneNumbers().size(), empWC.getPhoneNumbers().size());
         assertEquals(0, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
         assertEquals(1, getQuerySQLTracker(em).getTotalSQLDELETECalls());
+
+        em.getTransaction().rollback();
+    }
+
+    /**
+     * Create a partial entity graph using
+     * {@link JpaFetchPlanHelper#copy(EntityManager, FetchPlan, Object)}
+     */
+    @Test
+    public void copyMerge_updateBasics() {
+        EntityManager em = getEntityManager();
+
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("firstName");
+        fetchPlan.addAttribute("lastName");
+        fetchPlan.addAttribute("address");
+        fetchPlan.addAttribute("phoneNumbers");
+
+        Employee emp = Queries.minEmployeeWithAddressAndPhones(em);
+
+        assertNotNull(emp.getFirstName());
+        assertNotNull(emp.getLastName());
+
+        Employee partialEmp = JpaFetchPlanHelper.copy(em, fetchPlan, emp);
+
+        // Verify state of partial entity
+        assertEquals(emp.getId(), partialEmp.getId());
+        assertEquals(emp.getVersion(), partialEmp.getVersion());
+        assertNotNull(partialEmp.getFirstName());
+        assertNotNull(partialEmp.getLastName());
+        assertNull(partialEmp.getPeriod());
+        assertNull(partialEmp.getProjects());
+        assertNull(partialEmp.getGender());
+        assertNull(partialEmp.getManager());
+        assertNull(partialEmp.getManagedEmployees());
+        assertNotNull(partialEmp.getAddress());
+        assertNotNull(partialEmp.getPhoneNumbers());
+        for (PhoneNumber phone : partialEmp.getPhoneNumbers()) {
+            assertNotNull(phone.getNumber());
+            assertNotNull(phone.getType());
+            assertNotNull(phone.getAreaCode());
+            assertNotNull(phone.getOwner());
+        }
+
+        double originalSalary = emp.getSalary();
+        partialEmp.setSalary(emp.getSalary() + 1);
+        partialEmp.setFirstName(null);
+        partialEmp.setLastName(null);
+
+        em.getTransaction().begin();
+        Employee managedEmp = JpaFetchPlanHelper.merge(em, fetchPlan, partialEmp);
+
+        assertSame(emp, managedEmp);
+        assertNull(emp.getFirstName());
+        assertNull(emp.getLastName());
+        assertEquals(originalSalary, emp.getSalary());
+
+        em.flush();
+
+        // Verify that only 1 update was issued for the EMPLOYEE table. The
+        // salary will not be updated
+        assertEquals(1, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
+
+        em.getTransaction().rollback();
+    }
+
+    /**
+     * Create a partial entity graph using
+     * {@link JpaFetchPlanHelper#copy(EntityManager, FetchPlan, Object)}
+     */
+    @Test
+    public void copyMerge_removingPrivateOwnedOneToMany() {
+        EntityManager em = getEntityManager();
+
+        FetchPlan fetchPlan = new FetchPlan(Employee.class);
+        fetchPlan.addAttribute("firstName");
+        fetchPlan.addAttribute("lastName");
+        fetchPlan.addAttribute("address");
+        fetchPlan.addAttribute("phoneNumbers");
+
+        Employee emp = Queries.minEmployeeWithAddressAndPhones(em);
+
+        assertNotNull(emp.getFirstName());
+        assertNotNull(emp.getLastName());
+
+        Employee partialEmp = JpaFetchPlanHelper.copy(em, fetchPlan, emp);
+
+        // Verify state of partial entity
+        assertEquals(emp.getId(), partialEmp.getId());
+        assertEquals(emp.getVersion(), partialEmp.getVersion());
+        assertNotNull(partialEmp.getFirstName());
+        assertNotNull(partialEmp.getLastName());
+        assertNull(partialEmp.getPeriod());
+        assertNull(partialEmp.getProjects());
+        assertNull(partialEmp.getGender());
+        assertNull(partialEmp.getManager());
+        assertNull(partialEmp.getManagedEmployees());
+        assertNotNull(partialEmp.getAddress());
+        assertNotNull(partialEmp.getPhoneNumbers());
+        int numPhones = partialEmp.getPhoneNumbers().size();
+        for (PhoneNumber phone : partialEmp.getPhoneNumbers()) {
+            assertNotNull(phone.getNumber());
+            assertNotNull(phone.getType());
+            assertNotNull(phone.getAreaCode());
+            assertNotNull(phone.getOwner());
+        }
+
+        partialEmp.getPhoneNumbers().remove(0);
+
+        em.getTransaction().begin();
+        Employee managedEmp = JpaFetchPlanHelper.merge(em, fetchPlan, partialEmp);
+
+        assertSame(emp, managedEmp);
+        assertEquals(numPhones - 1, emp.getPhoneNumbers().size());
+
+        em.flush();
+
+        // Verify that only 1 delete
+        assertEquals(1, getQuerySQLTracker(em).getTotalSQLDELETECalls());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
+
+        em.getTransaction().rollback();
+    }
+
+    /**
+     * Here we see 1. many SQLs during copy call. 2. DELETE operations on commit
+     * which are critical. It looks like EL does not track entity state (is a
+     * relation detached null, means not loaded - detached - attached again? or
+     * really emptied?).
+     * 
+     * @throws Exception
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testDetachMerge() throws Exception {
+        EntityManager em = getEntityManager();
+        em.getTransaction().begin();
+
+        Query q = em.createQuery("SELECT e FROM Employee e WHERE SIZE(e.managedEmployees) > 0");
+        q.setMaxResults(1);
+        List<Employee> ems = q.getResultList();
+
+        // Verify that at this point only the Employee SELECT occurred
+        assertEquals(1, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        FetchPlan fp = new FetchPlan(Employee.class);
+        fp.addAttribute("managedEmployees");
+
+        // Ensure FetchPlan's requested attributes are loaded from database
+        JpaFetchPlanHelper.fetch(em, fp, ems);
+
+        // Primary SELECT plus 1 for each employee
+        assertEquals(2, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        Employee emp = ems.get(0);
+        System.out.println("emp.id: " + emp.getId());
+        System.out.println("emp.address: " + emp.getAddress().toString());
+        
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        
+        System.out.println("emp.managedEmployees: " + emp.getManagedEmployees().toArray().toString());
+
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        
+        // detach the emp
+        emp = JpaFetchPlanHelper.copy(em, fp, emp);
+        // after copy we see about 50 SQLs which we cant associate with this
+        // detach action
+        System.out.println("deserializedEmployee: " + emp.toString());
+        em.getTransaction().commit();
+
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLINSERTCalls());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLDELETECalls());
+
+        // Clear shared cache and EntityManager
+        em.clear();
+
+        JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
+
+        Employee newEmp = new Employee();
+
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        em.persist(newEmp);
+        // Additional SELECT to get new sequence value
+        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        // add the new to Collection
+        emp.addManagedEmployee(newEmp);
+
+        em.getTransaction().begin();
+        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        Employee mergedEmployee = JpaFetchPlanHelper.merge(em, fp, emp);
+        
+        // 2 SELECT for Employee and managed Employees to do merge
+        assertEquals(6, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        mergedEmployee.getAddress(); // null is okay
+        // Additional select for ADDRESS
+        assertEquals(7, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        em.flush();
+
+        assertEquals(7, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        // INSERT for each of EMPLOYEE AND SALARY table
+        assertEquals(2, getQuerySQLTracker(em).getTotalSQLINSERTCalls());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLDELETECalls());
 
         em.getTransaction().rollback();
     }

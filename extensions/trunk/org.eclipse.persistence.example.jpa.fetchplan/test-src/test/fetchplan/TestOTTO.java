@@ -83,7 +83,7 @@ public class TestOTTO extends EclipseLinkJPATest {
 
         List<Employee> emps = em.createQuery("SELECT e FROM Employee e where e.managedEmployees is not empty").getResultList();
 
-        FetchPlan fetchplan = new FetchPlan("f", Employee.class, true);
+        FetchPlan fetchplan = new FetchPlan("f", Employee.class);
         fetchplan.addAttribute("managedEmployees");
         
         List<Employee> detachedEmps = JpaFetchPlanHelper.copy(em, fetchplan, emps);
@@ -296,7 +296,7 @@ public class TestOTTO extends EclipseLinkJPATest {
 
         List<Employee> emps = query.getResultList();
 
-        FetchPlan fetchplan = new FetchPlan(Employee.class, false);
+        FetchPlan fetchplan = new FetchPlan(Employee.class);
         fetchplan.addAttribute("firstName");
         fetchplan.addAttribute("phoneNumbers");
 
@@ -315,7 +315,7 @@ public class TestOTTO extends EclipseLinkJPATest {
         }
 
         // Detach with "bigger" Fetchplan
-        FetchPlan fetchplan2 = new FetchPlan(Employee.class, false);
+        FetchPlan fetchplan2 = new FetchPlan(Employee.class);
         fetchplan.addAttribute("firstName");
         fetchplan2.addAttribute("address");
         fetchplan2.addAttribute("phoneNumbers");
