@@ -12,7 +12,7 @@
  ******************************************************************************/
 package test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -136,7 +136,7 @@ public class FetchPlanFetchWithBatchInTests extends EclipseLinkJPATest {
     public void findEmployeesWithBatchInConfigFetch() {
         EntityManager em = getEntityManager();
 
-        Query q = em.createQuery("SELECT em FROM Employee em");
+        Query q = em.createQuery("SELECT em FROM Employee em ORDER BY em.id");
         q.setHint(QueryHints.BATCH, "em.managedEmployees");
         q.setHint(QueryHints.BATCH, "em.managedEmployees.address");
 
@@ -153,7 +153,7 @@ public class FetchPlanFetchWithBatchInTests extends EclipseLinkJPATest {
         fp.addAttribute("managedEmployees");
         JpaFetchPlanHelper.fetch(em, fp, ems);
 
-        // interate through all employees and collect their managers
+        // iterate through all employees and collect their managers
         Set<Employee> managedEmployees = new HashSet<Employee>();
         for (Employee employee : ems) {
             managedEmployees.addAll(employee.getManagedEmployees());
@@ -165,6 +165,120 @@ public class FetchPlanFetchWithBatchInTests extends EclipseLinkJPATest {
         fp2.addAttribute("address");
         JpaFetchPlanHelper.fetch(em, fp2, managedEmployees);
 
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        System.out.println("Employees Read - " + ems.size());
+        for (Employee emp : ems) {
+            System.out.println("\t> " + emp);
+            for (Employee managedEmp : emp.getManagedEmployees()) {
+                System.out.println("\t\t> " + managedEmp);
+                System.out.println("\t\t\t> " + managedEmp.getAddress());
+            }
+            if (emp.getManagedEmployees() == null) {
+
+            }
+        }
+
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        em.clear();
+        JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
+
+        q = em.createNativeQuery("SELECT EMP_ID, ADDR_ID, MANAGER_ID FROM EMPLOYEE ORDER BY EMP_ID");
+        List<Object[]> ids = q.getResultList();
+
+        assertEquals(4, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertEquals(ems.size(), ids.size());
+
+        for (int index = 0; index < ems.size(); index++) {
+            Employee emp = ems.get(index);
+            Object[] idRow = ids.get(index);
+
+            assertEquals(emp.getId(), ((Number) idRow[0]).intValue());
+            if (idRow[2] != null) { // We have a manager
+                assertNotNull(emp.getAddress());
+                assertEquals(emp.getAddress().getId(), ((Number) idRow[1]).intValue());
+            } else {
+
+            }
+        }
+    }
+
+    /**
+     * This test does not used BatchIn but is here to provide a verification for
+     * the assertions of {@link #findEmployeesWithBatchInConfigFetch()}
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void findEmployeesWithJoinBatching() {
+        EntityManager em = getEntityManager();
+
+        Query q = em.createQuery("SELECT em FROM Employee em ORDER BY em.id");
+        q.setHint(QueryHints.BATCH, "em.managedEmployees");
+        q.setHint(QueryHints.BATCH, "em.managedEmployees.address");
+
+        List<Employee> ems = q.getResultList();
+
+        // Display initial Employees read:
+        System.out.println("Employees Read - " + ems.size());
+        for (Employee emp : ems) {
+            System.out.println("\t> " + emp);
+        }
+
+        //BatchInConfig.config(em, ems, "managedEmployees");
+        FetchPlan fp = new FetchPlan(Employee.class);
+        fp.addAttribute("managedEmployees");
+        JpaFetchPlanHelper.fetch(em, fp, ems);
+
+        // iterate through all employees and collect their managers
+        Set<Employee> managedEmployees = new HashSet<Employee>();
+        for (Employee employee : ems) {
+            managedEmployees.addAll(employee.getManagedEmployees());
+        }
+
+        // Fetch for all managers the addresses
+        //BatchInConfig.config(em, new ArrayList<Employee>(managedEmployees), "address");
+        FetchPlan fp2 = new FetchPlan(Employee.class);
+        fp2.addAttribute("address");
+        JpaFetchPlanHelper.fetch(em, fp2, managedEmployees);
+
+        assertEquals(13, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        System.out.println("Employees Read - " + ems.size());
+        for (Employee emp : ems) {
+            System.out.println("\t> " + emp);
+            for (Employee managedEmp : emp.getManagedEmployees()) {
+                System.out.println("\t\t> " + managedEmp);
+                System.out.println("\t\t\t> " + managedEmp.getAddress());
+            }
+            if (emp.getManagedEmployees() == null) {
+
+            }
+        }
+
+        assertEquals(13, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+
+        em.clear();
+        JpaHelper.getServerSession(getEMF()).getIdentityMapAccessor().initializeAllIdentityMaps();
+
+        q = em.createNativeQuery("SELECT e.EMP_ID, e.ADDR_ID, e.MANAGER_ID FROM EMPLOYEE e, SALARY s WHERE s.EMP_ID = e.EMP_ID ORDER BY e.EMP_ID");
+        List<Object[]> ids = q.getResultList();
+
+        assertEquals(14, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertEquals(ems.size(), ids.size());
+
+        for (int index = 0; index < ems.size(); index++) {
+            Employee emp = ems.get(index);
+            Object[] idRow = ids.get(index);
+
+            assertEquals(emp.getId(), ((Number) idRow[0]).intValue());
+            if (idRow[2] != null) { // We have a manager
+                assertNotNull(emp.getAddress());
+                assertEquals("Incorrect address on: " + emp, emp.getAddress().getId(), ((Number) idRow[1]).intValue());
+            } else {
+
+            }
+        }
     }
 
     /**

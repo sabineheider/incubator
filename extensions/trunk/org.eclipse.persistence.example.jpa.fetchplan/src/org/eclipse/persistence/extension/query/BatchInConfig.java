@@ -23,6 +23,7 @@ import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.indirection.IndirectContainer;
 import org.eclipse.persistence.indirection.ValueHolderInterface;
 import org.eclipse.persistence.internal.indirection.BatchValueHolder;
+import org.eclipse.persistence.internal.indirection.QueryBasedValueHolder;
 import org.eclipse.persistence.internal.indirection.UnitOfWorkValueHolder;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.jpa.JpaHelper;
@@ -33,7 +34,6 @@ import org.eclipse.persistence.mappings.OneToManyMapping;
 import org.eclipse.persistence.mappings.OneToOneMapping;
 import org.eclipse.persistence.queries.ReadAllQuery;
 import org.eclipse.persistence.queries.ReadQuery;
-import org.eclipse.persistence.sessions.server.Server;
 
 /**
  * This is an extension to EclipseLink intending to assist customers who need to
@@ -84,7 +84,7 @@ public class BatchInConfig {
             return;
         }
 
-        Server session = JpaHelper.getEntityManager(em).getServerSession();
+        AbstractSession session = JpaHelper.getEntityManager(em).getServerSession();
         ClassDescriptor descriptor = session.getClassDescriptor(results.get(0));
 
         if (descriptor == null) {
@@ -105,7 +105,7 @@ public class BatchInConfig {
             throw new IllegalArgumentException("Invalid mapping type found: " + mapping);
         }
 
-        BatchValueHolder batchVH = getBatchValueHolder(frMapping, results);
+        BatchValueHolder batchVH = getBatchValueHolder(frMapping, results, (AbstractSession) session);
 
         if (batchVH == null) {
             SessionLog log = JpaHelper.getEntityManager(em).getServerSession().getSessionLog();
@@ -123,7 +123,7 @@ public class BatchInConfig {
     /**
      * Find the first BatchValueHolder in the results
      */
-    private static BatchValueHolder getBatchValueHolder(ForeignReferenceMapping mapping, List<?> results) {
+    private static BatchValueHolder getBatchValueHolder(ForeignReferenceMapping mapping, List<?> results, AbstractSession session) {
         Object result = results.get(0);
 
         Object value = mapping.getAttributeValueFromObject(result);
@@ -140,14 +140,18 @@ public class BatchInConfig {
             return (BatchValueHolder) value;
         }
 
-        // No BatchValueHolder found? TODO: Build one?
-        return null;
+        if (value instanceof QueryBasedValueHolder) {
+            replaceQueryBasedValueHolders(mapping, results, session);
+            return getBatchValueHolder(mapping, results, session);
+        }
+
+        throw new IllegalStateException("TODO: How can we get here?");
     }
 
     /**
      * Customize the query for a 1:1 or M:1
      */
-    private static void configBatchInQuery(Server session, OneToOneMapping mapping, ReadAllQuery raq, List<?> results) {
+    private static void configBatchInQuery(AbstractSession session, OneToOneMapping mapping, ReadAllQuery raq, List<?> results) {
         if (mapping.getForeignKeyFields().size() != 1) {
             throw new IllegalArgumentException("Cannot configure batch using IN with composite FK: " + mapping);
         }
@@ -159,7 +163,7 @@ public class BatchInConfig {
             if (vhi instanceof UnitOfWorkValueHolder) {
                 vhi = ((UnitOfWorkValueHolder) vhi).getWrappedValueHolder();
             }
-            BatchValueHolder bvh = (BatchValueHolder) vhi;
+            QueryBasedValueHolder bvh = (QueryBasedValueHolder) vhi;
 
             ids[index] = bvh.getRow().get(mapping.getForeignKeyFields().get(0));
         }
@@ -173,12 +177,12 @@ public class BatchInConfig {
     /**
      * Customize the query for a 1:M
      */
-    private static void configBatchInQuery(Server session, OneToManyMapping mapping, ReadAllQuery raq, List<?> results) {
+    private static void configBatchInQuery(AbstractSession session, OneToManyMapping mapping, ReadAllQuery raq, List<?> results) {
         if (raq == null) {
             // TODO: This occurs when there is no query available.
             return;
         }
-        
+
         if (mapping.getTargetForeignKeyFields().size() != 1) {
             throw new IllegalArgumentException("Cannot configure batch using IN with composite FK: " + mapping);
         }
@@ -224,9 +228,32 @@ public class BatchInConfig {
 
         ReadQuery batchQuery = frMapping.prepareNestedBatchQuery(raq);
         Object value = frMapping.getIndirectionPolicy().valueFromBatchQuery(batchQuery, null, raq);
-        
-        for (Object result: results) {
+
+        for (Object result : results) {
             frMapping.setAttributeValueInObject(result, value);
+        }
+    }
+
+    /**
+     * Replace All existing {@link QueryBasedValueHolder} in a set of entities
+     * for the provided mapping with {@link BatchValueHolder} that are later
+     * updated to use the IN operation.
+     */
+    private static void replaceQueryBasedValueHolders(ForeignReferenceMapping mapping, List<?> results, AbstractSession session) {
+        // Create fake source query
+        ReadAllQuery sourceQuery = new ReadAllQuery(mapping.getDescriptor().getJavaClass());
+        sourceQuery.setSession(session);
+        sourceQuery.setDescriptor(mapping.getDescriptor());
+
+        ReadQuery batchQuery = mapping.prepareNestedBatchQuery(sourceQuery);
+
+        for (Object obj : results) {
+            ValueHolderInterface vhi = (ValueHolderInterface) mapping.getAttributeValueFromObject(obj);
+            if (vhi instanceof UnitOfWorkValueHolder) {
+                vhi = ((UnitOfWorkValueHolder) vhi).getWrappedValueHolder();
+            }
+            Object batchVH = mapping.getIndirectionPolicy().valueFromBatchQuery(batchQuery, ((QueryBasedValueHolder) vhi).getRow(), sourceQuery);
+            mapping.setAttributeValueInObject(obj, batchVH);
         }
     }
 }

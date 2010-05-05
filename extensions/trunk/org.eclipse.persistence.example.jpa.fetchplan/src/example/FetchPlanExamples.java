@@ -42,14 +42,15 @@ public class FetchPlanExamples {
         fetchPlan.addAttribute("salary");
         fetchPlan.addAttribute("address");
         fetchPlan.addAttribute("phoneNumbers");
-
+        
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.salary > 0");
-
+        
         // Configure a dynamic FetchGroup based on the FetchPlan
         query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());
-
+        
         List<Employee> emps = query.getResultList();
-
+        
+        // Force the fetch operation on the query result
         JpaFetchPlanHelper.fetch(em, fetchPlan, emps);
 
         return emps;
@@ -191,15 +192,15 @@ public class FetchPlanExamples {
      */
     public List<Employee> employeeCopyWithNamesAddressAndPhones(EntityManager em) {
         Query query = em.createQuery("SELECT e FROM Employee e WHERE e.salary > 0");
-
+        
         FetchPlan fetchPlan = new FetchPlan(Employee.class);
         fetchPlan.addAttribute("firstName");
         fetchPlan.addAttribute("lastName");
         fetchPlan.addAttribute("address");
         fetchPlan.addAttribute("phoneNumbers");
-
+        
         List<Employee> emps = query.getResultList();
-
+        
         return JpaFetchPlanHelper.copy(em, fetchPlan, emps);
     }
 
@@ -279,9 +280,7 @@ public class FetchPlanExamples {
         fetchPlan.addAttribute("address");
         fetchPlan.addAttribute("phoneNumbers");
 
-        int minId = ((Number) em.createQuery("SELECT MIN(e.id) FROM Employee e").getSingleResult()).intValue();
-
-        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = " + minId);
+        Query query = em.createQuery("SELECT e FROM Employee e WHERE e.id = (SELECT MIN(ee.id) FROM Employee ee)");
         query.setHint(QueryHints.FETCH_GROUP, fetchPlan.createFetchGroup());
 
         Employee emp = (Employee) query.getSingleResult();
@@ -291,6 +290,11 @@ public class FetchPlanExamples {
         copy.setSalary(Integer.MAX_VALUE);
         copy.setFirstName(emp.getLastName());
         copy.setLastName(emp.getFirstName());
+        
+        if (clear) {
+            em.clear();
+            JpaHelper.getEntityManager(em).getServerSession().getIdentityMapAccessor().initializeAllIdentityMaps();
+        }
 
         JpaFetchPlanHelper.merge(em, fetchPlan, copy);
     }

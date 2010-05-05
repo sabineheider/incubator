@@ -323,6 +323,54 @@ public class FetchPlanExamplesTests extends EclipseLinkJPATest {
     }
 
     @Test
+    public void copyMergeExample_Clear() throws Exception {
+        EntityManager em = getEntityManager();
+
+        em.getTransaction().begin();
+        this.examples.copyMergeExample(em, true);
+
+        assertEquals(6, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLINSERTCalls());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLDELETECalls());
+
+        try {
+            em.flush();
+
+            assertEquals(6, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+            assertEquals(0, getQuerySQLTracker(em).getTotalSQLINSERTCalls());
+            assertEquals(1, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
+            assertEquals(0, getQuerySQLTracker(em).getTotalSQLDELETECalls());
+        } finally {
+            em.getTransaction().rollback();
+        }
+    }
+
+    @Test
+    public void copyMergeExample_NoClear() throws Exception {
+        EntityManager em = getEntityManager();
+
+        em.getTransaction().begin();
+        this.examples.copyMergeExample(em, false);
+
+        assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLINSERTCalls());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
+        assertEquals(0, getQuerySQLTracker(em).getTotalSQLDELETECalls());
+
+        try {
+            em.flush();
+
+            assertEquals(3, getQuerySQLTracker(em).getTotalSQLSELECTCalls());
+            assertEquals(0, getQuerySQLTracker(em).getTotalSQLINSERTCalls());
+            assertEquals(1, getQuerySQLTracker(em).getTotalSQLUPDATECalls());
+            assertEquals(0, getQuerySQLTracker(em).getTotalSQLDELETECalls());
+        } finally {
+            em.getTransaction().rollback();
+        }
+    }
+
+    @Test
     public void fetchCopyMergeExample() throws Exception {
         EntityManager em = getEntityManager();
 
