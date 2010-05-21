@@ -33,23 +33,14 @@ public class Employee implements Serializable {
 	private Collection<PhoneNumber> phoneNumbers;
 	private Collection<Project> projects;
 	private Collection<Employee> managedEmployees;
+	private Collection<String> responsibilities;
 	
 	private Address address;
 	private EmploymentPeriod period;
 
     private Employee manager;
     
-	public Employee () {
-        this.phoneNumbers = new Vector<PhoneNumber>();
-        this.projects = new Vector<Project>();
-        this.managedEmployees = new Vector<Employee>();
-	}
-    
-    public Employee(String firstName, String lastName){
-        this();
-        this.firstName = firstName;
-        this.lastName = lastName;
-    }
+	public Employee () {}
 
 	public Address getAddress() { 
         return address; 
@@ -88,6 +79,10 @@ public class Employee implements Serializable {
 
 	public Collection<Project> getProjects() { 
         return projects; 
+    }
+
+    public Collection<String> getResponsibilities() {
+        return responsibilities;
     }
 
     @Column(table="SALARY")
@@ -137,6 +132,10 @@ public class Employee implements Serializable {
 		this.projects = projects;
 	}
     
+	public void setResponsibilities(Collection<String> responsibilities) {
+        this.responsibilities = responsibilities;
+    }
+
 	public void setSalary(int salary) { 
         this.salary = salary; 
     }

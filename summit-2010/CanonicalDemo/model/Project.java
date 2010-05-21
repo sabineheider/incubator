@@ -31,9 +31,7 @@ public class Project implements Serializable {
 	private Employee teamLeader;
 	private Collection<Employee> teamMembers;
 
-	public Project () {
-        this.teamMembers = new Vector<Employee>();
-	}
+	public Project () {}
 
 	@Column(name="DESCRIP")
 	public String getDescription() { 
