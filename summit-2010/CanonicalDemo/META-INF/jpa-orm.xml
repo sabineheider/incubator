@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<entity-mappings version="2.1" xmlns="http://www.eclipse.org/eclipselink/xsds/persistence/orm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<entity-mappings version="2.0" xmlns="http://www.eclipse.org/eclipselink/xsds/persistence/orm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   
   <package>model</package>
 
@@ -8,6 +8,7 @@
       <id name="id">
         <column name="EMP_ID"/>
       </id>
+	  <element-collection name="responsibilities"/>
       <many-to-one name="address" target-entity="Address" fetch="LAZY">
         <join-column name="ADDR_ID"/>
       </many-to-one>
