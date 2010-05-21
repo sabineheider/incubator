@@ -1,0 +1,10 @@
+<persistence xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/persistence persistence_1_0.xsd" version="1.0">
+    <persistence-unit name="default" transaction-type="RESOURCE_LOCAL">
+        <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+        <mapping-file>META-INF/mappings.xml</mapping-file>
+        <exclude-unlisted-classes>false</exclude-unlisted-classes>
+        <properties>
+            <property name="eclipselink.session-name" value="default-session"/>
+        </properties>
+    </persistence-unit>
+</persistence>
