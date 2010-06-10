@@ -80,8 +80,8 @@ public final class MaxDBPlatform extends DatabasePlatform {
     @Override
     protected void printFieldTypeSize(Writer writer, FieldDefinition field, FieldTypeDefinition fieldType) throws IOException {        
         String typeName = fieldType.getName();
-        /* byte[] < 4000 map to CHAR BYTE, longer ones to LONG BYTE */
-        if(typeName.equals("CHAR") && field.getSize() > 4000) {
+        /* byte[] < 4000 map to CHAR BYTE, longer ones to LONG BYTE, without size also LONG BYTE (blob) */
+        if(typeName.equals("CHAR") && (field.getSize() > 4000 || field.getSize() == 0)) {
             fieldType.setName("LONG");
             fieldType.setIsSizeRequired(false);
             fieldType.setIsSizeAllowed(false);
