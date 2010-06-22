@@ -82,10 +82,11 @@ public final class MaxDBPlatform extends DatabasePlatform {
         String typeName = fieldType.getName();
         /* byte[] < 8000 map to CHAR BYTE, longer ones to LONG BYTE */
         Class javaFieldType = field.getType();
-        if(javaFieldType != null && (javaFieldType.equals(Byte[].class) || javaFieldType.equals(byte[].class)) && (field.getSize() > 8000 || field.getSize() == 0) ) {
-            fieldType.setName("LONG");
-            fieldType.setIsSizeRequired(false);
-            fieldType.setIsSizeAllowed(false);
+        /*    backward mapping big_bad_table ser_data 10000    -      forwardmapper */
+        if( (javaFieldType == null && typeName.equals("CHAR")) || (javaFieldType != null && (javaFieldType.equals(Byte[].class) || javaFieldType.equals(byte[].class))) ) {
+            if(field.getSize() > 8000 || field.getSize() == 0)  {
+               fieldType = new FieldTypeDefinition("LONG BYTE", false);
+            }
         }
         super.printFieldTypeSize(writer, field, fieldType);
         if (fieldType.getTypesuffix() != null) {
