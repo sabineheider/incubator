@@ -44,7 +44,12 @@ import org.eclipse.persistence.tools.schemaframework.FieldDefinition;
  * @author Markus KARG (markus@headcrashing.eu)
  */
 @SuppressWarnings("serial")
-public final class MaxDBPlatform extends DatabasePlatform {
+public final class MaxDBPlatform extends DatabasePlatform {    
+    
+    public MaxDBPlatform(){
+        super();
+        this.pingSQL = "SELECT 1 FROM DUAL";
+    }
             
     @Override
     protected final Hashtable buildFieldTypes() {
@@ -92,14 +97,15 @@ public final class MaxDBPlatform extends DatabasePlatform {
         if (fieldType.getTypesuffix() != null) {
             writer.append(" " + fieldType.getTypesuffix());
         }
-    }
+    }    
+    
     
     @Override
     protected final void initializePlatformOperators() {
         super.initializePlatformOperators();
         this.addOperator(MaxDBPlatform.createConcatExpressionOperator());
         this.addOperator(MaxDBPlatform.createTrim2ExpressionOperator());
-        this.addOperator(MaxDBPlatform.createEqualOuterJoinOperator());
+        //this.addOperator(MaxDBPlatform.createEqualOuterJoinOperator());
         this.addOperator(MaxDBPlatform.createToNumberOperator());
         this.addOperator(MaxDBPlatform.createNullifOperator());
         this.addOperator(MaxDBPlatform.createCoalesceOperator());
@@ -114,9 +120,9 @@ public final class MaxDBPlatform extends DatabasePlatform {
         return ExpressionOperator.simpleTwoArgumentFunction(ExpressionOperator.Trim2, "TRIM");
     }
 
-    private static final ExpressionOperator createEqualOuterJoinOperator() {
-        return ExpressionOperator.simpleRelation(ExpressionOperator.EqualOuterJoin, "(+)=");
-    }
+    //private static final ExpressionOperator createEqualOuterJoinOperator() {
+    //    return ExpressionOperator.simpleRelation(ExpressionOperator.EqualOuterJoin, "(+)=");
+    //}
 
     private static final ExpressionOperator createNullValueOperator() {
         return ExpressionOperator.simpleTwoArgumentFunction(ExpressionOperator.Nvl, "VALUE");
@@ -211,7 +217,7 @@ public final class MaxDBPlatform extends DatabasePlatform {
 
     @Override
     public final boolean shouldPrintOuterJoinInWhereClause() {
-        return true;
+        return false;
     }
 
     @Override
