@@ -104,30 +104,31 @@ public final class MaxDBPlatform extends DatabasePlatform {
     protected final void initializePlatformOperators() {
         super.initializePlatformOperators();
         this.addOperator(MaxDBPlatform.createConcatExpressionOperator());
-        this.addOperator(MaxDBPlatform.createTrim2ExpressionOperator());
-        //this.addOperator(MaxDBPlatform.createEqualOuterJoinOperator());
+        this.addOperator(MaxDBPlatform.createTrim2ExpressionOperator());        
         this.addOperator(MaxDBPlatform.createToNumberOperator());
         this.addOperator(MaxDBPlatform.createNullifOperator());
         this.addOperator(MaxDBPlatform.createCoalesceOperator());
+        this.addOperator(MaxDBPlatform.createTodayExpressionOperator());
         this.addNonBindingOperator(MaxDBPlatform.createNullValueOperator());
     }
     
-    private static final ExpressionOperator createConcatExpressionOperator() { // not checked
-        return ExpressionOperator.simpleTwoArgumentFunction(ExpressionOperator.Concat, "CONCAT");
+    private static final ExpressionOperator createConcatExpressionOperator() {
+        return ExpressionOperator.simpleLogicalNoParens(ExpressionOperator.Concat, "||");
     }
-
-    private static final ExpressionOperator createTrim2ExpressionOperator() { // not checked
+    
+    private static final ExpressionOperator createTodayExpressionOperator() {
+        return ExpressionOperator.simpleLogicalNoParens(ExpressionOperator.Today, "DATE");
+    }        
+    
+    private static final ExpressionOperator createTrim2ExpressionOperator() { 
         return ExpressionOperator.simpleTwoArgumentFunction(ExpressionOperator.Trim2, "TRIM");
     }
-
-    //private static final ExpressionOperator createEqualOuterJoinOperator() {
-    //    return ExpressionOperator.simpleRelation(ExpressionOperator.EqualOuterJoin, "(+)=");
-    //}
 
     private static final ExpressionOperator createNullValueOperator() {
         return ExpressionOperator.simpleTwoArgumentFunction(ExpressionOperator.Nvl, "VALUE");
     }
     
+    /* see bug 316774 */
     private static final ExpressionOperator createCoalesceOperator() {
         ListExpressionOperator operator = (ListExpressionOperator) ExpressionOperator.coalesce();
         operator.setStartString("VALUE(");
@@ -170,7 +171,7 @@ public final class MaxDBPlatform extends DatabasePlatform {
         return new ValueReadQuery("SELECT " + this.getQualifiedSequenceName(sequenceName) + ".NEXTVAL FROM DUAL");
     }
 
-    // not checked starts here Andreas <°)))><
+    // not checked starts here; Andreas <°)))><
     
     @Override
     protected final String getCreateTempTableSqlBodyForTable(final DatabaseTable table) {
@@ -196,11 +197,7 @@ public final class MaxDBPlatform extends DatabasePlatform {
         return new DatabaseTable("$" + table.getName(), "TEMP");
     }
 
-    
-
-    /**************
-     * @Override This will only qualify as an override when isMaxDB appears in DatabasePlatform
-     ***************/
+    @Override     
     public final boolean isMaxDB() {
         return true;
     }
@@ -240,6 +237,11 @@ public final class MaxDBPlatform extends DatabasePlatform {
 
     @Override
     public final boolean supportsNativeSequenceNumbers() {
+        return true;
+    }
+    
+    @Override
+    public boolean supportsSequenceObjects() {
         return true;
     }
 
