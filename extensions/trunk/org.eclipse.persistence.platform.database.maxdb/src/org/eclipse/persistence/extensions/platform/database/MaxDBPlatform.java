@@ -261,10 +261,13 @@ public final class MaxDBPlatform extends DatabasePlatform {
 	@Override
 	public int executeBatch(Statement statement, boolean isStatementPrepared)
 			throws SQLException {
-
-		statement.executeBatch();
-		return statement.getUpdateCount();
+		if (isStatementPrepared) {
+			statement.executeBatch();
+			return statement.getUpdateCount();
+		} else {
+			int[] updateCounts = statement.executeBatch();
+			return updateCounts.length;
+		}
 	}
-
 
 }
