@@ -45,9 +45,26 @@ import org.eclipse.persistence.tools.schemaframework.FieldDefinition;
  * Provides MaxDB specific behaviour.
  *
  * @author Markus KARG (markus@headcrashing.eu)
+ * @author afischbach
+ * @author agoerler
  */
 @SuppressWarnings("serial")
 public final class MaxDBPlatform extends DatabasePlatform {
+
+    @Override
+    public boolean isForUpdateCompatibleWithDistinct() {
+        return false;
+    }
+
+    @Override
+    public String getSelectForUpdateString() {
+        return " WITH LOCK EXCLUSIVE";
+    }
+
+    @Override
+    public String getSelectForUpdateNoWaitString() {
+        return " WITH LOCK (NOWAIT) EXCLUSIVE";
+    }
 
     public MaxDBPlatform(){
         super();
@@ -83,6 +100,11 @@ public final class MaxDBPlatform extends DatabasePlatform {
         fieldTypeMapping.put(Time.class, new FieldTypeDefinition("TIME", false));
         fieldTypeMapping.put(Timestamp.class, new FieldTypeDefinition("TIMESTAMP", false));
         return fieldTypeMapping;
+    }
+
+    @Override
+    public boolean supportsIndividualTableLocking() {
+        return false;
     }
 
     @Override
