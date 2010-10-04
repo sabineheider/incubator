@@ -51,6 +51,15 @@ import org.eclipse.persistence.tools.schemaframework.FieldDefinition;
 @SuppressWarnings("serial")
 public final class MaxDBPlatform extends DatabasePlatform {
 
+    private static final int MAX_BINARY_LENGTH = 8000; // FIXME review this
+
+    /**
+     * Maximum length of type VARCHAR UNICODE
+     *
+     * ({@link http://maxdb.sap.com/doc/7_8/45/33337d9faf2b34e10000000a1553f7/content.htm})
+     */
+    private static final int MAX_VARCHAR_UNICODE_LENGTH = 4000; //
+
     @Override
     public boolean isForUpdateCompatibleWithDistinct() {
         return false;
@@ -112,13 +121,19 @@ public final class MaxDBPlatform extends DatabasePlatform {
         String typeName = fieldType.getName();
         /* byte[] < 8000 map to CHAR BYTE, longer ones to LONG BYTE */
         Class javaFieldType = field.getType();
-        /*    backward mapping big_bad_table ser_data 10000    -      forwardmapper */
+        /*    backward mapping big_bad_table ser_data 10000 - forwardmapper */
         if( ( javaFieldType == null && "CHAR".equals(typeName) && "BYTE".equals(fieldType.getTypesuffix())) ||
                 (javaFieldType != null && (javaFieldType.equals(Byte[].class) || javaFieldType.equals(byte[].class))) ) {
-            if(field.getSize() > 8000 || field.getSize() == 0)  {
+            if(field.getSize() > MAX_BINARY_LENGTH || field.getSize() == 0)  {
                fieldType = new FieldTypeDefinition("LONG BYTE", false);
             }
+        } else if ("VARCHAR".equals(typeName) && "UNICODE".equals(fieldType.getTypesuffix())) {
+            if (field.getSize() > MAX_VARCHAR_UNICODE_LENGTH) {
+                fieldType = new FieldTypeDefinition("LONG UNICODE", false);
+            }
         }
+
+
         super.printFieldTypeSize(writer, field, fieldType);
         if (fieldType.getTypesuffix() != null) {
             writer.append(" " + fieldType.getTypesuffix());
