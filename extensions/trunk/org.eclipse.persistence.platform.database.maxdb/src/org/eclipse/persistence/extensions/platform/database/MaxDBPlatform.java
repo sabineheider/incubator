@@ -47,6 +47,7 @@ import org.eclipse.persistence.tools.schemaframework.FieldDefinition;
  * @author Markus KARG (markus@headcrashing.eu)
  * @author afischbach
  * @author agoerler
+ * @author Sabine Heider (sabine.heider@sap.com)
  */
 @SuppressWarnings("serial")
 public final class MaxDBPlatform extends DatabasePlatform {
@@ -255,14 +256,6 @@ public final class MaxDBPlatform extends DatabasePlatform {
 
     @Override
     public final boolean shouldUseJDBCOuterJoinSyntax() {
-        return false;
-    }
-
-    /*
-     * TODO Removemove this function.
-     */
-    @Override
-    public final boolean supportsForeignKeyConstraints() {
         return false;
     }
 
