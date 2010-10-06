@@ -215,11 +215,6 @@ public final class MaxDBPlatform extends DatabasePlatform {
     // not checked starts here; Andreas <°)))><
 
     @Override
-    protected final String getCreateTempTableSqlBodyForTable(final DatabaseTable table) {
-        return " LIKE " + table.getQualifiedName();
-    }
-
-    @Override
     protected final String getCreateTempTableSqlPrefix() {
         return "CREATE TABLE ";
     }
