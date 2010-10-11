@@ -151,6 +151,8 @@ public final class MaxDBPlatform extends DatabasePlatform {
         this.addOperator(MaxDBPlatform.createNullifOperator());
         this.addOperator(MaxDBPlatform.createCoalesceOperator());
         this.addOperator(MaxDBPlatform.createTodayExpressionOperator());
+        this.addOperator(MaxDBPlatform.createCurrentDateExpressionOperator());
+        this.addOperator(MaxDBPlatform.createCurrentTimeExpressionOperator());
         this.addNonBindingOperator(MaxDBPlatform.createNullValueOperator());
     }
 
@@ -158,8 +160,31 @@ public final class MaxDBPlatform extends DatabasePlatform {
         return ExpressionOperator.simpleLogicalNoParens(ExpressionOperator.Concat, "||");
     }
 
+    /**
+     * Creates the expression operator representing the JPQL function current_timestamp as defined by § 4.6.17.2.3 of the JPA 2.0 specification
+     *
+     * @return the expression operator representing the JPQL function current_timestamp as defined by § 4.6.17.2.3 of the JPA 2.0 specification
+     */
     private static final ExpressionOperator createTodayExpressionOperator() {
-        return ExpressionOperator.simpleLogicalNoParens(ExpressionOperator.Today, "DATE");
+        return ExpressionOperator.simpleLogicalNoParens(ExpressionOperator.Today, "TIMESTAMP");
+    }
+
+    /**
+     * Creates the expression operator representing the JPQL function current_date as defined by § 4.6.17.2.3 of the JPA 2.0 specification
+     *
+     * @return the expression operator representing the JPQL function current_date as defined by § 4.6.17.2.3 of the JPA 2.0 specification
+     */
+    private static final ExpressionOperator createCurrentDateExpressionOperator() {
+        return ExpressionOperator.simpleLogicalNoParens(ExpressionOperator.CurrentDate, "DATE");
+    }
+
+    /**
+     * Creates the expression operator representing the JPQL function current_timestamp as defined by § 4.6.17.2.3 of the JPA 2.0 specification
+     *
+     * @return the expression operator representing the JPQL function current_timestamp as defined by § 4.6.17.2.3 of the JPA 2.0 specification
+     */
+    private static final ExpressionOperator createCurrentTimeExpressionOperator() {
+        return ExpressionOperator.simpleLogicalNoParens(ExpressionOperator.CurrentTime, "TIME");
     }
 
     private static final ExpressionOperator createTrim2ExpressionOperator() {
