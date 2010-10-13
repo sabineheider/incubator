@@ -45,7 +45,7 @@ import org.eclipse.persistence.tools.schemaframework.FieldDefinition;
  * Provides MaxDB specific behaviour.
  *
  * @author Markus KARG (markus@headcrashing.eu)
- * @author afischbach
+ * @author afischbach <°)))><
  * @author agoerler
  * @author Sabine Heider (sabine.heider@sap.com)
  */
@@ -118,11 +118,16 @@ public final class MaxDBPlatform extends DatabasePlatform {
     }
 
     @Override
+    /**
+     * EclipseLink does not support length dependent type mapping.
+     * Map binary types with length > MAX_BINARY_LENGTH to LONG BYTE (i.e. blob); shorter types to CHAR (n) BYTE
+     * Map varchar types with length > MAX_VARCHAR_UNICODE_LENGTH to LONG UNICODE (i.e clob); shorter types to VARCHAR (n) UNICODE
+     * See also bugs 317597, 317448
+     */
     protected void printFieldTypeSize(Writer writer, FieldDefinition field, FieldTypeDefinition fieldType) throws IOException {
         String typeName = fieldType.getName();
         /* byte[] < 8000 map to CHAR BYTE, longer ones to LONG BYTE */
         Class javaFieldType = field.getType();
-        /*    backward mapping big_bad_table ser_data 10000 - forwardmapper */
         if( ( javaFieldType == null && "CHAR".equals(typeName) && "BYTE".equals(fieldType.getTypesuffix())) ||
                 (javaFieldType != null && (javaFieldType.equals(Byte[].class) || javaFieldType.equals(byte[].class))) ) {
             if(field.getSize() > MAX_BINARY_LENGTH || field.getSize() == 0)  {
@@ -226,19 +231,23 @@ public final class MaxDBPlatform extends DatabasePlatform {
 
     @Override
     public boolean shouldOptimizeDataConversion() {
-        return true;
+        return true; // TODO is this needed? (seems to default to true)
     }
 
-    protected void addNonBindingOperator(ExpressionOperator operator) {
+    private void addNonBindingOperator(ExpressionOperator operator) {
         operator.setIsBindingSupported(false);
         addOperator(operator);
     }
 
+    @Override
+    public final boolean supportsNativeSequenceNumbers() {
+        return true;
+    }
+
+    @Override
     public final ValueReadQuery buildSelectQueryForSequenceObject(final String sequenceName, final Integer size) {
         return new ValueReadQuery("SELECT " + this.getQualifiedSequenceName(sequenceName) + ".NEXTVAL FROM DUAL");
     }
-
-    // not checked starts here; Andreas <°)))><
 
     @Override
     protected final String getCreateTempTableSqlPrefix() {
@@ -252,6 +261,11 @@ public final class MaxDBPlatform extends DatabasePlatform {
 
     private final String getQualifiedSequenceName(final String sequenceName) {
         return this.getTableQualifier().length() == 0 ? sequenceName : this.getTableQualifier() + "." + sequenceName;
+    }
+
+    @Override
+    public final boolean supportsLocalTempTables() {
+        return true;
     }
 
     @Override
@@ -282,16 +296,6 @@ public final class MaxDBPlatform extends DatabasePlatform {
     @Override
     public final boolean shouldUseJDBCOuterJoinSyntax() {
         return false;
-    }
-
-    @Override
-    public final boolean supportsLocalTempTables() {
-        return true;
-    }
-
-    @Override
-    public final boolean supportsNativeSequenceNumbers() {
-        return true;
     }
 
     @Override
