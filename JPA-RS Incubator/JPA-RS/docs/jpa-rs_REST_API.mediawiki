@@ -1,0 +1,156 @@
+= JAX-RS: A RESTful API for JPA=
+
+'''History'''
+Date
+Author
+Description
+01/10/11
+douglas.clarke
+Initial Version
+
+
+
+==Overview==
+
+This specification will define a RESTful API for dealing with JPA behind a JAX-RS front end that can be consistently applied all RESTful services built that expose JPA entities and the underlying database. These components include:
+
+* Static: RESTFul access to existing JPA persistence units
+* Dynamic: RESTful access for persistence units defined or generated with only Metadata (dynamic provisions or DBWS)
+
+The intent is to provide access to the JPA persistence unit using REST that can be used by clients that are both JPA and aware and those that are not.
+
+===Static JPA===
+The static JPA model refers to putting a RESTful interface in front of an existing JPA persistence unit. Customers may choose this as a way to REST enable their existing Java EE applications or it can be done as an alternative management and monitoring capability added to an application for internal use only. This specification addresses how a JPA persistent unit can be exposed through REST but does not address how that interface can be secured to limit access.
+
+==REST URI Structure==
+This section describes the entire API as it is broken down into 3 sub sections within the URI root and persistence context:
+APP: Persistence related operations agains the persistence unit
+INFO: Metadata calls to interrogate the structure of a persistence unit and its supporting queries
+ADMIN: Support for dynamically defining, modifying and extending dynamic persistence units.
+===URI Root : /persistence===
+The root URI for the RESTful interface is defined in the application's web.xml:
+  <servlet-mapping>
+    <servlet-name>Jersey REST Service</servlet-name>
+    <url-pattern>/persistence/*</url-pattern>
+  </servlet-mapping>
+
+Here the root URI is 'persistence' to differentiate it from other services
+===Data Formats: JSON or XML===
+This REST interface deals with XML and JSON representations of the data equally well. The caller is responsible for using the HTTP header values to indicate the format of the content it is sending (Content-Type = application/json or application/xml) as well as indicating the format of the result it expects (Accept = application/json or application/xml).
+In cases where no header value is specified JSON will be used by default and in cases where content-type is specified and accept is not the returned format will match the content-type passed in.
+NOTE: In many REST utilities the accept value is defaulted to application/xml making it the users responsibility to configure this value explicitly.
+===Web Caching===
+In addition to the internal caching within TopLink (EclipseLink) the results from REST URI calls can be cached in various points between the initiating server and the user, including their browser. This caching is determined by URI structure and the HTTP header information in the response from the REST calls. Generally only GET call responses are cached so these must be addressed carefully to ensure the proper caching information is provided so that the end user of the RESTful persistence interface get the most correct information possible while still benefiting from web caching.
+TODO: Add guidelines
+
+===Application Versions===
+
+/persistence/app/{context}/v1/...
+
+===Application URI: /persistence/app/{context}===
+Since a JPA enabled application can contain one or more persistence units a persistence context root must be specified. The value ({context}) will be the JPA persistence unit name. 
+
+====Entity Operations: /persistence/app/{context}/entity====
+The 'entity' element of the URI allows access to defined data types within the persistence context.
+To operate against a specific entity the 
+=====INSERT (PUT)=====
+If the underlying entity type assigns its identifier during the database 
+UPDATE (POST)
+This URI will take in an entity or entity graph and merge it into the persistent context's database. If there is a graph of entities then the merge will be done according to the mapped relationships in the model and their cascade merge configurations. If optimistic locking is enabled on the entity then the version values provided in the payload will be used in the lock checks and the response will only be successful if all entities are successfully committed.
+Responses:
+ACCEPTED(202)
+DELETE: /app/{context}/entity
+Delete the entity provided in the payload. The entity must contain all of the necessary id values and optimistic locking 
+DELETE By Id
+There are multiple ways to delete an entity by id:
+.../entity/{id} for single value identifiers
+../entity?{id1-name}={id1-value}&{id2-name}={id2-value}...
+../entity:{id1-name}={id1-value}&{id2-name}={id2-value}...
+Composite Keys
+In order to handle composite keys on find operations so that a fixed URL can be used and thus support caching an {element array} approach is used. This allows each piece of the composite id to be identified:
+URI: {.../entities/{type}:{id1-name}={id1-value};{id2-name}={id2-value}...
+
+
+
+Query Operations: /persistence/app/{context}/query
+The RESTful API will allow clients to perform queries using predefined queries with a set of parameter values or to 
+Named Queries
+
+Dynamic Queries
+
+CAUTION: Allowing dynamic queries can be a great diagnostic and admin tool but allowing it to the general user community of an application is dangerous. 
+TODO: Figure out how to handle this from a security check-list point of view.
+Index Array Args
+Alternatively 
+Synchronize Offline
+When dealing with clients that support offline storage (HTML5) support for doing a merge or synchronize with the primary persistence store must be supported.
+Entity-Set Merge
+For those clients who maintain sets of entities but do not keep track of changes the set of entities to be merged must be set to the server and the server will calculate the change-set to be applied.
+Change-Set Merge
+
+Resource Scope
+One challenge with putting a RESTful front end on a persistence unit is scoping the returned structure. JPA entities have relationships which could be included in the result of any 
+Default Scoping
+
+Relationships
+
+Attribute Group
+
+Partial Entities
+
+Information URI: /persistence/info/{context}
+Clients will also have the ability to 
+
+/info/{context}
+This URI will return the high level information about the persistence unit referenced by the context. The information presented will be driven from the runtime environment but will be equivalent to what is generally configured in JPA's persistence.xml. This includes:
+Transaction type
+Data-source or JDBC connection information being used
+Validation mode
+Properties
+/info/{context}/entity
+This URI will return the list of all entity types managed in this persistence unit. These will be returned as a list of links to the detailed information for that type (see #2.4.3./info/{context}/entity/{type}|outline).
+
+/info/{context}/entity/{type}
+This 
+/info/{context}/orm
+
+/info/{context}/oxm
+This URI will return the complete Object-XML mapping/binding specified or defaulted for this persistence context. This mapping information is what is used for both XML and JSON marshaling and unmarshaling of the entity types.
+/info/{context}/queries
+This URI will produce a summary list of all available named queries defined in the {context}'s persistence unit. Each will have a link to the more detailed information.
+/info/{context}/queries/{query-name}
+This URI will produce a complete description of the {context}'s persistence unit's named query specified by {query-name}.
+Admin: /persistence/admin/{context}
+The admin URIs will provide support for 
+
+Create Context: /admin/{context}
+
+
+
+
+==Background==
+
+===Standards===
+
+
+==Issues==
+#
+Description
+Status
+1
+Security: Is there anything that can/must be done within the JAX-RS implementation to better enable security
+Open
+2
+Selective URIs: Within this specification there are various information and admin access URIs that a user of this interface may choose to disable. Need to add a configuration file definition that will be included with implementations to enable/disable URIs or URI sets. 
+Open
+3
+HTML or TEXT Data Formats: Should additional support for returning the results of operations in HTML or TEXT format be supported? Would this be useful for browser usage of GET URIs? How would the data be formatted? 
+Open
+
+==Decisions==
+The following decisions have been made in the development of this specification.
+REST meta-model
+There is not a standard REST meta-model for web service access which functions in the same way that a WSDL does for 
+References
+The following references were used in the research of this specification and are valuable in understanding how to best implement it.
+Jersey: The JAX-RS reference implementation in GlassFish - http://jersey.java.net/
