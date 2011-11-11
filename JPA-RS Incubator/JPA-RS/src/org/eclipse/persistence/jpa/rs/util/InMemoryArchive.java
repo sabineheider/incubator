@@ -39,13 +39,20 @@ public class InMemoryArchive extends URLArchive {
     	this();
         this.persistenceXMLURL = persistencexmlurl;
     }
+    
+    public InMemoryArchive(InputStream stream){
+        this();
+        this.stream = stream;
+    }
 
     @Override
     public InputStream getDescriptorStream() throws IOException {
-        if (persistencexml == null){
-        	stream = persistenceXMLURL.openStream();
-        } else {
-        	stream = new ByteArrayInputStream(persistencexml.getBytes());
+        if (stream == null){
+            if (persistencexml == null){
+            	stream = persistenceXMLURL.openStream();
+            } else {
+            	stream = new ByteArrayInputStream(persistencexml.getBytes());
+            }
         }
         return stream;
     }

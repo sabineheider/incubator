@@ -81,14 +81,18 @@ public class Service {
     
     @POST
     @Path("{context}")
-    public Response bootstrap(@PathParam("context") String persistenceUnit, @Context HttpHeaders hh, @Context UriInfo ui){
+    public Response bootstrap(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, InputStream in){
         ResponseBuilder rb = new ResponseBuilderImpl();
         String urlString = getURL(hh);
         PersistenceContext persistenceContext = null;
         try{
-            URL url = new URL(urlString);
-            persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, url, new HashMap<String, Object>());
-        } catch (Exception e){
+            if (urlString != null){
+                URL url = new URL(urlString);
+                persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, url, new HashMap<String, Object>());
+            } else {
+                persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, in, new HashMap<String, Object>());
+            }
+       } catch (Exception e){
             rb.status(Status.NOT_FOUND);
         }
         if (persistenceContext != null){

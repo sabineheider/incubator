@@ -12,6 +12,7 @@
  ******************************************************************************/
 package org.eclipse.persistence.jpa.rs;
 
+import java.io.InputStream;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,6 +43,11 @@ public class PersistenceFactory {
     
     public PersistenceContext bootstrapPersistenceContext(String name, URL persistenceXMLURL, Map<String, ?> originalProperties){
         InMemoryArchive archive = new InMemoryArchive(persistenceXMLURL);
+        return bootstrapPersistenceContext(name, archive, originalProperties);
+    }
+    
+    public PersistenceContext bootstrapPersistenceContext(String name, InputStream persistenceXMLStream, Map<String, ?> originalProperties){
+        InMemoryArchive archive = new InMemoryArchive(persistenceXMLStream);
         return bootstrapPersistenceContext(name, archive, originalProperties);
     }
     
