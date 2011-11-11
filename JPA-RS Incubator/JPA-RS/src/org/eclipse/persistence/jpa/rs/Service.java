@@ -16,14 +16,15 @@ import static org.eclipse.persistence.jaxb.JAXBContext.MEDIA_TYPE;
 import static org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller.mediaType;
 
 import java.io.InputStream;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
+import javax.ejb.EJB;
 import javax.ejb.Singleton;
-import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -73,9 +74,27 @@ public class Service {
         return factory;
     }
 
-    @Inject
+   @EJB
     public void setPersistenceFactory(PersistenceFactory factory) {
         this.factory = factory;
+    }
+    
+    @POST
+    @Path("{context}")
+    public Response bootstrap(@PathParam("context") String persistenceUnit, @Context HttpHeaders hh, @Context UriInfo ui){
+        ResponseBuilder rb = new ResponseBuilderImpl();
+        String urlString = getURL(hh);
+        PersistenceContext persistenceContext = null;
+        try{
+            URL url = new URL(urlString);
+            persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, url, new HashMap<String, Object>());
+        } catch (Exception e){
+            rb.status(Status.NOT_FOUND);
+        }
+        if (persistenceContext != null){
+            rb.status(Status.OK);
+        }
+        return rb.build();
     }
     
     @GET
@@ -195,6 +214,26 @@ public class Service {
         } catch (JAXBException e) {
             throw new WebApplicationException(Status.BAD_REQUEST);
         }
+    }
+    
+    private String getURL(HttpHeaders hh){
+        List<String> persistenceXmlURLs = hh.getRequestHeader("persistenceXmlURL");
+        if (persistenceXmlURLs == null || persistenceXmlURLs.isEmpty()) {
+            return null;
+        }
+        if (persistenceXmlURLs.size() != 1) {
+            throw new WebApplicationException(Status.BAD_REQUEST);
+        }
+        return persistenceXmlURLs.get(0);
+    }
+    
+  //  @PreDestroy
+    //TODO
+    public void close() {
+     //   for (Application each : this.applications.values()) {
+      //      each.stop();
+      //  }
+     //   this.applications.clear();
     }
 
 }

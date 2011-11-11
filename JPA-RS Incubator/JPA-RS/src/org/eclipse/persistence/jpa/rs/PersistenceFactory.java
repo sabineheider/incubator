@@ -16,6 +16,8 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.ejb.Singleton;
+
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.jpa.Archive;
@@ -28,18 +30,19 @@ import org.eclipse.persistence.jpa.rs.util.InMemoryArchive;
  * 
  * @author douglas.clarke, tom.ware
  */
+@Singleton
 public class PersistenceFactory {
 
 	private Map<String, PersistenceContext> persistenceContexts = new HashMap<String, PersistenceContext>();
 
-    public String bootstrapPersistenceContext(String persistenceXML, Map<String, ?> originalProperties){
+    public PersistenceContext bootstrapPersistenceContext(String name, String persistenceXML, Map<String, ?> originalProperties){
         InMemoryArchive archive = new InMemoryArchive(persistenceXML);
-        return bootstrapPersistenceContext(archive, originalProperties);
+        return bootstrapPersistenceContext(name, archive, originalProperties);
     }
     
-    public String bootstrapPersistenceContext(URL persistenceXMLURL, Map<String, ?> originalProperties){
+    public PersistenceContext bootstrapPersistenceContext(String name, URL persistenceXMLURL, Map<String, ?> originalProperties){
         InMemoryArchive archive = new InMemoryArchive(persistenceXMLURL);
-        return bootstrapPersistenceContext(archive, originalProperties);
+        return bootstrapPersistenceContext(name, archive, originalProperties);
     }
     
     public PersistenceContext getPersistenceContext(String name){
@@ -54,13 +57,13 @@ public class PersistenceFactory {
         }
     }
     
-    public String bootstrapPersistenceContext(Archive archive, Map<String, ?> originalProperties){        	
+    public PersistenceContext bootstrapPersistenceContext(String name, Archive archive, Map<String, ?> originalProperties){        	
     	DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
         Map<String, Object> properties = createProperties(dcl, originalProperties);
     	PersistenceContext persistenceContext = new PersistenceContext(archive, properties, dcl);
 
-        persistenceContexts.put(persistenceContext.getName(), persistenceContext);
-        return persistenceContext.getName();
+        persistenceContexts.put(name, persistenceContext);
+        return persistenceContext;
     }
 
     protected static Map<String, Object> createProperties(DynamicClassLoader dcl, Map<String, ?> originalProperties) {
