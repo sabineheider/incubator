@@ -12,78 +12,58 @@
  ******************************************************************************/
 package org.eclipse.persistence.jpa.rs;
 
+import java.net.URL;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import javax.persistence.EntityManagerFactory;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.internal.jpa.EntityManagerFactoryImpl;
-import org.eclipse.persistence.internal.jpa.EntityManagerFactoryProvider;
-import org.eclipse.persistence.internal.jpa.EntityManagerSetupImpl;
-import org.eclipse.persistence.internal.jpa.deployment.PersistenceUnitProcessor;
-import org.eclipse.persistence.internal.jpa.deployment.SEPersistenceUnitInfo;
-import org.eclipse.persistence.jaxb.JAXBContextFactory;
-import org.eclipse.persistence.jaxb.dynamic.DynamicJAXBContextFactory;
-import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.jpa.rs.util.DynamicXMLMetadataSource;
+import org.eclipse.persistence.jpa.Archive;
 import org.eclipse.persistence.jpa.rs.util.InMemoryArchive;
-import org.eclipse.persistence.jpa.rs.util.XMLDatabaseMetadataSource;
-import org.eclipse.persistence.sessions.server.Server;
 
 /**
  * Factory for the creation of persistence contexts (JPA and JAXB). These
  * contexts are for the persistence of both the meta-model as well as the
  * dynamic persistence contexts for the hosted applications.
  * 
- * @author douglas.clarke
- * @since Avatar POC - September 2011
+ * @author douglas.clarke, tom.ware
  */
 public class PersistenceFactory {
 
-    private static final String PACKAGE_ROOT = "avatar.app.";
-    private static final String MODEL_PACKAGE = ".model";
+	private Map<String, PersistenceContext> persistenceContexts = new HashMap<String, PersistenceContext>();
 
-    public static final String CHANGE_NOTIFICATION_LISTENER = "avatar.change-notification-listener";
-
-    public static EntityManagerFactory createDynamicEMF(String persistenceUnitName, Map<String, ?> originalProperties) {
-        String sessionName = "AVATAR-" + persistenceUnitName;
-        EntityManagerFactoryImpl emfImpl = null;
-
-        DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
-        Map<String, Object> properties = createProperties(dcl, sessionName, originalProperties);
-        properties.put(PersistenceUnitProperties.DDL_GENERATION, PersistenceUnitProperties.CREATE_ONLY);
-        properties.put(PersistenceUnitProperties.METADATA_SOURCE, XMLDatabaseMetadataSource.class.getName());
-
-        InMemoryArchive archive = new InMemoryArchive(null); // TODO
-        List<SEPersistenceUnitInfo> persistenceUnits = PersistenceUnitProcessor.getPersistenceUnits(archive, dcl);
-        SEPersistenceUnitInfo persistenceUnitInfo = persistenceUnits.get(0);
-        EntityManagerSetupImpl emSetupImpl = null;
-        synchronized (EntityManagerFactoryProvider.emSetupImpls) {
-            emSetupImpl = EntityManagerFactoryProvider.getEntityManagerSetupImpl(sessionName);
-            if (emSetupImpl == null) {
-                emSetupImpl = new EntityManagerSetupImpl(sessionName, sessionName);
-                emSetupImpl.predeploy(persistenceUnitInfo, properties);
-                EntityManagerFactoryProvider.addEntityManagerSetupImpl(sessionName, emSetupImpl);
-            }
-        }
-        emfImpl = new EntityManagerFactoryImpl(emSetupImpl, properties);
-        return emfImpl;
+    public String bootstrapPersistenceContext(String persistenceXML, Map<String, ?> originalProperties){
+        InMemoryArchive archive = new InMemoryArchive(persistenceXML);
+        return bootstrapPersistenceContext(archive, originalProperties);
     }
-
-    public static void closeDynamicEntityManagerFactory(EntityManagerFactory emf) {
-        Server session = JpaHelper.getServerSession(emf);
-        emf.close();
-        if (session.isConnected()) {
-            session.logout();
+    
+    public String bootstrapPersistenceContext(URL persistenceXMLURL, Map<String, ?> originalProperties){
+        InMemoryArchive archive = new InMemoryArchive(persistenceXMLURL);
+        return bootstrapPersistenceContext(archive, originalProperties);
+    }
+    
+    public PersistenceContext getPersistenceContext(String name){
+    	return persistenceContexts.get(name);
+    }
+    
+    public void closePersistenceContext(String name){
+        PersistenceContext context = persistenceContexts.get(name);
+        if (context != null){
+            context.getEmf().close();
+            persistenceContexts.remove(name);
         }
     }
+    
+    public String bootstrapPersistenceContext(Archive archive, Map<String, ?> originalProperties){        	
+    	DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
+        Map<String, Object> properties = createProperties(dcl, originalProperties);
+    	PersistenceContext persistenceContext = new PersistenceContext(archive, properties, dcl);
 
-    private static Map<String, Object> createProperties(DynamicClassLoader dcl, String sessionName, Map<String, ?> originalProperties) {
+        persistenceContexts.put(persistenceContext.getName(), persistenceContext);
+        return persistenceContext.getName();
+    }
+
+    protected static Map<String, Object> createProperties(DynamicClassLoader dcl, Map<String, ?> originalProperties) {
         Map<String, Object> properties = new HashMap<String, Object>();
 
         properties.put(PersistenceUnitProperties.CLASSLOADER, dcl);
@@ -92,7 +72,6 @@ public class PersistenceFactory {
         // "drop-and-create-tables");
         // properties.put("eclipselink.ddl-generation.output-mode", "database");
         properties.put(PersistenceUnitProperties.LOGGING_LEVEL, "FINE");
-        properties.put(PersistenceUnitProperties.SESSION_NAME, sessionName);
 
         // For now we'll copy the connection info from admin PU
         for (Map.Entry<String, ?> entry : originalProperties.entrySet()) {
@@ -104,52 +83,6 @@ public class PersistenceFactory {
             properties.put(PersistenceUnitProperties.NON_JTA_DATASOURCE, "jdbc/avatar");
         }
         return properties;
-    }
-
-    /**
-     * TODO
-     * 
-     * @param session
-     * @return
-     */
-    public static JAXBContext createDynamicJAXBContext(String persistenceUnitName, Server session) throws JAXBException {
-        JAXBContext jaxbContext = (JAXBContext) session.getProperty(JAXBContext.class.getName());
-        if (jaxbContext != null) {
-            return jaxbContext;
-        }
-
-        String packageName = PACKAGE_ROOT + persistenceUnitName + MODEL_PACKAGE;
-        Map<String, Object> properties = new HashMap<String, Object>(1);
-        properties.put(JAXBContextFactory.ECLIPSELINK_OXM_XML_KEY, new DynamicXMLMetadataSource(session, packageName));
-
-        ClassLoader cl = session.getPlatform().getConversionManager().getLoader();
-        jaxbContext = DynamicJAXBContextFactory.createContextFromOXM(cl, properties);
-        session.setProperty(JAXBContext.class.getName(), jaxbContext);
-
-        return jaxbContext;
-    }
-
-    /**
-     * TODO
-     * 
-     * @param session
-     * @return
-     */
-    public static JAXBContext createJAXBContext(String persistenceUnitName, Server session, String oxmLocation) throws JAXBException {
-        JAXBContext jaxbContext = (JAXBContext) session.getProperty(JAXBContext.class.getName());
-        if (jaxbContext != null) {
-            return jaxbContext;
-        }
-
-        String packageName = PACKAGE_ROOT + persistenceUnitName + MODEL_PACKAGE;
-        Map<String, Object> properties = new HashMap<String, Object>(1);
-        properties.put(JAXBContextFactory.ECLIPSELINK_OXM_XML_KEY, new InMemoryArchive(oxmLocation));
-
-        ClassLoader cl = session.getPlatform().getConversionManager().getLoader();
-        jaxbContext = DynamicJAXBContextFactory.createContextFromOXM(cl, properties);
-        session.setProperty(JAXBContext.class.getName(), jaxbContext);
-
-        return jaxbContext;
     }
 
 }

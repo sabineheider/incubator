@@ -67,21 +67,21 @@ import com.sun.jersey.core.spi.factory.ResponseBuilderImpl;
 public class Service {
 	static final Logger logger = Logger.getLogger("AppService");	
 
-    private PersistenceUnitHelper repository;
+    private PersistenceFactory factory;
 
-    public PersistenceUnitHelper getRepository() {
-        return repository;
+    public PersistenceFactory getPersistenceFactory() {
+        return factory;
     }
 
     @Inject
-    public void setRepository(PersistenceUnitHelper repository) {
-        this.repository = repository;
+    public void setPersistenceFactory(PersistenceFactory factory) {
+        this.factory = factory;
     }
     
     @GET
     @Path("{context}/entity/{type}")
     public Response find(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo ui) {
-        PersistenceUnitWrapper app = get(persistenceUnit);
+        PersistenceContext app = get(persistenceUnit);
         Object id = IdHelper.buildId(app, type, ui.getQueryParameters());
 
         Object entity = app.find(getTenantId(hh), type, id);
@@ -98,7 +98,7 @@ public class Service {
     @PUT
     @Path("{context}/entity/{type}")
     public Response create(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, InputStream in) {
-        PersistenceUnitWrapper app = get(persistenceUnit);
+        PersistenceContext app = get(persistenceUnit);
         DynamicEntity entity = unmarshalEntity(app, type, getTenantId(hh), mediaType(hh.getAcceptableMediaTypes()), in);
 
         app.create(getTenantId(hh), entity);
@@ -112,7 +112,7 @@ public class Service {
     @POST
     @Path("{context}/entity/{type}")
     public StreamingOutput update(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, InputStream in) {
-        PersistenceUnitWrapper app = get(persistenceUnit);
+        PersistenceContext app = get(persistenceUnit);
         String tenantId = getTenantId(hh);
         MediaType contentType = mediaType(hh.getRequestHeader(HttpHeaders.CONTENT_TYPE)); 
 
@@ -126,7 +126,7 @@ public class Service {
     @GET
     @Path("{context}/query/{name}")
     public StreamingOutput namedQuery(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
-        PersistenceUnitWrapper app = get(persistenceUnit);
+        PersistenceContext app = get(persistenceUnit);
         Object result = app.query(name, Service.getParameterMap(ui), false);
         JAXBContext context = app.getJAXBContext();
         return new StreamingOutputMarshaller(context, result, hh.getAcceptableMediaTypes());
@@ -136,7 +136,7 @@ public class Service {
     @Path("{context}/singleResultQuery/{name}")
     @Produces(MediaType.WILDCARD)
     public StreamingOutput namedQuerySingleResult(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
-        PersistenceUnitWrapper app = get(persistenceUnit);
+        PersistenceContext app = get(persistenceUnit);
         Object result = app.query(name, Service.getParameterMap(ui), true);
         JAXBContext context = app.getJAXBContext();
         return new StreamingOutputMarshaller(context, result, hh.getAcceptableMediaTypes());
@@ -165,8 +165,8 @@ public class Service {
         throw new WebApplicationException(Status.SERVICE_UNAVAILABLE);
     }
 
-    private PersistenceUnitWrapper get(String persistenceUnit) {
-        PersistenceUnitWrapper app = getRepository().getPersistenceUnit(persistenceUnit);
+    private PersistenceContext get(String persistenceUnit) {
+        PersistenceContext app = getPersistenceFactory().getPersistenceContext(persistenceUnit);
 
         if (app == null) {
             throw new WebApplicationException(Status.NOT_FOUND);
@@ -185,7 +185,7 @@ public class Service {
         return tenantIdValues.get(0);
     }
 
-    private DynamicEntity unmarshalEntity(PersistenceUnitWrapper app, String type, String tenantId, MediaType acceptedMedia, InputStream in) {
+    private DynamicEntity unmarshalEntity(PersistenceContext app, String type, String tenantId, MediaType acceptedMedia, InputStream in) {
         Unmarshaller unmarshaller;
         try {
             unmarshaller = app.getJAXBContext().createUnmarshaller();

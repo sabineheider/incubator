@@ -22,7 +22,7 @@ import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.internal.jpa.CMP3Policy;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.jpa.JpaHelper;
-import org.eclipse.persistence.jpa.rs.PersistenceUnitWrapper;
+import org.eclipse.persistence.jpa.rs.PersistenceContext;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.sessions.server.Server;
 
@@ -37,7 +37,7 @@ import org.eclipse.persistence.sessions.server.Server;
  */
 public class IdHelper {
 
-    public static Object buildId(PersistenceUnitWrapper app, String entityName,MultivaluedMap<String, String> multivaluedMap) {
+    public static Object buildId(PersistenceContext app, String entityName,MultivaluedMap<String, String> multivaluedMap) {
         Server session = JpaHelper.getServerSession(app.getEmf());
         ClassDescriptor descriptor = null;
 

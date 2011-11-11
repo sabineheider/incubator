@@ -10,13 +10,15 @@ package org.eclipse.persistence.jpa.rs;
 import static org.eclipse.persistence.jaxb.JAXBContext.MEDIA_TYPE;
 
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
 import javax.persistence.Query;
+import javax.persistence.spi.PersistenceUnitInfo;
 import javax.ws.rs.core.MediaType;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -28,47 +30,94 @@ import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.internal.helper.ConversionManager;
 import org.eclipse.persistence.internal.jpa.EJBQueryImpl;
+import org.eclipse.persistence.internal.jpa.EntityManagerFactoryImpl;
+import org.eclipse.persistence.internal.jpa.deployment.PersistenceUnitProcessor;
+import org.eclipse.persistence.internal.jpa.deployment.SEPersistenceUnitInfo;
+import org.eclipse.persistence.jaxb.JAXBContextFactory;
+import org.eclipse.persistence.jaxb.dynamic.DynamicJAXBContextFactory;
+import org.eclipse.persistence.jpa.Archive;
 import org.eclipse.persistence.jpa.JpaHelper;
+import org.eclipse.persistence.jpa.PersistenceProvider;
 import org.eclipse.persistence.jpa.dynamic.JPADynamicHelper;
+import org.eclipse.persistence.jpa.rs.util.DynamicXMLMetadataSource;
+import org.eclipse.persistence.jpa.rs.util.InMemoryArchive;
 import org.eclipse.persistence.queries.DatabaseQuery;
 import org.eclipse.persistence.sessions.server.Server;
 
+
 /**
- * A running application within the environment based on an
- * {@link ApplicationDefinition}.
+ * A wrapper around the JPA and JAXB artifacts used to persist an application
  * 
- * @author douglas.clarke
- * @since Avatar POC - September 2011
+ * @author douglas.clarke, tom.ware
  */
-public class PersistenceUnitWrapper {
-
+public class PersistenceContext {
+    
+    private static final String PACKAGE_ROOT = "jpars.app.";
+    private static final String MODEL_PACKAGE = ".model";
+    
+    private String name = null;
+    
     private EntityManagerFactory emf;
+    
+    private JAXBContext context = null;
 
-    private JAXBContext context;
+    public PersistenceContext(Archive archive, Map<String, ?> properties, ClassLoader classLoader){
+        super();
+        List<SEPersistenceUnitInfo> persistenceUnits = PersistenceUnitProcessor.getPersistenceUnits(archive, classLoader);
+        SEPersistenceUnitInfo persistenceUnitInfo = persistenceUnits.get(0);
+        
+        this.name = persistenceUnitInfo.getPersistenceUnitName();
+        
 
-
-    protected PersistenceUnitWrapper(String persistenceUnitName) {
-        this.emf = Persistence.createEntityManagerFactory(persistenceUnitName);
-        try {
-            this.context = createJaxbContext(persistenceUnitName, emf);
-        } catch (JAXBException e) {
-            // TODO Auto-generated catch block
+        EntityManagerFactoryImpl emf = createDynamicEMF(persistenceUnitInfo, properties);
+        this.emf = emf;
+       
+        try{
+            JAXBContext jaxbContext = createJAXBContext(persistenceUnitInfo.getPersistenceUnitName(), emf.getServerSession());
+           this.context = jaxbContext;
+        } catch (JAXBException e){
             e.printStackTrace();
+            emf.close();
+            throw new RuntimeException("JAXBException", e);
         }
     }
-
-    private JAXBContext createJaxbContext(String persistenceUnitName, EntityManagerFactory emf) throws JAXBException {
-        String oxmLocation = (String) emf.getProperties().get("eclipselink.jpa-rs.oxm");
-        Server serverSession = JpaHelper.getServerSession(emf);
-        
-        if (oxmLocation == null) {
-            return PersistenceFactory.createDynamicJAXBContext(persistenceUnitName,serverSession);
+    
+    protected EntityManagerFactoryImpl createDynamicEMF(PersistenceUnitInfo info, Map<String, ?> properties){
+        PersistenceProvider provider = new PersistenceProvider();
+        EntityManagerFactory emf = provider.createContainerEntityManagerFactory(info, properties);
+        return (EntityManagerFactoryImpl)emf;
+    }
+    
+    /**
+     * @param session
+     * @return
+     */
+    protected JAXBContext createJAXBContext(String persistenceUnitName, Server session) throws JAXBException {
+        JAXBContext jaxbContext = (JAXBContext) session.getProperty(JAXBContext.class.getName());
+        if (jaxbContext != null) {
+            return jaxbContext;
         }
-        return PersistenceFactory.createJAXBContext(persistenceUnitName, serverSession, oxmLocation);
+        String oxmLocation = (String) emf.getProperties().get("eclipselink.jpa-rs.oxm");
+        
+        String packageName = PACKAGE_ROOT + persistenceUnitName + MODEL_PACKAGE;
+        Map<String, Object> properties = new HashMap<String, Object>(1);
+        Object metadataLocation = null;
+        if (oxmLocation != null){
+            metadataLocation = new InMemoryArchive(oxmLocation);
+        } else {
+            metadataLocation = new DynamicXMLMetadataSource(session, packageName);
+        }
+        properties.put(JAXBContextFactory.ECLIPSELINK_OXM_XML_KEY, metadataLocation);
+
+        ClassLoader cl = session.getPlatform().getConversionManager().getLoader();
+        jaxbContext = DynamicJAXBContextFactory.createContextFromOXM(cl, properties);
+        session.setProperty(JAXBContext.class.getName(), jaxbContext);
+
+        return jaxbContext;
     }
 
     public String getName() {
-        return JpaHelper.getServerSession(getEmf()).getName();
+        return name;
     }
 
     public EntityManagerFactory getEmf() {
@@ -139,7 +188,8 @@ public class PersistenceUnitWrapper {
 
         try {
             em.getTransaction().begin();
-
+            DynamicEntity entity = (DynamicEntity)em.find(getClass(type), id);
+            em.remove(entity);
             em.getTransaction().commit();
         } finally {
             em.close();
@@ -150,7 +200,7 @@ public class PersistenceUnitWrapper {
      * Stop the current application instance
      */
     protected void stop() {
-        PersistenceFactory.closeDynamicEntityManagerFactory(getEmf());
+        emf.close();
         this.emf = null;
         this.context = null;
     }

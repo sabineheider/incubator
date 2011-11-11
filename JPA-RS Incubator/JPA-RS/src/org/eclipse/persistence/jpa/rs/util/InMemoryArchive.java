@@ -12,10 +12,11 @@ import org.eclipse.persistence.jpa.rs.PersistenceFactory;
 
 public class InMemoryArchive extends URLArchive {
 
-    private String persistencexml;
+    private String persistencexml = null;
+    private URL persistenceXMLURL = null;
     private InputStream stream = null;
     
-    public InMemoryArchive(String persistencexml){
+    private InMemoryArchive(){
         super(null, null);
         String persistenceFactoryResource = InMemoryArchive.class.getName().replace('.', '/') + ".class";
         URL myURL = PersistenceFactory.class.getClassLoader().getResource(persistenceFactoryResource);
@@ -26,14 +27,26 @@ public class InMemoryArchive extends URLArchive {
         } catch (IOException e){
             e.printStackTrace();
         }  
-        this.persistencexml = persistencexml;
         this.rootURL = myURL;
+    }
+    
+    public InMemoryArchive(String persistencexml){
+    	this();
+        this.persistencexml = persistencexml;
+    }
+    
+    public InMemoryArchive(URL persistencexmlurl){
+    	this();
+        this.persistenceXMLURL = persistencexmlurl;
     }
 
     @Override
     public InputStream getDescriptorStream() throws IOException {
-        
-        stream = new ByteArrayInputStream(persistencexml.getBytes());
+        if (persistencexml == null){
+        	stream = persistenceXMLURL.openStream();
+        } else {
+        	stream = new ByteArrayInputStream(persistencexml.getBytes());
+        }
         return stream;
     }
 
