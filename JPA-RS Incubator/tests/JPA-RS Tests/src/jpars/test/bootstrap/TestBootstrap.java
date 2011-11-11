@@ -31,7 +31,7 @@ public class TestBootstrap {
 		PersistenceFactory factory = null;
 		try{
 		    factory = new PersistenceFactory();
-			factory.bootstrapPersistenceContext(new URL("file:///C:/EclipseLinkView2/incubator/JPA-RS Incubator/tests/JPA-RS Tests/src/xmldocs/auction-persistence.xml"), properties);
+			factory.bootstrapPersistenceContext("auction", new URL("file:///C:/EclipseLinkView2/incubator/JPA-RS Incubator/tests/JPA-RS Tests/src/xmldocs/auction-persistence.xml"), properties);
 		} catch (Exception e){
 			fail(e.toString());
 		}
