@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.1"
+    xmlns="http://www.eclipse.org/eclipselink/xsds/persistence/orm"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+ 
+    <package>jpars.app.auction.model</package>
+  
+    <named-query name="Auction.all">
+        <query>SELECT a FROM Auction a</query>
+    </named-query>
+    
+    <named-query name="Auction.open">
+        <query>SELECT a FROM Auction a where a.sold = false</query>
+    </named-query>
+    
+    <named-query name="Auction.photo">
+        <query>SELECT a.image FROM Auction a where a.id = :auctionId</query>
+    </named-query>
+    
+    <named-query name="Bid.All">
+        <query>SELECT b FROM Bid b ORDER BY b.time</query>
+    </named-query>
+    
+    <named-query name="Bid.forAuctionId">
+        <query>SELECT b FROM Bid b WHERE b.auction.id =:auctionId ORDER BY b.time</query>
+    </named-query>
+    
+    <named-query name="Bid.maxForAuctionId">
+        <query>SELECT MAX(b.bid) FROM Bid b WHERE b.auction.id =:auctionId</query>
+    </named-query>
+    
+    <named-query name="Bid.forUserId">
+        <query>SELECT b FROM Bid b WHERE b.user.id =:userId  ORDER BY b.time</query>
+    </named-query>
+    
+    <named-query name="User.all">
+        <query>SELECT u from User u</query>
+    </named-query>
+ 
+    <entity class="User" access="VIRTUAL">
+        <table name="AUCTION_USER" />
+        <attributes>
+            <id name="id" attribute-type="Integer">
+                <column name="ID" />
+                <generated-value/>
+            </id>
+            <basic name="name" attribute-type="String" />
+        </attributes>
+    </entity>
+    
+    <entity class="Auction" access="VIRTUAL">
+        <table name="AUCTION_AUCTION" />
+        <attributes>
+            <id name="id" attribute-type="Integer">
+                <column name="ID" />
+                <generated-value/>
+            </id>
+            <basic name="name" attribute-type="String" />
+            <basic name="image" attribute-type="String"/>
+            <basic name="description" attribute-type="String">
+                <column column-definition="CLOB"/>
+            </basic>
+            <basic name="startPrice" attribute-type="Double"/>
+            <basic name="endPrice" attribute-type="Double"/>
+            <basic name="sold" attribute-type="boolean"/>
+        </attributes>
+    </entity>
+
+    <entity class="Bid" access="VIRTUAL">
+        <table name="AUCTION_BID" />
+        <attributes>
+            <id name="id" attribute-type="Integer">
+                <column name="ID" />
+                <generated-value/>
+            </id>
+            <basic name="bid" attribute-type="Double" />
+            <basic name="time" attribute-type="Long"/>        
+            <one-to-one name="user" fetch="EAGER" target-entity="User">
+                <join-column name="USER_ID" />
+            </one-to-one>
+            <one-to-one name="auction" fetch="EAGER" target-entity="Auction">
+                <join-column name="AUCTION_ID" />
+            </one-to-one>
+        </attributes>
+    </entity>
+        
+</entity-mappings>
