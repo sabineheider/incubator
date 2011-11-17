@@ -9,7 +9,9 @@ package org.eclipse.persistence.jpa.rs;
 
 import static org.eclipse.persistence.jaxb.JAXBContext.MEDIA_TYPE;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -43,6 +45,12 @@ import org.eclipse.persistence.jpa.rs.util.DynamicXMLMetadataSource;
 import org.eclipse.persistence.jpa.rs.util.InMemoryArchive;
 import org.eclipse.persistence.queries.DatabaseQuery;
 import org.eclipse.persistence.sessions.server.Server;
+import org.eclipse.persistence.sessions.server.ServerSession;
+
+import org.eclipse.persistence.jpa.rs.util.ChangeListener;
+import org.eclipse.persistence.jpa.rs.qcn.JPARSChangeNotificationListener;
+import org.eclipse.persistence.jpa.rs.PersistenceFactory;
+
 
 
 /**
@@ -75,16 +83,17 @@ public class PersistenceContext {
         try{
             JAXBContext jaxbContext = createJAXBContext(persistenceUnitInfo.getPersistenceUnitName(), emf.getServerSession());
            this.context = jaxbContext;
-        } catch (JAXBException e){
+        } catch (Exception e){
             e.printStackTrace();
             emf.close();
-            throw new RuntimeException("JAXBException", e);
+            throw new RuntimeException("JAXB Creation Exception", e);
         }
     }
     
     protected EntityManagerFactoryImpl createDynamicEMF(PersistenceUnitInfo info, Map<String, ?> properties){
         PersistenceProvider provider = new PersistenceProvider();
         EntityManagerFactory emf = provider.createContainerEntityManagerFactory(info, properties);
+        PersistenceContext.subscribeToEventNotification(emf);
         return (EntityManagerFactoryImpl)emf;
     }
     
@@ -92,7 +101,7 @@ public class PersistenceContext {
      * @param session
      * @return
      */
-    protected JAXBContext createJAXBContext(String persistenceUnitName, Server session) throws JAXBException {
+    protected JAXBContext createJAXBContext(String persistenceUnitName, Server session) throws JAXBException, IOException {
         JAXBContext jaxbContext = (JAXBContext) session.getProperty(JAXBContext.class.getName());
         if (jaxbContext != null) {
             return jaxbContext;
@@ -103,7 +112,7 @@ public class PersistenceContext {
         Map<String, Object> properties = new HashMap<String, Object>(1);
         Object metadataLocation = null;
         if (oxmLocation != null){
-            metadataLocation = new InMemoryArchive(oxmLocation);
+            metadataLocation = new InMemoryArchive((new URL(oxmLocation)).openStream());
         } else {
             metadataLocation = new DynamicXMLMetadataSource(session, packageName);
         }
@@ -286,6 +295,41 @@ public class PersistenceContext {
 
     protected EntityManager createEntityManager(String tenantId) {
         return getEmf().createEntityManager();
+    }
+    
+    /**
+     * TODO
+     */
+    public void addListener(ChangeListener listener) {
+        JPARSChangeNotificationListener changeListener = (JPARSChangeNotificationListener) JpaHelper.getDatabaseSession(getEmf()).getProperty(PersistenceFactory.CHANGE_NOTIFICATION_LISTENER);
+        if (changeListener == null) {
+            throw new RuntimeException("Change Listener not registered properly");
+        }
+        changeListener.addChangeListener(listener);
+    }
+
+    /**
+     * TODO
+     */
+    public void remove(ChangeListener listener) {
+        JPARSChangeNotificationListener changeListener = (JPARSChangeNotificationListener) JpaHelper.getDatabaseSession(getEmf()).getProperty(PersistenceFactory.CHANGE_NOTIFICATION_LISTENER);
+        if (changeListener != null) {
+            changeListener.removeChangeListener(listener);
+        }
+    }
+    
+    public static JPARSChangeNotificationListener subscribeToEventNotification(EntityManagerFactory emf) {
+        ServerSession session = (ServerSession) JpaHelper.getServerSession(emf);
+        Iterator<ClassDescriptor> i = session.getDescriptors().values().iterator();
+        JPARSChangeNotificationListener listener = new JPARSChangeNotificationListener();
+        session.setDatabaseEventListener(listener);
+        while (i.hasNext()) {
+            ClassDescriptor descriptor = i.next();
+            listener.initialize(descriptor, session);
+        }
+        listener.register(session);
+        session.setProperty(PersistenceFactory.CHANGE_NOTIFICATION_LISTENER, listener);
+        return listener;
     }
 
 }

@@ -1,6 +1,5 @@
 package org.eclipse.persistence.jpa.rs.util;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -8,18 +7,22 @@ import java.net.URL;
 
 import org.eclipse.persistence.internal.jpa.deployment.PersistenceUnitProcessor;
 import org.eclipse.persistence.internal.jpa.deployment.URLArchive;
-import org.eclipse.persistence.jpa.rs.PersistenceFactory;
 
+/**
+ * This archive is designed for use with dynamic persistence units
+ * it is built with a stream that allows it to read a persistence.xml file and creates a fake base URL
+ * based the classpath location of the InMemoryArchiveClass
+ * @author tware
+ *
+ */
 public class InMemoryArchive extends URLArchive {
 
-    private String persistencexml = null;
-    private URL persistenceXMLURL = null;
     private InputStream stream = null;
     
     private InMemoryArchive(){
         super(null, null);
         String persistenceFactoryResource = InMemoryArchive.class.getName().replace('.', '/') + ".class";
-        URL myURL = PersistenceFactory.class.getClassLoader().getResource(persistenceFactoryResource);
+        URL myURL = InMemoryArchive.class.getClassLoader().getResource(persistenceFactoryResource);
         try{
             myURL = PersistenceUnitProcessor.computePURootURL(myURL, persistenceFactoryResource);
         } catch (URISyntaxException e){
@@ -30,16 +33,6 @@ public class InMemoryArchive extends URLArchive {
         this.rootURL = myURL;
     }
     
-    public InMemoryArchive(String persistencexml){
-    	this();
-        this.persistencexml = persistencexml;
-    }
-    
-    public InMemoryArchive(URL persistencexmlurl){
-    	this();
-        this.persistenceXMLURL = persistencexmlurl;
-    }
-    
     public InMemoryArchive(InputStream stream){
         this();
         this.stream = stream;
@@ -47,13 +40,6 @@ public class InMemoryArchive extends URLArchive {
 
     @Override
     public InputStream getDescriptorStream() throws IOException {
-        if (stream == null){
-            if (persistencexml == null){
-            	stream = persistenceXMLURL.openStream();
-            } else {
-            	stream = new ByteArrayInputStream(persistencexml.getBytes());
-            }
-        }
         return stream;
     }
 
@@ -63,6 +49,7 @@ public class InMemoryArchive extends URLArchive {
         try{
             stream.close();
         } catch (IOException e){};
+        stream = null;
 
     }
 

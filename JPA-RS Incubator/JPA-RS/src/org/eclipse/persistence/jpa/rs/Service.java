@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
+import javax.annotation.PreDestroy;
 import javax.ejb.EJB;
 import javax.ejb.Singleton;
 import javax.ws.rs.Consumes;
@@ -231,13 +232,9 @@ public class Service {
         return persistenceXmlURLs.get(0);
     }
     
-  //  @PreDestroy
-    //TODO
+    @PreDestroy
     public void close() {
-     //   for (Application each : this.applications.values()) {
-      //      each.stop();
-      //  }
-     //   this.applications.clear();
+        factory.close();
     }
 
 }

@@ -12,6 +12,8 @@
  ******************************************************************************/
 package org.eclipse.persistence.jpa.rs;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.HashMap;
@@ -34,15 +36,18 @@ import org.eclipse.persistence.jpa.rs.util.InMemoryArchive;
 @Singleton
 public class PersistenceFactory {
 
+    public static final String CHANGE_NOTIFICATION_LISTENER = "jpars.change-notification-listener";
+    
 	private Map<String, PersistenceContext> persistenceContexts = new HashMap<String, PersistenceContext>();
 
     public PersistenceContext bootstrapPersistenceContext(String name, String persistenceXML, Map<String, ?> originalProperties){
-        InMemoryArchive archive = new InMemoryArchive(persistenceXML);
+        ByteArrayInputStream stream = new ByteArrayInputStream(persistenceXML.getBytes());
+        InMemoryArchive archive = new InMemoryArchive(stream);
         return bootstrapPersistenceContext(name, archive, originalProperties);
     }
     
-    public PersistenceContext bootstrapPersistenceContext(String name, URL persistenceXMLURL, Map<String, ?> originalProperties){
-        InMemoryArchive archive = new InMemoryArchive(persistenceXMLURL);
+    public PersistenceContext bootstrapPersistenceContext(String name, URL persistenceXMLURL, Map<String, ?> originalProperties) throws IOException{
+        InMemoryArchive archive = new InMemoryArchive(persistenceXMLURL.openStream());
         return bootstrapPersistenceContext(name, archive, originalProperties);
     }
     
@@ -63,6 +68,12 @@ public class PersistenceFactory {
         }
     }
     
+    public void close(){
+        for (String key: persistenceContexts.keySet()){
+            persistenceContexts.get(key).stop();
+        }
+    }
+    
     public PersistenceContext bootstrapPersistenceContext(String name, Archive archive, Map<String, ?> originalProperties){        	
     	DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
         Map<String, Object> properties = createProperties(dcl, originalProperties);
@@ -80,7 +91,7 @@ public class PersistenceFactory {
         // properties.put("eclipselink.ddl-generation",
         // "drop-and-create-tables");
         // properties.put("eclipselink.ddl-generation.output-mode", "database");
-        properties.put(PersistenceUnitProperties.LOGGING_LEVEL, "FINE");
+        properties.put(PersistenceUnitProperties.LOGGING_LEVEL, "FINEST");
 
         // For now we'll copy the connection info from admin PU
         for (Map.Entry<String, ?> entry : originalProperties.entrySet()) {
