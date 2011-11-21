@@ -88,8 +88,7 @@ public class PersistenceFactory {
 
         properties.put(PersistenceUnitProperties.CLASSLOADER, dcl);
         properties.put(PersistenceUnitProperties.WEAVING, "static");
-        // properties.put("eclipselink.ddl-generation",
-        // "drop-and-create-tables");
+        properties.put("eclipselink.ddl-generation", "create-tables");
         // properties.put("eclipselink.ddl-generation.output-mode", "database");
         properties.put(PersistenceUnitProperties.LOGGING_LEVEL, "FINEST");
 
