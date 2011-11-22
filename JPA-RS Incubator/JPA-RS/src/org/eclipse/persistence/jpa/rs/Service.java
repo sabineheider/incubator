@@ -8,7 +8,7 @@
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- * 		dclarke - 
+ * 		dclarke/tware - initial 
  ******************************************************************************/
 package org.eclipse.persistence.jpa.rs;
 
@@ -56,11 +56,10 @@ import org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller;
 import com.sun.jersey.core.spi.factory.ResponseBuilderImpl;
 
 /**
- * JAX-RS application interface for avatar POC clients. All /app requests are
- * handled here.
+ * JAX-RS application interface JPA-RS
  * 
- * @author douglas.clarke
- * @since Avatar POC - September 2011
+ * @author dclarke
+ * @since EclipseLink 2.4.0
  */
 @Singleton
 @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })

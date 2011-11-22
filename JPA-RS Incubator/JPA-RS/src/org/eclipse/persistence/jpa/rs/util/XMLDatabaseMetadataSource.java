@@ -8,7 +8,7 @@
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- * 		dclarke - TODO
+ * 		dclarke/tware - initial 
  ******************************************************************************/
 package org.eclipse.persistence.jpa.rs.util;
 

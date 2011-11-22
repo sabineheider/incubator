@@ -8,7 +8,7 @@
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- * 		dclarke - 
+ * 		dclarke/tware - initial 
  ******************************************************************************/
 package org.eclipse.persistence.jpa.rs.util;
 
@@ -32,8 +32,8 @@ import org.eclipse.persistence.sessions.server.Server;
  * JAX-RS calls as query or matrix parameters into a value that can be used in a
  * find.
  * 
- * @author douglas.clarke
- * @since Avatar POC - October 2011
+ * @author dclarke
+ * @since EclipseLink 2.4.0
  */
 public class IdHelper {
 

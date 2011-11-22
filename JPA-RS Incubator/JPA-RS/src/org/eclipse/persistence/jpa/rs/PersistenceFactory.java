@@ -99,7 +99,7 @@ public class PersistenceFactory {
             }
         }
         if (!properties.containsKey(PersistenceUnitProperties.JDBC_DRIVER)) {
-            properties.put(PersistenceUnitProperties.NON_JTA_DATASOURCE, "jdbc/avatar");
+            properties.put(PersistenceUnitProperties.NON_JTA_DATASOURCE, "jdbc/jpa-rs");
         }
         return properties;
     }
