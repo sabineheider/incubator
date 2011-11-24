@@ -34,7 +34,7 @@ public class BaseHttpServerTest {
 
     @AfterClass
     public static void stopServer() {
-       // server.stop(0);
+       server.stop(0);
     }
 
 }
