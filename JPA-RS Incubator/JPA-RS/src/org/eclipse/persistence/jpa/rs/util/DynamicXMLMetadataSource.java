@@ -9,6 +9,7 @@
  *
  * Contributors:
  *      dclarke/tware - initial 
+ *      tware
  ******************************************************************************/
 package org.eclipse.persistence.jpa.rs.util;
 
@@ -41,14 +42,14 @@ public class DynamicXMLMetadataSource implements MetadataSource {
 
     private XmlBindings xmlBindings;
 
-    public DynamicXMLMetadataSource(Server session, String packageName) {
+    public DynamicXMLMetadataSource(String persistenceUnitName, Server session, String packageName) {
         ObjectFactory objectFactory = new ObjectFactory();
         xmlBindings = new XmlBindings();
         xmlBindings.setPackageName(packageName);
 
         JavaTypes javaTypes = new JavaTypes();
         xmlBindings.setJavaTypes(javaTypes);
-
+  
         for (ClassDescriptor ormDescriptor : session.getProject().getOrderedDescriptors()) {
             javaTypes.getJavaType().add(createJAXBType(ormDescriptor, objectFactory));
         }

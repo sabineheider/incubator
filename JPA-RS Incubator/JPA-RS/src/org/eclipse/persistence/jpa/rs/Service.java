@@ -140,7 +140,7 @@ public class Service {
         MediaType contentType = mediaType(hh.getRequestHeader(HttpHeaders.CONTENT_TYPE)); 
 
         DynamicEntity entity = unmarshalEntity(app, type, tenantId, contentType, in);
-        entity = app.merge(tenantId, entity);
+        entity = app.merge(type, tenantId, entity);
 
         JAXBContext context = app.getJAXBContext();
         return new StreamingOutputMarshaller(context, entity, hh.getAcceptableMediaTypes());

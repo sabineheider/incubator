@@ -9,6 +9,7 @@
  *
  * Contributors:
  * 		dclarke/tware - initial 
+ *      tware
  ******************************************************************************/
 package org.eclipse.persistence.jpa.rs;
 
@@ -17,6 +18,7 @@ import static org.eclipse.persistence.jaxb.JAXBContext.MEDIA_TYPE;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -27,7 +29,7 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Query;
 import javax.persistence.spi.PersistenceUnitInfo;
 import javax.ws.rs.core.MediaType;
-import javax.xml.bind.JAXBContext;
+import org.eclipse.persistence.jaxb.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
@@ -35,6 +37,7 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.dynamic.DynamicType;
 import org.eclipse.persistence.internal.helper.ConversionManager;
 import org.eclipse.persistence.internal.jpa.EJBQueryImpl;
 import org.eclipse.persistence.internal.jpa.EntityManagerFactoryImpl;
@@ -46,9 +49,11 @@ import org.eclipse.persistence.jpa.Archive;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.PersistenceProvider;
 import org.eclipse.persistence.jpa.dynamic.JPADynamicHelper;
+import org.eclipse.persistence.jpa.rs.util.CustomSerializationMetadataSource;
 import org.eclipse.persistence.jpa.rs.util.DynamicXMLMetadataSource;
 import org.eclipse.persistence.jpa.rs.util.InMemoryArchive;
 import org.eclipse.persistence.queries.DatabaseQuery;
+import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.sessions.server.ServerSession;
 
@@ -119,17 +124,21 @@ public class PersistenceContext {
         if (oxmLocation != null){
             metadataLocation = new InMemoryArchive((new URL(oxmLocation)).openStream());
         } else {
-            metadataLocation = new DynamicXMLMetadataSource(session, packageName);
+            metadataLocation = new DynamicXMLMetadataSource(persistenceUnitName, session, packageName);
         }
-        properties.put(JAXBContextFactory.ECLIPSELINK_OXM_XML_KEY, metadataLocation);
+        List<Object> metadataLocations = new ArrayList<Object>();
+        metadataLocations.add(metadataLocation);
+        metadataLocations.add(new CustomSerializationMetadataSource(persistenceUnitName, session, packageName));
+        properties.put(JAXBContextFactory.ECLIPSELINK_OXM_XML_KEY, metadataLocations);
 
         ClassLoader cl = session.getPlatform().getConversionManager().getLoader();
         jaxbContext = DynamicJAXBContextFactory.createContextFromOXM(cl, properties);
+
         session.setProperty(JAXBContext.class.getName(), jaxbContext);
 
         return jaxbContext;
     }
-
+    
     public String getName() {
         return name;
     }
@@ -154,12 +163,25 @@ public class PersistenceContext {
         }
     }
 
-    public DynamicEntity merge(String tenantId, DynamicEntity entity) {
+    public DynamicEntity merge(String type, String tenantId, DynamicEntity entity) {
         EntityManager em = getEmf().createEntityManager();
-
+        DynamicEntity mergedEntity = null;
         try {
             em.getTransaction().begin();
-            DynamicEntity mergedEntity = em.merge(entity);
+            
+            if (isList(type)){
+                mergedEntity = newEntity(type);
+                List<Object> returnValues = new ArrayList<Object>();
+                mergedEntity.set("serializedData", returnValues);
+                @SuppressWarnings("unchecked")
+                List<Object> values = (List<Object>)entity.get("serializedData");
+                for (Object value: values){
+                    Object merged = em.merge(value);
+                    returnValues.add(merged);
+                }
+            } else {
+                mergedEntity = em.merge(entity);
+            }
             em.getTransaction().commit();
             return mergedEntity;
         } finally {
@@ -167,6 +189,15 @@ public class PersistenceContext {
         }
     }
 
+    public boolean isList(String type){
+        Server session = JpaHelper.getServerSession(getEmf());
+        ClassDescriptor descriptor = session.getDescriptorForAlias(type);
+        if (descriptor == null && getDescriptor(type) != null){
+            return true;
+        }
+        return false;
+    }
+    
     /**
      * TODO
      */
@@ -176,7 +207,20 @@ public class PersistenceContext {
 
     public DynamicEntity newEntity(String tenantId, String type) {
         JPADynamicHelper helper = new JPADynamicHelper(getEmf());
-        return helper.newDynamicEntity(type);
+        DynamicEntity entity = null;
+        try{
+            entity = helper.newDynamicEntity(type);
+        } catch (IllegalArgumentException e){
+            ClassDescriptor descriptor = getDescriptor(type);
+            if (descriptor != null){
+                DynamicType jaxbType = (DynamicType) descriptor.getProperty(DynamicType.DESCRIPTOR_PROPERTY);     
+                if (jaxbType != null){
+                    return jaxbType.newDynamicEntity();
+                }
+            }
+            throw e;
+        }
+        return entity;
     }
 
     /**
@@ -240,6 +284,14 @@ public class PersistenceContext {
     public ClassDescriptor getDescriptor(String entityName){
         Server session = JpaHelper.getServerSession(getEmf());
         ClassDescriptor descriptor = session.getDescriptorForAlias(entityName);
+        if (descriptor == null){
+            for (Object ajaxBSession:((JAXBContext)getJAXBContext()).getXMLContext().getSessions() ){
+                descriptor = ((Session)ajaxBSession).getClassDescriptorForAlias(entityName);
+                if (descriptor != null){
+                    break;
+                }
+            }
+        }
         return descriptor;
     }
     

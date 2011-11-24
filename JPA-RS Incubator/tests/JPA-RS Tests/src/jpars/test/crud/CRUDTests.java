@@ -80,11 +80,12 @@ public class CRUDTests {
         
         entity = persistenceContext.find("User", entity.get("id"));
         
-        assertNull("Entity was note deleted", entity);
+        assertNull("Entity was not deleted", entity);
     }
 
     
     @Test
+    @SuppressWarnings("unchecked")
     public void testQuery(){
         DynamicEntity entity = persistenceContext.newEntity("User");
         entity.set("name", "Jill");

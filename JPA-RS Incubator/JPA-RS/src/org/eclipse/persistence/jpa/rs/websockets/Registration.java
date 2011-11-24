@@ -9,6 +9,7 @@
  *
  * Contributors:
  * 		dclarke/tware - initial 
+ *      tware
  ******************************************************************************/
 package org.eclipse.persistence.jpa.rs.websockets;
 
