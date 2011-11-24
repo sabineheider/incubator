@@ -86,12 +86,19 @@ public class TestService {
         entity2.set("name", "Jill");
         context.create(null, entity2);
         
-        entity2.set("name", "Gillian");       
+        entity2.set("name", "Gillian");    
+        
+        DynamicEntity entity3 = context.newEntity("Auction");
+        entity3.set("name", "Computer");
+        context.create(null, entity3);
+        
+        entity3.set("name", "Tablet");
         
         DynamicEntity serializedData = context.newEntity("auctionSerializedData");
         List<DynamicEntity> entities = new ArrayList<DynamicEntity>();
         entities.add(entity);
         entities.add(entity2);
+        entities.add(entity3);
         serializedData.set("serializedData", entities);
 
         StringWriter writer = new StringWriter();
@@ -122,12 +129,13 @@ public class TestService {
         assertNotNull("returned data was null", serializedData);
         entities = serializedData.get("serializedData");
         assertNotNull("returned data had null list", entities);
-        assertTrue("returned data had wrong list size", entities.size() == 2);
+        assertTrue("returned data had wrong list size", entities.size() == 3);
         List<String> values = new ArrayList<String>();
         values.add("James");
         values.add("Gillian");
+        values.add("Tablet");
         for (DynamicEntity value: entities){
-            assertTrue("Incorrect name returned", value.get("name").equals("James") || value.get("name").equals("Gillian"));
+            assertTrue("Incorrect name returned", value.get("name").equals("Tablet") || value.get("name").equals("James") || value.get("name").equals("Gillian"));
             values.remove(value.get("name"));
         }
         assertTrue("Incorrent set of names.", values.isEmpty());
