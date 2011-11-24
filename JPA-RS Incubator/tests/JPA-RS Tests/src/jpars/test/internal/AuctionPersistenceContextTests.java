@@ -57,7 +57,7 @@ public class AuctionPersistenceContextTests {
         
         org.eclipse.persistence.jaxb.JAXBContext contextImpl = (org.eclipse.persistence.jaxb.JAXBContext) jaxbContext;
         
-        Assert.assertEquals(6, contextImpl.getXMLContext().getSession(0).getDescriptors().size());
+        Assert.assertEquals(4, contextImpl.getXMLContext().getSession(0).getDescriptors().size());
     }
 
     @BeforeClass
