@@ -96,7 +96,9 @@ public class Service {
        } catch (Exception e){
            rb.status(Status.NOT_FOUND);
        }
-       rb.status(Status.OK);
+       if (factory.getMetadataStore() != null){
+           rb.status(Status.OK);
+       }
        return rb.build();
    }
    
