@@ -43,6 +43,8 @@ import org.eclipse.persistence.jaxb.JAXBMarshaller;
 import org.eclipse.persistence.jpa.rs.PersistenceContext;
 import org.eclipse.persistence.jpa.rs.PersistenceFactory;
 import org.eclipse.persistence.jpa.rs.Service;
+import org.eclipse.persistence.jpa.rs.metadata.DatabaseMetadataStore;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -63,11 +65,19 @@ public class TestService {
         factory = null;
         try{
             factory = new PersistenceFactory();
-            factory.bootstrapPersistenceContext("auction", new URL("file:///C:/EclipseLinkView2/incubator/JPA-RS Incubator/tests/JPA-RS Tests/src/xmldocs/auction-persistence.xml"), properties);
+            factory.setMetadataStore(new DatabaseMetadataStore());
+            factory.getMetadataStore().setProperties(properties);
+            factory.getMetadataStore().clearMetadata();
+            factory.bootstrapPersistenceContext("auction", new URL("file:///C:/EclipseLinkView2/incubator/JPA-RS Incubator/tests/JPA-RS Tests/src/xmldocs/auction-persistence.xml"), properties, true);
         } catch (Exception e){
             e.printStackTrace();
             fail(e.toString());
         }
+    }
+    
+    @AfterClass
+    public static void teardown(){
+        factory.getMetadataStore().clearMetadata();
     }
     
     @Test
@@ -139,6 +149,24 @@ public class TestService {
             values.remove(value.get("name"));
         }
         assertTrue("Incorrent set of names.", values.isEmpty());
+    }
+    
+    @Test
+    public void testRestart(){
+        factory.close();
+        Map<String, Object> properties = new HashMap<String, Object>();
+        ExamplePropertiesLoader.loadProperties(properties); 
+        factory = null;
+        try{
+            factory = new PersistenceFactory();
+            factory.setMetadataStore(new DatabaseMetadataStore());
+            factory.getMetadataStore().setProperties(properties);
+            factory.initialize(properties);
+        } catch (Exception e){
+            e.printStackTrace();
+            fail(e.toString());
+        }
+        assertTrue("factory was not recreated at boot time.", factory.getPersistenceContext("auction") != null);
     }
     
     private DynamicEntity unmarshalEntity(PersistenceContext app, String type, String tenantId, String acceptedMedia, InputStream in) {

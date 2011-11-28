@@ -66,6 +66,6 @@ public class AuctionPersistenceContextTests {
         ExamplePropertiesLoader.loadProperties(properties);
         
         InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("xmldocs/auction-persistence.xml"); 
-        context = new PersistenceFactory().bootstrapPersistenceContext("auction", in, properties);
+        context = new PersistenceFactory().bootstrapPersistenceContext("auction", in, properties, true);
     }
 }

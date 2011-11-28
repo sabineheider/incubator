@@ -101,7 +101,12 @@ public class JPARSWebSocketApplication extends WebSocketApplication {
 			Registration message = unmarshallMessage(text);
 			jparsSocket.setRegistration(message);
 			PersistenceContext application = this.factory.getPersistenceContext(message.getAppName());
-			jparsSocket.setApplication(application);
+			if (application != null){
+			    jparsSocket.setApplication(application);
+			} else {
+			    logger.info("Message recieved for unavailable application: " + message.getAppName() + " closing socket.");
+		        closeSocket(jparsSocket);
+			}
 		} catch (Exception e) {			
 			// TODO Auto-generated catch block
 			e.printStackTrace();

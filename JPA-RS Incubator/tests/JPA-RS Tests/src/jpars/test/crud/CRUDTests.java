@@ -47,10 +47,16 @@ public class CRUDTests {
         factory = null;
         try{
             factory = new PersistenceFactory();
-            factory.bootstrapPersistenceContext("auction", new URL("file:///C:/EclipseLinkView2/incubator/JPA-RS Incubator/tests/JPA-RS Tests/src/xmldocs/auction-persistence.xml"), properties);
+            persistenceContext = factory.bootstrapPersistenceContext("auction", new URL("file:///C:/EclipseLinkView2/incubator/JPA-RS Incubator/tests/JPA-RS Tests/src/xmldocs/auction-persistence.xml"), properties, true);
         } catch (Exception e){
             fail(e.toString());
         }
+        EntityManager em = persistenceContext.getEmf().createEntityManager();
+        em.getTransaction().begin();
+        em.createQuery("delete from Bid b").executeUpdate();
+        em.createQuery("delete from Auction a").executeUpdate();
+        em.createQuery("delete from User u").executeUpdate();
+        em.getTransaction().commit();
         
         persistenceContext = factory.getPersistenceContext("auction");
     }

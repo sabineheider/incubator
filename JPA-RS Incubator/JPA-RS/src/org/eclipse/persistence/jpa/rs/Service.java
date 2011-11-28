@@ -49,7 +49,9 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.stream.StreamSource;
 
+import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.jpa.rs.metadata.DatabaseMetadataStore;
 import org.eclipse.persistence.jpa.rs.util.IdHelper;
 import org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller;
 
@@ -79,18 +81,42 @@ public class Service {
         this.factory = factory;
     }
     
+   @POST
+   @Path("/")
+   public Response start(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, InputStream in){
+       ResponseBuilder rb = new ResponseBuilderImpl();
+       try{
+           factory.setMetadataStore(new DatabaseMetadataStore());
+           List<String> datasourceValues = hh.getRequestHeader("datasourceName");
+           Map<String, Object> properties = new HashMap<String, Object>();
+           if (datasourceValues != null && datasourceValues.size() > 0){
+               properties.put(PersistenceUnitProperties.NON_JTA_DATASOURCE, datasourceValues.get(0));
+           }
+           factory.getMetadataStore().setProperties(properties);
+       } catch (Exception e){
+           rb.status(Status.NOT_FOUND);
+       }
+       rb.status(Status.OK);
+       return rb.build();
+   }
+   
     @POST
     @Path("{context}")
     public Response bootstrap(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, InputStream in){
         ResponseBuilder rb = new ResponseBuilderImpl();
         String urlString = getURL(hh);
         PersistenceContext persistenceContext = null;
+        boolean replace = false;
+        List<String> replaceValues = hh.getRequestHeader("replace");
+        if (replaceValues != null && replaceValues.size() > 0){
+            replace = Boolean.getBoolean(replaceValues.get(0));
+        }
         try{
             if (urlString != null){
                 URL url = new URL(urlString);
-                persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, url, new HashMap<String, Object>());
+                persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, url, new HashMap<String, Object>(), replace);
             } else {
-                persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, in, new HashMap<String, Object>());
+                persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, in, new HashMap<String, Object>(), replace);
             }
        } catch (Exception e){
             rb.status(Status.NOT_FOUND);

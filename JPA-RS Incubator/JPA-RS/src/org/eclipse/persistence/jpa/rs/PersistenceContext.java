@@ -35,6 +35,7 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.stream.StreamSource;
 
+import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicType;
@@ -79,14 +80,16 @@ public class PersistenceContext {
     
     private JAXBContext context = null;
 
-    public PersistenceContext(Archive archive, Map<String, ?> properties, ClassLoader classLoader){
+    public PersistenceContext(Archive archive, Map<String, Object> properties, ClassLoader classLoader){
         super();
         List<SEPersistenceUnitInfo> persistenceUnits = PersistenceUnitProcessor.getPersistenceUnits(archive, classLoader);
         SEPersistenceUnitInfo persistenceUnitInfo = persistenceUnits.get(0);
         
         this.name = persistenceUnitInfo.getPersistenceUnitName();
-        
 
+        if (!persistenceUnitInfo.getProperties().containsKey(PersistenceUnitProperties.JDBC_DRIVER) && !properties.containsKey(PersistenceUnitProperties.JDBC_DRIVER)) {
+            properties.put(PersistenceUnitProperties.NON_JTA_DATASOURCE, "jdbc/jpa-rs");
+        }
         EntityManagerFactoryImpl emf = createDynamicEMF(persistenceUnitInfo, properties);
         this.emf = emf;
        
