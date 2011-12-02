@@ -95,10 +95,9 @@ public class Service {
            factory.getMetadataStore().setProperties(properties);
        } catch (Exception e){
            rb.status(Status.NOT_FOUND);
+           return rb.build();
        }
-       if (factory.getMetadataStore() != null){
-           rb.status(Status.OK);
-       }
+       rb.status(Status.OK);
        return rb.build();
    }
    

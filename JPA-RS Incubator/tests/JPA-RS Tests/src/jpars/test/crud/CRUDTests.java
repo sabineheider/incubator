@@ -108,5 +108,18 @@ public class CRUDTests {
         List<DynamicEntity> users = (List<DynamicEntity>)persistenceContext.query("User.all", null);
         assertTrue(users.size() == 3);
     }
+    
+    @Test
+    public void testUpdate(){
+        DynamicEntity entity = persistenceContext.newEntity("User");
+        entity.set("name", "Tom");
+        persistenceContext.create(null, entity);
+        entity = persistenceContext.find("User", entity.get("id"));
+        entity.set("name", "Thomas");
+        persistenceContext.merge("User", null, entity);
+        entity = persistenceContext.find("User", entity.get("id"));
+        assertTrue("Entity name was not correctly updated.", entity.get("name").equals("Thomas"));
+        
+    }
 
 }

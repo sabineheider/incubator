@@ -22,6 +22,8 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
+import com.sun.jersey.core.util.StringKeyIgnoreCaseMultivaluedMap;
+
 /**
  * A fake HTTPHeaders implementation to test the service class
  * @author tware
@@ -29,6 +31,9 @@ import javax.ws.rs.core.MultivaluedMap;
  */
 public class TestHttpHeaders implements HttpHeaders {
 
+    protected List<MediaType> acceptableMediaTypes = new ArrayList<MediaType>();
+    protected MultivaluedMap<String, String> requestHeaders = new StringKeyIgnoreCaseMultivaluedMap<String>();
+    
     @Override
     public List<Locale> getAcceptableLanguages() {
         // TODO Auto-generated method stub
@@ -37,9 +42,7 @@ public class TestHttpHeaders implements HttpHeaders {
 
     @Override
     public List<MediaType> getAcceptableMediaTypes() {
-        List<MediaType> list = new ArrayList<MediaType>();
-        list.add(MediaType.valueOf(MediaType.APPLICATION_XML));
-        return list;
+        return acceptableMediaTypes;
     }
 
     @Override
@@ -62,15 +65,12 @@ public class TestHttpHeaders implements HttpHeaders {
 
     @Override
     public List<String> getRequestHeader(String arg0) {
-        List<String> list = new ArrayList<String>();
-        list.add(MediaType.APPLICATION_XML);
-        return list;
+        return requestHeaders.get(arg0);
     }
 
     @Override
     public MultivaluedMap<String, String> getRequestHeaders() {
-        // TODO Auto-generated method stub
-        return null;
+        return requestHeaders;
     }
 
 }
