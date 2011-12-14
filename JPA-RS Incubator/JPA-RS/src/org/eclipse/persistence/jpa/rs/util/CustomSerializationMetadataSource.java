@@ -20,7 +20,6 @@ import org.eclipse.persistence.jaxb.xmlmodel.JavaType;
 import org.eclipse.persistence.jaxb.xmlmodel.ObjectFactory;
 import org.eclipse.persistence.jaxb.xmlmodel.XmlBindings;
 import org.eclipse.persistence.jaxb.xmlmodel.XmlElement;
-import org.eclipse.persistence.jaxb.xmlmodel.XmlElements;
 import org.eclipse.persistence.jaxb.xmlmodel.JavaType.JavaAttributes;
 import org.eclipse.persistence.jaxb.xmlmodel.XmlBindings.JavaTypes;
 import org.eclipse.persistence.sessions.server.Server;
@@ -50,27 +49,34 @@ public class CustomSerializationMetadataSource implements MetadataSource {
         JavaTypes javaTypes = new JavaTypes();
         xmlBindings.setJavaTypes(javaTypes);
   
-        addSerializationType(persistenceUnitName, session, objectFactory, javaTypes);
+        addSerializationTypes(persistenceUnitName, session, objectFactory, javaTypes);
     }
     
-    private void addSerializationType(String persistenceUnitName, Server session, ObjectFactory objectFactory, JavaTypes javaTypes){
-        JavaType serializationType = new JavaType();
-        serializationType.setName(persistenceUnitName + "SerializedData");
-        serializationType.setJavaAttributes(new JavaAttributes());
-        
-        XmlElements xmlElements = new XmlElements(); 
-        xmlElements.setJavaAttribute("serializedData");
-        
-        xmlElements.setContainerType("java.util.List");
+    private void addSerializationTypes(String persistenceUnitName, Server session, ObjectFactory objectFactory, JavaTypes javaTypes){
+
         for (ClassDescriptor ormDescriptor : session.getProject().getOrderedDescriptors()) {
-            XmlElement childElement = new XmlElement(); 
-            childElement.setType(ormDescriptor.getJavaClassName());
-            childElement.setName(ormDescriptor.getAlias());
-            xmlElements.getXmlElement().add(childElement);
-        }
-        serializationType.getJavaAttributes().getJavaAttribute().add(objectFactory.createXmlElements(xmlElements));
-        serializationType.setXmlRootElement(new org.eclipse.persistence.jaxb.xmlmodel.XmlRootElement());
-        javaTypes.getJavaType().add(serializationType);
+        
+            JavaType serializationType = new JavaType();
+            serializationType.setName(ormDescriptor.getAlias() + "ListWrapper");
+            serializationType.setJavaAttributes(new JavaAttributes());
+        
+            XmlElement xmlElement = new XmlElement(); 
+            xmlElement.setJavaAttribute("list");
+        
+            xmlElement.setContainerType("java.util.List");
+
+            xmlElement.setType(ormDescriptor.getJavaClassName());
+
+            serializationType.getJavaAttributes().getJavaAttribute().add(objectFactory.createXmlElement(xmlElement));
+            
+           // serializationType.getJavaAttributes().getJavaAttribute().add(DynamicXMLMetadataSource.createSelfProperty(ormDescriptor.getAlias() + "ListWrapper", objectFactory));
+            
+            org.eclipse.persistence.jaxb.xmlmodel.XmlRootElement root = new org.eclipse.persistence.jaxb.xmlmodel.XmlRootElement();
+            root.setName(ormDescriptor.getAlias() + "ListWrapper");
+
+            serializationType.setXmlRootElement(root);
+            javaTypes.getJavaType().add(serializationType);
+        }        
     }
     
     @Override

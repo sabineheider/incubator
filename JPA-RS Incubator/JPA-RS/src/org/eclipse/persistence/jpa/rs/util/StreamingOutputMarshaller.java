@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.StringWriter;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -31,6 +32,8 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 
+import org.eclipse.persistence.jpa.rs.PersistenceContext;
+
 /**
  * Simple {@link StreamingOutput} implementation that uses the provided
  * {@link JAXBContext} to marshal the result when requested to either XML or
@@ -40,28 +43,29 @@ import javax.xml.bind.Marshaller;
  * @since EclipseLink 2.4.0
  */
 public class StreamingOutputMarshaller implements StreamingOutput {
-    private JAXBContext jaxbContext;
+    private PersistenceContext context;
     private Object result;
     private MediaType mediaType;
 
     private static final String COLLECTION_ELEMENT_NAME = "collection";
 
-    public StreamingOutputMarshaller(JAXBContext jaxbContext, Object result, MediaType acceptedType) {
-        this.jaxbContext = jaxbContext;
+    public StreamingOutputMarshaller(PersistenceContext context, Object result, MediaType acceptedType) {
+        this.context = context;
         this.result = result;
         this.mediaType = acceptedType;
     }
 
-    public StreamingOutputMarshaller(JAXBContext jaxbContext, Object result, List<MediaType> acceptedTypes) {
-        this(jaxbContext, result, mediaType(acceptedTypes));
+    public StreamingOutputMarshaller(PersistenceContext context, Object result, List<MediaType> acceptedTypes) {
+        this(context, result, mediaType(acceptedTypes));
     }
 
     public void write(OutputStream output) throws IOException, WebApplicationException {
-        if (this.jaxbContext != null && this.result != null && !this.mediaType.equals(MediaType.WILDCARD_TYPE)) {
+        if (this.context.getJAXBContext() != null && this.result != null && !this.mediaType.equals(MediaType.WILDCARD_TYPE)) {
             try {
-                Marshaller marshaller = jaxbContext.createMarshaller();
+                Marshaller marshaller = this.context.getJAXBContext().createMarshaller();
                 marshaller.setProperty(MEDIA_TYPE, this.mediaType.toString());
                 marshaller.setProperty(org.eclipse.persistence.jaxb.JAXBContext.INCLUDE_ROOT, false);
+                marshaller.setAdapter(new LinkAdapter("http://localhost:8080/JPA-RS/auction/entity/", context));
                 if (result instanceof Collection) {
                     @SuppressWarnings("unchecked")
                     Collection<Object> objs = (Collection<Object>) result;

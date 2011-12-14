@@ -62,6 +62,9 @@ public class TestBootstrap {
         assertTrue("JAXB Session did not contain Auction.", session.getProject().getAliasDescriptors().containsKey("Auction"));
         assertTrue("JAXB Session did not contain Bid.", session.getProject().getAliasDescriptors().containsKey("Bid"));
         assertTrue("JAXB Session did not contain User.", session.getProject().getAliasDescriptors().containsKey("User"));
+        assertTrue("JAXB Session did not contain Auction.", session.getProject().getAliasDescriptors().containsKey("AuctionListWrapper"));
+        assertTrue("JAXB Session did not contain Bid.", session.getProject().getAliasDescriptors().containsKey("BidListWrapper"));
+        assertTrue("JAXB Session did not contain User.", session.getProject().getAliasDescriptors().containsKey("UserListWrapper"));
 	
 	}
 

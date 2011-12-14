@@ -70,7 +70,7 @@ public class JPARSDatabaseChangeListener implements DatabaseChangeListener {
                                 ExpressionBuilder builder = new ExpressionBuilder();
                                 Expression expression = builder.getField(OracleChangeNotificationListener.ROWID).equal(rowChange.getRowid());
                                 ReadObjectQuery query = new ReadObjectQuery(descriptor.getJavaClass(), expression);
-
+                                query.refreshIdentityMapResult();
                                 updatedObject = session.executeQuery(query);
                            } else {
                                updatedObject = key.getObject();

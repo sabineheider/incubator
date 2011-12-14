@@ -43,7 +43,6 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriInfo;
-import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
@@ -53,6 +52,7 @@ import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.jpa.rs.metadata.DatabaseMetadataStore;
 import org.eclipse.persistence.jpa.rs.util.IdHelper;
+import org.eclipse.persistence.jpa.rs.util.LinkAdapter;
 import org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller;
 
 import com.sun.jersey.core.spi.factory.ResponseBuilderImpl;
@@ -140,7 +140,7 @@ public class Service {
             rb.status(Status.NOT_FOUND);
         } else {
             rb.status(Status.OK);
-            rb.entity(new StreamingOutputMarshaller(app.getJAXBContext(), entity, hh.getAcceptableMediaTypes()));
+            rb.entity(new StreamingOutputMarshaller(app, entity, hh.getAcceptableMediaTypes()));
         }
         return rb.build();
     }
@@ -155,7 +155,7 @@ public class Service {
 
         ResponseBuilder rb = new ResponseBuilderImpl();
         rb.status(Status.OK);
-        rb.entity(new StreamingOutputMarshaller(app.getJAXBContext(), entity, hh.getAcceptableMediaTypes()));
+        rb.entity(new StreamingOutputMarshaller(app, entity, hh.getAcceptableMediaTypes()));
         return rb.build();
     }
 
@@ -165,12 +165,10 @@ public class Service {
         PersistenceContext app = get(persistenceUnit);
         String tenantId = getTenantId(hh);
         MediaType contentType = mediaType(hh.getRequestHeader(HttpHeaders.CONTENT_TYPE)); 
-
         DynamicEntity entity = unmarshalEntity(app, type, tenantId, contentType, in);
         entity = app.merge(type, tenantId, entity);
 
-        JAXBContext context = app.getJAXBContext();
-        return new StreamingOutputMarshaller(context, entity, hh.getAcceptableMediaTypes());
+        return new StreamingOutputMarshaller(app, entity, hh.getAcceptableMediaTypes());
     }
 
     @GET
@@ -178,8 +176,7 @@ public class Service {
     public StreamingOutput namedQuery(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
         PersistenceContext app = get(persistenceUnit);
         Object result = app.query(name, Service.getParameterMap(ui), false);
-        JAXBContext context = app.getJAXBContext();
-        return new StreamingOutputMarshaller(context, result, hh.getAcceptableMediaTypes());
+        return new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes());
     }
     
     @GET
@@ -188,8 +185,7 @@ public class Service {
     public StreamingOutput namedQuerySingleResult(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
         PersistenceContext app = get(persistenceUnit);
         Object result = app.query(name, Service.getParameterMap(ui), true);
-        JAXBContext context = app.getJAXBContext();
-        return new StreamingOutputMarshaller(context, result, hh.getAcceptableMediaTypes());
+        return new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes());
     }
 
     /**
@@ -240,6 +236,7 @@ public class Service {
         try {
             unmarshaller = app.getJAXBContext().createUnmarshaller();
             unmarshaller.setProperty(MEDIA_TYPE, acceptedMedia.toString());
+            unmarshaller.setAdapter(new LinkAdapter("http://localhost:8080/JPA-RS/auction/entity/", app));
             JAXBElement<?> element = unmarshaller.unmarshal(new StreamSource(in), app.getClass(type));
             return (DynamicEntity) element.getValue();
         } catch (JAXBException e) {

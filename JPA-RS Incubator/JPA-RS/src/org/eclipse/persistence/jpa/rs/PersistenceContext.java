@@ -175,9 +175,9 @@ public class PersistenceContext {
             if (isList(type)){
                 mergedEntity = newEntity(type);
                 List<Object> returnValues = new ArrayList<Object>();
-                mergedEntity.set("serializedData", returnValues);
+                mergedEntity.set("list", returnValues);
                 @SuppressWarnings("unchecked")
-                List<Object> values = (List<Object>)entity.get("serializedData");
+                List<Object> values = (List<Object>)entity.get("list");
                 for (Object value: values){
                     Object merged = em.merge(value);
                     returnValues.add(merged);
@@ -271,10 +271,14 @@ public class PersistenceContext {
     }
 
     public DynamicEntity find(String tenantId, String entityName, Object id) {
+        return find(tenantId, entityName, id, null);
+    }
+    
+    public DynamicEntity find(String tenantId, String entityName, Object id, Map<String, Object> properties) {
         EntityManager em = getEmf().createEntityManager();
 
         try {
-            return (DynamicEntity) em.find(getClass(entityName), id);
+            return (DynamicEntity) em.find(getClass(entityName), id, properties);
         } finally {
             em.close();
         }

@@ -24,6 +24,7 @@ import javax.xml.bind.Marshaller;
 import org.eclipse.persistence.internal.helper.Helper;
 
 import org.eclipse.persistence.jpa.rs.PersistenceContext;
+import org.eclipse.persistence.jpa.rs.util.LinkAdapter;
 
 import com.sun.grizzly.websockets.DataFrame;
 import com.sun.grizzly.websockets.DefaultWebSocket;
@@ -100,8 +101,10 @@ public class JPARSWebSocket extends DefaultWebSocket {
 			Marshaller marshaller = jaxbContext.createMarshaller();
 			marshaller.setProperty(MEDIA_TYPE, MediaType.APPLICATION_JSON);
 			marshaller.setProperty(org.eclipse.persistence.jaxb.JAXBContext.INCLUDE_ROOT, false);
+            marshaller.setAdapter(new LinkAdapter("http://localhost:8080/JPA-RS/auction/entity/", context));
 			StringWriter stringWriter = new StringWriter();
 			marshaller.marshal(entity, stringWriter);
+
 			String jsonString = stringWriter.toString();
 			return jsonString;
 		} catch (Exception e) {

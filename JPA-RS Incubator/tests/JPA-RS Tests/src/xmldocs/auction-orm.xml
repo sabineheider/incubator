@@ -9,6 +9,10 @@
         <query>SELECT a FROM Auction a</query>
     </named-query>
     
+    <named-query name="Auction.forName">
+        <query>SELECT a FROM Auction a WHERE a.name = :name</query>
+    </named-query>
+    
     <named-query name="Auction.open">
         <query>SELECT a FROM Auction a where a.sold = false</query>
     </named-query>
@@ -77,9 +81,11 @@
             <basic name="time" attribute-type="Long"/>        
             <one-to-one name="user" fetch="EAGER" target-entity="User">
                 <join-column name="USER_ID" />
+                <private-owned/>
             </one-to-one>
             <one-to-one name="auction" fetch="EAGER" target-entity="Auction">
                 <join-column name="AUCTION_ID" />
+                <private-owned/>
             </one-to-one>
         </attributes>
     </entity>

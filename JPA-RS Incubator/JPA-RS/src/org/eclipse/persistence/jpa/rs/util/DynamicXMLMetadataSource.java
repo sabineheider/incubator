@@ -23,7 +23,10 @@ import org.eclipse.persistence.jaxb.xmlmodel.JavaType;
 import org.eclipse.persistence.jaxb.xmlmodel.JavaType.JavaAttributes;
 import org.eclipse.persistence.jaxb.xmlmodel.ObjectFactory;
 import org.eclipse.persistence.jaxb.xmlmodel.XmlBindings;
+import org.eclipse.persistence.jaxb.xmlmodel.XmlJavaTypeAdapter;
+import org.eclipse.persistence.jaxb.xmlmodel.XmlSchema;
 import org.eclipse.persistence.jaxb.xmlmodel.XmlBindings.JavaTypes;
+import org.eclipse.persistence.jaxb.xmlmodel.XmlSchema.XmlNs;
 import org.eclipse.persistence.jaxb.xmlmodel.XmlElement;
 import org.eclipse.persistence.jpa.rs.PersistenceFactory;
 import org.eclipse.persistence.mappings.CollectionMapping;
@@ -40,6 +43,10 @@ import org.eclipse.persistence.sessions.server.Server;
  */
 public class DynamicXMLMetadataSource implements MetadataSource {
 
+    private static final String LINK_NAMESPACE_URI = "http://www.w3.org/2005/Atom";
+    private static final String LINK_PREFIX = "atom";
+    private static final String LINK_LOCAL_NAME = "link";
+    
     private XmlBindings xmlBindings;
 
     public DynamicXMLMetadataSource(String persistenceUnitName, Server session, String packageName) {
@@ -49,7 +56,14 @@ public class DynamicXMLMetadataSource implements MetadataSource {
 
         JavaTypes javaTypes = new JavaTypes();
         xmlBindings.setJavaTypes(javaTypes);
-  
+
+        XmlSchema xmlSchema = new XmlSchema();
+        XmlNs atomNs = new XmlNs();
+        atomNs.setPrefix(LINK_PREFIX);
+        atomNs.setNamespaceUri(LINK_NAMESPACE_URI);
+        xmlSchema.getXmlNs().add(atomNs);
+        xmlBindings.setXmlSchema(xmlSchema);
+        
         for (ClassDescriptor ormDescriptor : session.getProject().getOrderedDescriptors()) {
             javaTypes.getJavaType().add(createJAXBType(ormDescriptor, objectFactory));
         }
@@ -62,6 +76,7 @@ public class DynamicXMLMetadataSource implements MetadataSource {
         for (DatabaseMapping ormMapping : classDescriptor.getMappings()) {
             javaType.getJavaAttributes().getJavaAttribute().add(createJAXBProperty(ormMapping, objectFactory));
         }
+    //    javaType.getJavaAttributes().getJavaAttribute().add(createSelfProperty(classDescriptor.getJavaClassName(), objectFactory));
         // Make them all root elements for now
         javaType.setXmlRootElement(new org.eclipse.persistence.jaxb.xmlmodel.XmlRootElement());
 
@@ -73,14 +88,38 @@ public class DynamicXMLMetadataSource implements MetadataSource {
         xmlElement.setJavaAttribute(mapping.getAttributeName());
         if (mapping.isObjectReferenceMapping()){
             xmlElement.setType(((ObjectReferenceMapping)mapping).getReferenceClassName());
+            if (!mapping.isPrivateOwned()){
+                addXmlAdapter(xmlElement);
+            }
         } else if (mapping.isCollectionMapping()){
             xmlElement.setType(((CollectionMapping)mapping).getReferenceClassName());
+            if (!mapping.isPrivateOwned()){
+                addXmlAdapter(xmlElement);
+            }
         } else {
             xmlElement.setType(mapping.getAttributeClassification().getName());
         }
         return objectFactory.createXmlElement(xmlElement);
     }
 
+    public static JAXBElement<XmlElement> createSelfProperty(String ownerClassName, ObjectFactory objectFactory){
+        XmlElement xmlElement = new XmlElement();
+        xmlElement.setJavaAttribute("self");
+        xmlElement.setType(ownerClassName);
+        addXmlAdapter(xmlElement);
+        return objectFactory.createXmlElement(xmlElement);
+    }
+    
+    public static void addXmlAdapter(XmlElement xmlElement) {
+        xmlElement.setXmlPath(LINK_PREFIX + ":" + LINK_LOCAL_NAME + "[@rel='" + xmlElement.getJavaAttribute() + "']/@href");
+
+        XmlJavaTypeAdapter adapter = new XmlJavaTypeAdapter();
+        adapter.setValue(LinkAdapter.class.getName());
+        adapter.setValueType(String.class.getName());
+        adapter.setType(xmlElement.getType());
+        xmlElement.setXmlJavaTypeAdapter(adapter);
+    }
+    
     @Override
     public XmlBindings getXmlBindings(Map<String, ?> properties, ClassLoader classLoader) {
         return this.xmlBindings;
