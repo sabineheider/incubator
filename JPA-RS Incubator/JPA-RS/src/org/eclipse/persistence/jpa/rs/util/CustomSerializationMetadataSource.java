@@ -49,10 +49,10 @@ public class CustomSerializationMetadataSource implements MetadataSource {
         JavaTypes javaTypes = new JavaTypes();
         xmlBindings.setJavaTypes(javaTypes);
   
-        addSerializationTypes(persistenceUnitName, session, objectFactory, javaTypes);
+        addSerializationTypes(persistenceUnitName, session, objectFactory, javaTypes, packageName);
     }
     
-    private void addSerializationTypes(String persistenceUnitName, Server session, ObjectFactory objectFactory, JavaTypes javaTypes){
+    private void addSerializationTypes(String persistenceUnitName, Server session, ObjectFactory objectFactory, JavaTypes javaTypes, String packageName){
 
         for (ClassDescriptor ormDescriptor : session.getProject().getOrderedDescriptors()) {
         
@@ -69,7 +69,7 @@ public class CustomSerializationMetadataSource implements MetadataSource {
 
             serializationType.getJavaAttributes().getJavaAttribute().add(objectFactory.createXmlElement(xmlElement));
             
-           // serializationType.getJavaAttributes().getJavaAttribute().add(DynamicXMLMetadataSource.createSelfProperty(ormDescriptor.getAlias() + "ListWrapper", objectFactory));
+            serializationType.getJavaAttributes().getJavaAttribute().add(DynamicXMLMetadataSource.createSelfProperty(packageName + "." + ormDescriptor.getAlias() + "ListWrapper", objectFactory));
             
             org.eclipse.persistence.jaxb.xmlmodel.XmlRootElement root = new org.eclipse.persistence.jaxb.xmlmodel.XmlRootElement();
             root.setName(ormDescriptor.getAlias() + "ListWrapper");

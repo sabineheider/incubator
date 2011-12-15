@@ -14,6 +14,7 @@ package org.eclipse.persistence.jpa.rs.websockets;
 
 import static org.eclipse.persistence.jaxb.JAXBContext.MEDIA_TYPE;
 
+import java.beans.PropertyChangeListener;
 import java.io.StringWriter;
 import java.util.logging.Logger;
 
@@ -21,6 +22,8 @@ import javax.ws.rs.core.MediaType;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
 
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.internal.helper.Helper;
 
 import org.eclipse.persistence.jpa.rs.PersistenceContext;
@@ -102,6 +105,16 @@ public class JPARSWebSocket extends DefaultWebSocket {
 			marshaller.setProperty(MEDIA_TYPE, MediaType.APPLICATION_JSON);
 			marshaller.setProperty(org.eclipse.persistence.jaxb.JAXBContext.INCLUDE_ROOT, false);
             marshaller.setAdapter(new LinkAdapter("http://localhost:8080/JPA-RS/auction/entity/", context));
+            marshaller.setListener(new Marshaller.Listener() {
+                @Override
+                public void beforeMarshal(Object source) {
+                    DynamicEntityImpl sourceImpl = (DynamicEntityImpl)source;
+                    PropertyChangeListener listener = sourceImpl._persistence_getPropertyChangeListener();
+                    sourceImpl._persistence_setPropertyChangeListener(null);
+                    ((DynamicEntity)source).set("self", source);
+                    sourceImpl._persistence_setPropertyChangeListener(listener);
+                }
+            });
 			StringWriter stringWriter = new StringWriter();
 			marshaller.marshal(entity, stringWriter);
 
