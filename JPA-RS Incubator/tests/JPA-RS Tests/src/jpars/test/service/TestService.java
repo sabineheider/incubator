@@ -15,6 +15,7 @@ package jpars.test.service;
 import static org.eclipse.persistence.jaxb.JAXBContext.MEDIA_TYPE;
 import static org.junit.Assert.fail;
 
+import java.beans.PropertyChangeListener;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -43,6 +44,7 @@ import jpars.test.util.TestHttpHeaders;
 import jpars.test.util.TestURIInfo;
 
 import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.jaxb.JAXBContext;
 import org.eclipse.persistence.jaxb.JAXBMarshaller;
 import org.eclipse.persistence.jpa.JpaHelper;
@@ -380,18 +382,23 @@ public class TestService {
         JAXBMarshaller marshaller = null;
         try{
             marshaller = (JAXBMarshaller)context.getJAXBContext().createMarshaller();
-          /*  marshaller.setListener(new Marshaller.Listener() {
+            marshaller.setListener(new Marshaller.Listener() {
                     @Override
                     public void beforeMarshal(Object source) {
+                        DynamicEntityImpl sourceImpl = (DynamicEntityImpl)source;
+                        PropertyChangeListener listener = sourceImpl._persistence_getPropertyChangeListener();
+                        sourceImpl._persistence_setPropertyChangeListener(null);
                         ((DynamicEntity)source).set("self", source);
+                        sourceImpl._persistence_setPropertyChangeListener(listener);
                     }
                 }
-            );*/
+            );
             marshaller.setProperty("eclipselink.media-type", mediaType);
             marshaller.setAdapter(new LinkAdapter("http://localhost:8080/JPA-RS/auction/entity/", context));
             marshaller.setProperty(JAXBContext.INCLUDE_ROOT, Boolean.FALSE);
             marshaller.marshal(object, writer);
         } catch (Exception e){
+            e.printStackTrace();
             fail(e.toString());
         }
         ByteArrayInputStream stream = new ByteArrayInputStream(writer.toString().getBytes());
