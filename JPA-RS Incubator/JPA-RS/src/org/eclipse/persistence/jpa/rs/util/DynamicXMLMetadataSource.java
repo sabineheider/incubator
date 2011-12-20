@@ -111,7 +111,7 @@ public class DynamicXMLMetadataSource implements MetadataSource {
     }
     
     public static void addXmlAdapter(XmlElement xmlElement) {
-        xmlElement.setXmlPath(LINK_PREFIX + ":" + LINK_LOCAL_NAME + "[@rel='" + xmlElement.getJavaAttribute() + "']/@href");
+        xmlElement.setXmlPath(xmlElement.getJavaAttribute() + "/" + LINK_PREFIX + ":" + LINK_LOCAL_NAME + "[@rel='" + xmlElement.getJavaAttribute() + "']/@href");
 
         XmlJavaTypeAdapter adapter = new XmlJavaTypeAdapter();
         adapter.setValue(LinkAdapter.class.getName());

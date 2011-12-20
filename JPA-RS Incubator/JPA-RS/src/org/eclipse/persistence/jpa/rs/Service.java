@@ -97,7 +97,7 @@ public class Service {
            rb.status(Status.NOT_FOUND);
            return rb.build();
        }
-       rb.status(Status.OK);
+       rb.status(Status.CREATED);
        return rb.build();
    }
    
@@ -123,7 +123,7 @@ public class Service {
             rb.status(Status.NOT_FOUND);
         }
         if (persistenceContext != null){
-            rb.status(Status.OK);
+            rb.status(Status.CREATED);
         }
         return rb.build();
     }
@@ -150,11 +150,10 @@ public class Service {
     public Response create(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, InputStream in) {
         PersistenceContext app = get(persistenceUnit);
         DynamicEntity entity = unmarshalEntity(app, type, getTenantId(hh), mediaType(hh.getAcceptableMediaTypes()), in);
-
         app.create(getTenantId(hh), entity);
 
         ResponseBuilder rb = new ResponseBuilderImpl();
-        rb.status(Status.OK);
+        rb.status(Status.CREATED);
         rb.entity(new StreamingOutputMarshaller(app, entity, hh.getAcceptableMediaTypes()));
         return rb.build();
     }
@@ -167,7 +166,6 @@ public class Service {
         MediaType contentType = mediaType(hh.getRequestHeader(HttpHeaders.CONTENT_TYPE)); 
         DynamicEntity entity = unmarshalEntity(app, type, tenantId, contentType, in);
         entity = app.merge(type, tenantId, entity);
-
         return new StreamingOutputMarshaller(app, entity, hh.getAcceptableMediaTypes());
     }
 

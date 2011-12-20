@@ -64,38 +64,52 @@ public class JPARSWebSocket extends DefaultWebSocket {
 		super.onClose(frame);
 	}
 
-	public void sendInsert(PersistenceContext context, Object entity) {
-		if (ofInterest(context, entity)) {
-			String json = marshallEntity(context, entity);
+	public void sendInsert(PersistenceContext application, Object entity) {
+		send(application, entity);
+	}
+
+	public void sendUpdate(PersistenceContext application, Object entity) {
+		send(application, entity);
+	}
+	
+	protected void send(PersistenceContext application, Object entity) {
+		String entityName = Helper.getShortClassName(entity.getClass());
+		if (ofInterest(application, entity, entityName)) {
+			String json = marshallEntity(application, entity);
 			if (json == null) {
 				logger.severe("Entity did not marshall, not sending: " + entity);
 			} else {
-				logger.info(this + " sending: " + json);
-				send(json);
+				String wrappedJson = 
+						"{" +
+						"\"url\" : \"persistence/" + application.getName() + "/" + entityName + "\", " +
+						"\"data\" : " + json +
+						"}";
+				logger.info(this + " sending: " + wrappedJson);
+				send(wrappedJson);
 			}
 		}
 	}
 
-	public void sendUpdate(PersistenceContext context, Object entity) {
-		if (ofInterest(context, entity)) {
-			String json = marshallEntity(context, entity);
-			if (json == null) {
-				logger.severe("Entity did not marshall, not sending: " + entity);
-			} else {
-				logger.info(this + " sending: " + json);
-				send(json);
-			}
-		}
-	}
-	
-	private boolean ofInterest(PersistenceContext context, Object entity) {
-		String appName = context.getName();
-		String entityName = Helper.getShortClassName(entity.getClass());
-		if ((appName == null) || (entityName == null) || (getRegistration() == null)) {
+	/**
+	 * Answer whether the socket should send the update.  The application name must
+	 * match but the entity name is optional and will only be used if not null.  This
+	 * allows clients to register interest in changes to all entities in an application.
+	 * 
+	 * @param application
+	 * @param entity
+	 * @param entityName
+	 * @return
+	 */
+	private boolean ofInterest(PersistenceContext application, Object entity, String entityName) {
+		String appName = application.getName();
+		if ((appName == null) || (getRegistration() == null)) {
 			return false;
 		}
-		return appName.equals(getRegistration().getAppName())
-				&& entityName.equals(getRegistration().getEntityName());
+		
+		boolean appNameMatches = appName.equals(getRegistration().getAppName());
+		boolean entityNameMatches = (getRegistration().getEntityName() == null) 
+				|| (getRegistration().getEntityName().equals(entityName));
+		return appNameMatches && entityNameMatches;
 	}
 
 	protected String marshallEntity(PersistenceContext context, Object entity) {
