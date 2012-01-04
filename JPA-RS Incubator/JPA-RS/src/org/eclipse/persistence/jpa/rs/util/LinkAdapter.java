@@ -34,7 +34,7 @@ import org.eclipse.persistence.queries.FetchGroup;
 
 public class LinkAdapter extends XmlAdapter<String, Object> {
 
-    private String baseURI = "http://example.com/DEFAULT/";
+    private String baseURI = null;
     protected PersistenceContext context;
 
     public LinkAdapter() {
@@ -44,7 +44,7 @@ public class LinkAdapter extends XmlAdapter<String, Object> {
         this.baseURI = baseURI;
         this.context = context;
     }
-
+    
     @Override
     @SuppressWarnings("rawtypes")
     // TODO Composite keys
@@ -53,7 +53,7 @@ public class LinkAdapter extends XmlAdapter<String, Object> {
             return null;
         }
         int lastSlash = v.lastIndexOf('/');
-        String entityType = v.substring(baseURI.length(), lastSlash);
+        String entityType = v.substring((baseURI + context.getName() + "/" ).length(), lastSlash);
         String entityId = v.substring(lastSlash + 1);
         ClassDescriptor descriptor = context.getDescriptor(entityType);
         DatabaseMapping idMapping = getIdMapping(descriptor);
@@ -102,7 +102,7 @@ public class LinkAdapter extends XmlAdapter<String, Object> {
             return "";
         }
         Object id = de.get(idMapping.getAttributeName());
-        String href = baseURI + v.getClass().getSimpleName() + "/"
+        String href = baseURI + context.getName() + "/"  + v.getClass().getSimpleName() + "/"
                 + id;
         return href;
     }

@@ -17,6 +17,7 @@ import static org.eclipse.persistence.jaxb.JAXBContext.MEDIA_TYPE;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -79,6 +80,8 @@ public class PersistenceContext {
     private EntityManagerFactory emf;
     
     private JAXBContext context = null;
+    
+    private URI baseURI = null;
 
     public PersistenceContext(Archive archive, Map<String, Object> properties, ClassLoader classLoader){
         super();
@@ -152,6 +155,14 @@ public class PersistenceContext {
 
     public JAXBContext getJAXBContext() {
         return context;
+    }
+
+    public URI getBaseURI() {
+        return baseURI;
+    }
+
+    public void setBaseURI(URI baseURI) {
+        this.baseURI = baseURI;
     }
 
     public void create(String tenantId, DynamicEntity entity) {

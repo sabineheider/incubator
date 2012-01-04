@@ -19,6 +19,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ejb.Singleton;
 
@@ -86,7 +87,6 @@ public class PersistenceFactory {
     
     
     public PersistenceContext bootstrapPersistenceContext(String name, Archive archive, String persistenceXMLLocation, Map<String, ?> originalProperties, boolean replace){
-        System.out.println("--- bootstrap persitence context " + name + " - " + persistenceXMLLocation);
         initialize();
         PersistenceContext persistenceContext = getPersistenceContext(name);
         if (persistenceContext == null || replace){
@@ -108,6 +108,10 @@ public class PersistenceFactory {
     public PersistenceContext getPersistenceContext(String name){
         initialize();
     	return persistenceContexts.get(name);
+    }
+    
+    public Set<String> getPersistenceContextNames(){
+        return persistenceContexts.keySet();
     }
     
     public void closePersistenceContext(String name){

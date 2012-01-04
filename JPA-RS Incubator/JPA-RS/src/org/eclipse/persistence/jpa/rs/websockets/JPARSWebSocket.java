@@ -28,6 +28,7 @@ import org.eclipse.persistence.internal.helper.Helper;
 
 import org.eclipse.persistence.jpa.rs.PersistenceContext;
 import org.eclipse.persistence.jpa.rs.util.LinkAdapter;
+import org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller;
 
 import com.sun.grizzly.websockets.DataFrame;
 import com.sun.grizzly.websockets.DefaultWebSocket;
@@ -114,21 +115,7 @@ public class JPARSWebSocket extends DefaultWebSocket {
 
 	protected String marshallEntity(PersistenceContext context, Object entity) {
 		try {
-			JAXBContext jaxbContext = context.getJAXBContext();
-			Marshaller marshaller = jaxbContext.createMarshaller();
-			marshaller.setProperty(MEDIA_TYPE, MediaType.APPLICATION_JSON);
-			marshaller.setProperty(org.eclipse.persistence.jaxb.JAXBContext.INCLUDE_ROOT, false);
-            marshaller.setAdapter(new LinkAdapter("http://localhost:8080/JPA-RS/auction/entity/", context));
-            marshaller.setListener(new Marshaller.Listener() {
-                @Override
-                public void beforeMarshal(Object source) {
-                    DynamicEntityImpl sourceImpl = (DynamicEntityImpl)source;
-                    PropertyChangeListener listener = sourceImpl._persistence_getPropertyChangeListener();
-                    sourceImpl._persistence_setPropertyChangeListener(null);
-                    ((DynamicEntity)source).set("self", source);
-                    sourceImpl._persistence_setPropertyChangeListener(listener);
-                }
-            });
+            Marshaller marshaller = StreamingOutputMarshaller.createMarshaller(context, MediaType.APPLICATION_JSON_TYPE);
 			StringWriter stringWriter = new StringWriter();
 			marshaller.marshal(entity, stringWriter);
 

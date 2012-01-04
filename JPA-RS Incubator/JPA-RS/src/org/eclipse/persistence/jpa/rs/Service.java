@@ -16,11 +16,14 @@ import static org.eclipse.persistence.jaxb.JAXBContext.MEDIA_TYPE;
 import static org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller.mediaType;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.annotation.PreDestroy;
@@ -30,6 +33,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -42,6 +46,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
+import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
@@ -49,7 +54,9 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.stream.StreamSource;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.rs.metadata.DatabaseMetadataStore;
 import org.eclipse.persistence.jpa.rs.util.IdHelper;
 import org.eclipse.persistence.jpa.rs.util.LinkAdapter;
@@ -64,8 +71,8 @@ import com.sun.jersey.core.spi.factory.ResponseBuilderImpl;
  * @since EclipseLink 2.4.0
  */
 @Singleton
-@Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
 @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+@Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
 @Path("/")
 public class Service {
 	static final Logger logger = Logger.getLogger("AppService");	
@@ -81,8 +88,9 @@ public class Service {
         this.factory = factory;
     }
     
-   @POST
+   @PUT
    @Path("/")
+   @Consumes({ MediaType.WILDCARD})
    public Response start(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, InputStream in){
        ResponseBuilder rb = new ResponseBuilderImpl();
        try{
@@ -101,9 +109,30 @@ public class Service {
        return rb.build();
    }
    
-    @POST
+   @GET
+   @Path("/")
+   @Consumes({ MediaType.WILDCARD})
+   public Response getContexts(@Context HttpHeaders hh) {
+       ResponseBuilder rb = new ResponseBuilderImpl();
+       Set<String> contexts = factory.getPersistenceContextNames();
+       StringBuffer buffer = new StringBuffer();
+       buffer.append("[");
+       Iterator<String> contextIterator = contexts.iterator();
+       while (contextIterator.hasNext()){
+           buffer.append("\"" + contextIterator.next() + "\"");
+           if (contextIterator.hasNext()){
+               buffer.append(", ");
+           }
+       }           
+       buffer.append("]");
+       rb.status(Status.OK);    
+       rb.entity(new StreamingOutputMarshaller(null, buffer.toString(), hh.getAcceptableMediaTypes()));
+       return rb.build();
+   }
+   
+    @PUT
     @Path("{context}")
-    public Response bootstrap(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, InputStream in){
+    public Response bootstrap(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo uriInfo, InputStream in){
         ResponseBuilder rb = new ResponseBuilderImpl();
         String urlString = getURL(hh);
         PersistenceContext persistenceContext = null;
@@ -120,11 +149,50 @@ public class Service {
                 persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, in, new HashMap<String, Object>(), replace);
             }
        } catch (Exception e){
+            e.printStackTrace();
             rb.status(Status.NOT_FOUND);
         }
         if (persistenceContext != null){
+            persistenceContext.setBaseURI(uriInfo.getBaseUri());
             rb.status(Status.CREATED);
         }
+
+        return rb.build();
+    }
+    
+    @GET
+    @Path("{context}")
+    @Consumes({ MediaType.WILDCARD})
+    public Response getTypes(@PathParam("context") String persistenceUnit, @Context HttpHeaders hh) {
+        ResponseBuilder rb = new ResponseBuilderImpl();
+        PersistenceContext app = get(persistenceUnit);
+        if (app == null){
+            rb.status(Status.NOT_FOUND);
+        } else {
+            Map<Class, ClassDescriptor> descriptors = JpaHelper.getServerSession(app.getEmf()).getDescriptors();
+            StringBuffer buffer = new StringBuffer();
+            
+            buffer.append("[");
+            Iterator<Class> contextIterator = descriptors.keySet().iterator();
+            while (contextIterator.hasNext()){
+                buffer.append("\"" + descriptors.get(contextIterator.next()).getAlias() + "\"");
+                if (contextIterator.hasNext()){
+                    buffer.append(", ");
+                }
+            }           
+            buffer.append("]");
+            rb.status(Status.OK);
+            rb.entity(new StreamingOutputMarshaller(null , buffer.toString(), hh.getAcceptableMediaTypes()));
+        }
+        return rb.build();
+    }
+    
+    @DELETE
+    @Path("{context}")
+    public Response removeContext(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, InputStream in){
+        ResponseBuilder rb = new ResponseBuilderImpl();
+        factory.closePersistenceContext(persistenceUnit);
+        rb.status(Status.OK);
         return rb.build();
     }
     
@@ -234,7 +302,7 @@ public class Service {
         try {
             unmarshaller = app.getJAXBContext().createUnmarshaller();
             unmarshaller.setProperty(MEDIA_TYPE, acceptedMedia.toString());
-            unmarshaller.setAdapter(new LinkAdapter("http://localhost:8080/JPA-RS/auction/entity/", app));
+            unmarshaller.setAdapter(new LinkAdapter(app.getBaseURI().toString(), app));
             JAXBElement<?> element = unmarshaller.unmarshal(new StreamSource(in), app.getClass(type));
             return (DynamicEntity) element.getValue();
         } catch (JAXBException e) {

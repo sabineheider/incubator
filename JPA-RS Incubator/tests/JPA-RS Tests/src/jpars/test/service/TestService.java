@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,6 +54,7 @@ import org.eclipse.persistence.jpa.rs.PersistenceFactory;
 import org.eclipse.persistence.jpa.rs.Service;
 import org.eclipse.persistence.jpa.rs.metadata.DatabaseMetadataStore;
 import org.eclipse.persistence.jpa.rs.util.LinkAdapter;
+import org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller;
 import org.eclipse.persistence.sessions.server.ServerSession;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -81,9 +83,12 @@ public class TestService {
             factory.setMetadataStore(new DatabaseMetadataStore());
             factory.getMetadataStore().setProperties(properties);
             factory.getMetadataStore().clearMetadata();
-            factory.bootstrapPersistenceContext("auction", new URL("file:///C:/EclipseLinkView2/incubator/JPA-RS Incubator/tests/JPA-RS Tests/src/xmldocs/auction-persistence.xml"), properties, true);
-            factory.bootstrapPersistenceContext("phonebook", new URL("file:///C:/EclipseLinkView2/incubator/JPA-RS Incubator/tests/JPA-RS Tests/src/xmldocs/phonebook-persistence.xml"), properties, true);
-
+            PersistenceContext context = factory.bootstrapPersistenceContext("auction", new URL("file:///C:/EclipseLinkView2/incubator/JPA-RS Incubator/tests/JPA-RS Tests/src/xmldocs/auction-persistence.xml"), properties, true);
+            context.setBaseURI(new URI("http://localhost:8080/JPA-RS/"));
+            
+            context = factory.bootstrapPersistenceContext("phonebook", new URL("file:///C:/EclipseLinkView2/incubator/JPA-RS Incubator/tests/JPA-RS Tests/src/xmldocs/phonebook-persistence.xml"), properties, true);
+            context.setBaseURI(new URI("http://localhost:8080/JPA-RS/"));
+            
             clearData();
         } catch (Exception e){
             fail(e.toString());
@@ -226,6 +231,8 @@ public class TestService {
             factory.setMetadataStore(new DatabaseMetadataStore());
             factory.getMetadataStore().setProperties(properties);
             factory.initialize(properties);
+            factory.getPersistenceContext("auction").setBaseURI(new URI("http://localhost:8080/JPA-RS/"));
+            factory.getPersistenceContext("phonebook").setBaseURI(new URI("http://localhost:8080/JPA-RS/"));
         } catch (Exception e){
             fail(e.toString());
         }
@@ -354,12 +361,30 @@ public class TestService {
         assertTrue("Laptop was not in results.", resultString.contains("\"description\" : \"Speedy\""));
     }
     
+    @Test 
+    public void testMetadataQuery(){
+        Service service = new Service();
+        service.setPersistenceFactory(factory);
+        StreamingOutput output = (StreamingOutput)service.getContexts(generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON)).getEntity();
+        String result = stringifyResults(output);
+        assertTrue("auction was not in the results", result.contains("auction"));
+        assertTrue("phonebook was not in the results", result.contains("phonebook"));
+        
+        output = (StreamingOutput)service.getTypes("auction", generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON)).getEntity();
+        result = stringifyResults(output);
+        
+        assertTrue("Bid was not in the results", result.contains("Bid"));
+        assertTrue("Auction was not in the results", result.contains("Auction"));
+        assertTrue("User was not in the results", result.contains("User"));
+
+    }
+    
     private static DynamicEntity unmarshalEntity(PersistenceContext app, String type, String tenantId, String acceptedMedia, InputStream in) {
         Unmarshaller unmarshaller;
         try {
             unmarshaller = app.getJAXBContext().createUnmarshaller();
             unmarshaller.setProperty(MEDIA_TYPE, acceptedMedia);
-            unmarshaller.setAdapter(new LinkAdapter("http://localhost:8080/JPA-RS/auction/entity/", app));
+            unmarshaller.setAdapter(new LinkAdapter(app.getBaseURI().toString(), app));
             JAXBElement<?> element = unmarshaller.unmarshal(new StreamSource(in), app.getClass(type));
             return (DynamicEntity) element.getValue();
         } catch (JAXBException e) {
@@ -394,7 +419,7 @@ public class TestService {
                 }
             );
             marshaller.setProperty("eclipselink.media-type", mediaType);
-            marshaller.setAdapter(new LinkAdapter("http://localhost:8080/JPA-RS/auction/entity/", context));
+            marshaller.setAdapter(new LinkAdapter(context.getBaseURI().toString(), context));
             marshaller.setProperty(JAXBContext.INCLUDE_ROOT, Boolean.FALSE);
             marshaller.marshal(object, writer);
         } catch (Exception e){
@@ -414,5 +439,6 @@ public class TestService {
         headers.getRequestHeaders().put(HttpHeaders.CONTENT_TYPE, mediaTypes);
         return headers;
     }
+    
     
 }
