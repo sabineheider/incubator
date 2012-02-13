@@ -21,15 +21,19 @@ import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import javax.ejb.EJB;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Query;
 import javax.persistence.spi.PersistenceUnitInfo;
 import javax.ws.rs.core.MediaType;
+
 import org.eclipse.persistence.jaxb.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
@@ -51,16 +55,19 @@ import org.eclipse.persistence.jpa.Archive;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.PersistenceProvider;
 import org.eclipse.persistence.jpa.dynamic.JPADynamicHelper;
+import org.eclipse.persistence.jpa.metadata.XMLMetadataSource;
+import org.eclipse.persistence.jpa.rs.eventlistener.DatabaseEventListenerFactory;
 import org.eclipse.persistence.jpa.rs.util.CustomSerializationMetadataSource;
+import org.eclipse.persistence.jpa.rs.util.DatabaseListener;
 import org.eclipse.persistence.jpa.rs.util.DynamicXMLMetadataSource;
 import org.eclipse.persistence.jpa.rs.util.InMemoryArchive;
+import org.eclipse.persistence.platform.database.events.DatabaseEventListener;
 import org.eclipse.persistence.queries.DatabaseQuery;
 import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.sessions.server.ServerSession;
 
 import org.eclipse.persistence.jpa.rs.util.ChangeListener;
-import org.eclipse.persistence.jpa.rs.qcn.JPARSChangeNotificationListener;
 import org.eclipse.persistence.jpa.rs.PersistenceFactory;
 
 
@@ -73,7 +80,8 @@ import org.eclipse.persistence.jpa.rs.PersistenceFactory;
 public class PersistenceContext {
     
     private static final String PACKAGE_ROOT = "jpars.app.";
-    private static final String MODEL_PACKAGE = ".model";
+    private static final String MODEL_PACKAGE = ".model";   
+    public static DatabaseEventListenerFactory EVENT_LISTENER_FACTORY = null;
     
     private String name = null;
     
@@ -82,6 +90,7 @@ public class PersistenceContext {
     private JAXBContext context = null;
     
     private URI baseURI = null;
+
 
     public PersistenceContext(Archive archive, Map<String, Object> properties, ClassLoader classLoader){
         super();
@@ -97,11 +106,35 @@ public class PersistenceContext {
         this.emf = emf;
        
         try{
-            JAXBContext jaxbContext = createJAXBContext(persistenceUnitInfo.getPersistenceUnitName(), emf.getServerSession());
+            JAXBContext jaxbContext = createDynamicJAXBContext(persistenceUnitInfo.getPersistenceUnitName(), emf.getServerSession());
            this.context = jaxbContext;
         } catch (Exception e){
-            e.printStackTrace();
             emf.close();
+            throw new RuntimeException("JAXB Creation Exception", e);
+        }
+    }
+    
+    @SuppressWarnings("unchecked")
+    public PersistenceContext(String emfName, EntityManagerFactoryImpl emf, URI defaultURI){
+        super();
+        this.emf = emf;
+        
+        boolean createStaticContext = true;
+        if (!emf.getServerSession().getDescriptors().isEmpty()){
+            ClassDescriptor descriptor = emf.getServerSession().getDescriptors().entrySet().iterator().next().getValue();
+            if (DynamicEntity.class.isAssignableFrom(descriptor.getJavaClass())){
+                createStaticContext = false;
+            }
+        }
+        try{
+            JAXBContext jaxbContext = null;
+            if (createStaticContext){
+                jaxbContext = createStaticJAXBContext(emfName, emf.getServerSession());
+            } else {
+                jaxbContext = createDynamicJAXBContext(emfName, emf.getServerSession());
+            }
+           this.context = jaxbContext;
+        } catch (Exception e){
             throw new RuntimeException("JAXB Creation Exception", e);
         }
     }
@@ -117,25 +150,16 @@ public class PersistenceContext {
      * @param session
      * @return
      */
-    protected JAXBContext createJAXBContext(String persistenceUnitName, Server session) throws JAXBException, IOException {
+    protected JAXBContext createDynamicJAXBContext(String persistenceUnitName, Server session) throws JAXBException, IOException {
         JAXBContext jaxbContext = (JAXBContext) session.getProperty(JAXBContext.class.getName());
         if (jaxbContext != null) {
             return jaxbContext;
         }
-        String oxmLocation = (String) emf.getProperties().get("eclipselink.jpa-rs.oxm");
-        
         String packageName = PACKAGE_ROOT + persistenceUnitName + MODEL_PACKAGE;
-        Map<String, Object> properties = new HashMap<String, Object>(1);
-        Object metadataLocation = null;
-        if (oxmLocation != null){
-            metadataLocation = new InMemoryArchive((new URL(oxmLocation)).openStream());
-        } else {
-            metadataLocation = new DynamicXMLMetadataSource(persistenceUnitName, session, packageName);
-        }
-        List<Object> metadataLocations = new ArrayList<Object>();
-        metadataLocations.add(metadataLocation);
-        metadataLocations.add(new CustomSerializationMetadataSource(persistenceUnitName, session, packageName));
-        properties.put(JAXBContextFactory.ECLIPSELINK_OXM_XML_KEY, metadataLocations);
+
+        Map<String, Object> properties = createJAXBProperties(persistenceUnitName, session, packageName);      
+
+        ((List<Object>)properties.get(JAXBContextFactory.ECLIPSELINK_OXM_XML_KEY)).add(new CustomSerializationMetadataSource(persistenceUnitName, session, packageName));
 
         ClassLoader cl = session.getPlatform().getConversionManager().getLoader();
         jaxbContext = DynamicJAXBContextFactory.createContextFromOXM(cl, properties);
@@ -143,6 +167,60 @@ public class PersistenceContext {
         session.setProperty(JAXBContext.class.getName(), jaxbContext);
 
         return jaxbContext;
+    }
+    
+    /**
+     * @param session
+     * @return
+     */
+    protected JAXBContext createStaticJAXBContext(String persistenceUnitName, Server session) throws JAXBException, IOException {
+        JAXBContext jaxbContext = (JAXBContext) session.getProperty(JAXBContext.class.getName());
+        if (jaxbContext != null) {
+            return jaxbContext;
+        }
+        Map<String, Object> properties = createJAXBProperties(persistenceUnitName, session, null);
+
+        Object[] classes = session.getDescriptors().keySet().toArray();
+        Class[] classesToBeBound = new Class[classes.length];
+        for (int i=0;i<classes.length;i++){
+            classesToBeBound[i] = (Class)classes[i];
+        }
+        jaxbContext = (JAXBContext)JAXBContextFactory.createContext(classesToBeBound, properties);
+
+        session.setProperty(JAXBContext.class.getName(), jaxbContext);
+
+        return jaxbContext;
+    }
+    
+    public Map<String, Object> createJAXBProperties(String persistenceUnitName, Server session, String dynamicPackageName) throws IOException{
+        String oxmLocation = (String) emf.getProperties().get("eclipselink.jpa-rs.oxm");
+        
+        Map<String, Object> properties = new HashMap<String, Object>(1);
+        List<Object> metadataLocations = new ArrayList<Object>();
+
+        addDynamicXMLMetadataSources(metadataLocations, persistenceUnitName, session);
+        if (oxmLocation != null){
+            metadataLocations.add(new org.eclipse.persistence.jaxb.metadata.XMLMetadataSource((new URL(oxmLocation)).openStream()));
+        }
+        properties.put(JAXBContextFactory.ECLIPSELINK_OXM_XML_KEY, metadataLocations);
+        return properties;
+    }
+    
+    public void addDynamicXMLMetadataSources(List<Object> metadataSources, String persistenceUnitName, Server session){
+        //   metadataLocation = new DynamicXMLMetadataSource(persistenceUnitName, session, dynamicPackageName);
+        Set<String> packages = new HashSet<String>();
+        Iterator<Class> i = session.getDescriptors().keySet().iterator();
+        while (i.hasNext()){
+            Class descriptorClass = i.next();
+            String packageName = descriptorClass.getName().substring(0, descriptorClass.getName().lastIndexOf('.'));
+            if (!packages.contains(packageName)){
+                packages.add(packageName);
+            }
+        }
+        
+        for(String packageName: packages){
+            metadataSources.add(new DynamicXMLMetadataSource(persistenceUnitName, session, packageName));
+        }
     }
     
     public String getName() {
@@ -165,7 +243,7 @@ public class PersistenceContext {
         this.baseURI = baseURI;
     }
 
-    public void create(String tenantId, DynamicEntity entity) {
+    public void create(String tenantId, Object entity) {
         EntityManager em = getEmf().createEntityManager();
 
         try {
@@ -177,22 +255,23 @@ public class PersistenceContext {
         }
     }
 
-    public DynamicEntity merge(String type, String tenantId, DynamicEntity entity) {
+    public Object merge(String type, String tenantId, Object entity) {
         EntityManager em = getEmf().createEntityManager();
-        DynamicEntity mergedEntity = null;
+        Object mergedEntity = null;
         try {
             em.getTransaction().begin();
             
             if (isList(type)){
-                mergedEntity = newEntity(type);
+                DynamicEntity mergedDynamic = (DynamicEntity)newEntity(type);
                 List<Object> returnValues = new ArrayList<Object>();
-                mergedEntity.set("list", returnValues);
+                mergedDynamic.set("list", returnValues);
                 @SuppressWarnings("unchecked")
-                List<Object> values = (List<Object>)entity.get("list");
+                List<Object> values = (List<Object>)((DynamicEntity)entity).get("list");
                 for (Object value: values){
                     Object merged = em.merge(value);
                     returnValues.add(merged);
                 }
+                mergedEntity = mergedDynamic;
             } else {
                 mergedEntity = em.merge(entity);
             }
@@ -240,7 +319,7 @@ public class PersistenceContext {
     /**
      * TODO
      */
-    public void save(String tenantId, DynamicEntity entity) {
+    public void save(String tenantId, Object entity) {
         EntityManager em = getEmf().createEntityManager();
 
         try {
@@ -260,7 +339,7 @@ public class PersistenceContext {
 
         try {
             em.getTransaction().begin();
-            DynamicEntity entity = (DynamicEntity)em.find(getClass(type), id);
+            Object entity = em.find(getClass(type), id);
             em.remove(entity);
             em.getTransaction().commit();
         } finally {
@@ -277,19 +356,19 @@ public class PersistenceContext {
         this.context = null;
     }
 
-    public DynamicEntity find(String entityName, Object id) {
+    public Object find(String entityName, Object id) {
         return find(null, entityName, id);
     }
 
-    public DynamicEntity find(String tenantId, String entityName, Object id) {
+    public Object find(String tenantId, String entityName, Object id) {
         return find(tenantId, entityName, id, null);
     }
     
-    public DynamicEntity find(String tenantId, String entityName, Object id, Map<String, Object> properties) {
+    public Object find(String tenantId, String entityName, Object id, Map<String, Object> properties) {
         EntityManager em = getEmf().createEntityManager();
 
         try {
-            return (DynamicEntity) em.find(getClass(entityName), id, properties);
+            return em.find(getClass(entityName), id, properties);
         } finally {
             em.close();
         }
@@ -318,11 +397,11 @@ public class PersistenceContext {
     }
 
     public Object query(String name, Map<?, ?> parameters) {
-        return query(name, parameters, false);
+        return query(name, parameters, null, false);
     }
     
     @SuppressWarnings("rawtypes")
-    public Object query(String name, Map<?, ?> parameters, boolean returnSingleResult) {
+    public Object query(String name, Map<?, ?> parameters, Map<String, ?> hints, boolean returnSingleResult) {
         EntityManager em = getEmf().createEntityManager();
         try{
             Query query = em.createNamedQuery(name);
@@ -343,6 +422,11 @@ public class PersistenceContext {
                     query.setParameter(key, parameter);
                 }
             }
+            if (hints != null){
+                for (String key:  hints.keySet()){
+                    query.setHint(key, hints.get(key));
+                }
+            }
             if (returnSingleResult){
                 return query.getSingleResult();
             } else {
@@ -356,7 +440,7 @@ public class PersistenceContext {
         return null;
     }
     
-    public DynamicEntity unmarshalEntity(String entityName, String tenantId, String acceptedMedia, InputStream in) throws JAXBException {
+    public Object unmarshalEntity(String entityName, String tenantId, String acceptedMedia, InputStream in) throws JAXBException {
         Unmarshaller unmarshaller = getJAXBContext().createUnmarshaller();
         if (acceptedMedia == null || acceptedMedia.indexOf(MediaType.APPLICATION_JSON) < 0) {
             unmarshaller.setProperty(MEDIA_TYPE, MediaType.APPLICATION_JSON);
@@ -365,7 +449,7 @@ public class PersistenceContext {
             unmarshaller.setProperty(MEDIA_TYPE, MediaType.APPLICATION_XML);
         }
         JAXBElement<?> element = unmarshaller.unmarshal(new StreamSource(in), getClass(entityName));
-		return (DynamicEntity) element.getValue();
+		return element.getValue();
     }
 
     protected EntityManager createEntityManager(String tenantId) {
@@ -376,7 +460,7 @@ public class PersistenceContext {
      * TODO
      */
     public void addListener(ChangeListener listener) {
-        JPARSChangeNotificationListener changeListener = (JPARSChangeNotificationListener) JpaHelper.getDatabaseSession(getEmf()).getProperty(PersistenceFactory.CHANGE_NOTIFICATION_LISTENER);
+        DatabaseListener changeListener = (DatabaseListener) JpaHelper.getDatabaseSession(getEmf()).getProperty(PersistenceFactory.CHANGE_NOTIFICATION_LISTENER);
         if (changeListener == null) {
             throw new RuntimeException("Change Listener not registered properly");
         }
@@ -387,24 +471,34 @@ public class PersistenceContext {
      * TODO
      */
     public void remove(ChangeListener listener) {
-        JPARSChangeNotificationListener changeListener = (JPARSChangeNotificationListener) JpaHelper.getDatabaseSession(getEmf()).getProperty(PersistenceFactory.CHANGE_NOTIFICATION_LISTENER);
+        DatabaseListener changeListener = (DatabaseListener) JpaHelper.getDatabaseSession(getEmf()).getProperty(PersistenceFactory.CHANGE_NOTIFICATION_LISTENER);
         if (changeListener != null) {
             changeListener.removeChangeListener(listener);
         }
     }
     
-    public static JPARSChangeNotificationListener subscribeToEventNotification(EntityManagerFactory emf) {
-        ServerSession session = (ServerSession) JpaHelper.getServerSession(emf);
-        Iterator<ClassDescriptor> i = session.getDescriptors().values().iterator();
-        JPARSChangeNotificationListener listener = new JPARSChangeNotificationListener();
-        session.setDatabaseEventListener(listener);
-        while (i.hasNext()) {
-            ClassDescriptor descriptor = i.next();
-            listener.initialize(descriptor, session);
+    public static DatabaseEventListener subscribeToEventNotification(EntityManagerFactory emf) {
+        DatabaseEventListener listener = null;
+        if (EVENT_LISTENER_FACTORY != null){
+            listener = EVENT_LISTENER_FACTORY.createDatabaseEventListener();
+            ServerSession session = (ServerSession) JpaHelper.getServerSession(emf);
+            Iterator<ClassDescriptor> i = session.getDescriptors().values().iterator();
+            session.setDatabaseEventListener(listener);
+            System.out.println("--- Subscribe set Listener " + listener);
+
+            while (i.hasNext()) {
+                ClassDescriptor descriptor = i.next();
+                listener.initialize(descriptor, session);
+            }
+            listener.register(session);
+            session.setProperty(PersistenceFactory.CHANGE_NOTIFICATION_LISTENER, listener);
         }
-        listener.register(session);
-        session.setProperty(PersistenceFactory.CHANGE_NOTIFICATION_LISTENER, listener);
         return listener;
+    }
+
+    public static void setEventListenerFactory(
+            DatabaseEventListenerFactory eventListenerFactory) {
+        EVENT_LISTENER_FACTORY = eventListenerFactory;
     }
 
 }

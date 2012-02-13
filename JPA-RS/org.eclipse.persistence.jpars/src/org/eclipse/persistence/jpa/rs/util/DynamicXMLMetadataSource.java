@@ -65,10 +65,14 @@ public class DynamicXMLMetadataSource implements MetadataSource {
         xmlBindings.setXmlSchema(xmlSchema);
         
         for (ClassDescriptor ormDescriptor : session.getProject().getOrderedDescriptors()) {
-            javaTypes.getJavaType().add(createJAXBType(ormDescriptor, objectFactory));
+            String descriptorPackageName = ormDescriptor.getJavaClassName().substring(0, ormDescriptor.getJavaClassName().lastIndexOf('.'));
+            if (descriptorPackageName.equals(packageName)){
+                javaTypes.getJavaType().add(createJAXBType(ormDescriptor, objectFactory));
+            }
         }
     }
 
+    
     private JavaType createJAXBType(ClassDescriptor classDescriptor, ObjectFactory objectFactory) {
         JavaType javaType = new JavaType();
         javaType.setName(classDescriptor.getAlias());

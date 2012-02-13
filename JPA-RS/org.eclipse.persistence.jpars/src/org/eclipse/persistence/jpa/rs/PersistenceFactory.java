@@ -15,17 +15,23 @@ package org.eclipse.persistence.jpa.rs;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.ejb.EJB;
 import javax.ejb.Singleton;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.internal.jpa.EntityManagerFactoryImpl;
 import org.eclipse.persistence.jpa.Archive;
+import org.eclipse.persistence.jpa.rs.eventlistener.DatabaseEventListenerFactory;
 import org.eclipse.persistence.jpa.rs.metadata.Application;
 import org.eclipse.persistence.jpa.rs.metadata.MetadataStore;
 import org.eclipse.persistence.jpa.rs.util.InMemoryArchive;
@@ -45,6 +51,8 @@ public class PersistenceFactory {
 	private Map<String, PersistenceContext> persistenceContexts = new HashMap<String, PersistenceContext>();
     
     private MetadataStore metadataStore;
+    
+    private DatabaseEventListenerFactory eventListenerFactory;
 	
     public PersistenceFactory(){
     }
@@ -92,6 +100,7 @@ public class PersistenceFactory {
         if (persistenceContext == null || replace){
             DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
             Map<String, Object> properties = createProperties(dcl, originalProperties);
+            properties.putAll(originalProperties);
             persistenceContext = new PersistenceContext(archive, properties, dcl);
     
             persistenceContexts.put(name, persistenceContext);
@@ -105,9 +114,24 @@ public class PersistenceFactory {
         return persistenceContext;
     }
     
-    public PersistenceContext getPersistenceContext(String name){
+    public PersistenceContext bootstrapPersistenceContext(String name, EntityManagerFactory emf, URI baseURI, boolean replace){
         initialize();
-    	return persistenceContexts.get(name);
+        PersistenceContext persistenceContext = null;
+        if (!replace){
+            persistenceContext = getPersistenceContext(name);
+        }
+        if (persistenceContext == null){
+            persistenceContext = new PersistenceContext(name, (EntityManagerFactoryImpl)emf, baseURI);
+            persistenceContexts.put(name, persistenceContext);
+        }
+        persistenceContext.setBaseURI(baseURI);
+        return persistenceContext;
+    }
+ 
+    
+    public synchronized PersistenceContext getPersistenceContext(String name){
+        initialize();
+        return persistenceContexts.get(name);
     }
     
     public Set<String> getPersistenceContextNames(){
@@ -164,6 +188,16 @@ public class PersistenceFactory {
 
     public void setMetadataStore(MetadataStore metadataStore) {
         this.metadataStore = metadataStore;
+    }
+    
+
+    public DatabaseEventListenerFactory getEventListenerFactory() {
+        return eventListenerFactory;
+    }
+
+    public void setEventListenerFactory(
+            DatabaseEventListenerFactory eventListenerFactory) {
+        this.eventListenerFactory = eventListenerFactory;
     }
     
 }

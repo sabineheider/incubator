@@ -30,8 +30,10 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.StreamingOutput;
 import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
+import javax.xml.namespace.QName;
 
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
@@ -63,6 +65,8 @@ public class StreamingOutputMarshaller implements StreamingOutput {
     }
 
     public void write(OutputStream output) throws IOException, WebApplicationException {
+long millis = System.currentTimeMillis();
+        System.out.println("SteamingOutputMarshaller About to write ");
         if (this.context != null && this.context.getJAXBContext() != null && this.result != null && !this.mediaType.equals(MediaType.WILDCARD_TYPE)) {
             try {
                 Marshaller marshaller = createMarshaller(context, mediaType);
@@ -75,7 +79,9 @@ public class StreamingOutputMarshaller implements StreamingOutput {
                         Iterator<Object> i = objs.iterator();
                         writer.write("[");
                         if (i.hasNext()) {
-                            marshaller.marshal(i.next(), writer);
+                            Object element = i.next();
+                            //JAXBElement jaxbElement = new JAXBElement(new QName(null, "data"), element.getClass(), element);
+                            marshaller.marshal(element, writer);
                             while (i.hasNext()) {
                                 writer.write(",");
                                 marshaller.marshal(i.next(), writer);
@@ -117,6 +123,8 @@ public class StreamingOutputMarshaller implements StreamingOutput {
             oos.close();
             output.write(baos.toByteArray());
         }
+        System.out.println("SteamingOutputMarshaller done write. time: " + (System.currentTimeMillis() - millis));
+
     }
     
     /**
@@ -160,12 +168,14 @@ public class StreamingOutputMarshaller implements StreamingOutput {
         marshaller.setAdapter(new LinkAdapter(context.getBaseURI().toString(), context));
         marshaller.setListener(new Marshaller.Listener() {
             @Override
-            public void beforeMarshal(Object source) {
-                DynamicEntityImpl sourceImpl = (DynamicEntityImpl)source;
-                PropertyChangeListener listener = sourceImpl._persistence_getPropertyChangeListener();
-                sourceImpl._persistence_setPropertyChangeListener(null);
-                ((DynamicEntity)source).set("self", source);
-                sourceImpl._persistence_setPropertyChangeListener(listener);
+            public void beforeMarshal(Object source) {   
+                if (source instanceof DynamicEntity){
+                    DynamicEntityImpl sourceImpl = (DynamicEntityImpl)source;
+                    PropertyChangeListener listener = sourceImpl._persistence_getPropertyChangeListener();
+                    sourceImpl._persistence_setPropertyChangeListener(null);
+                    ((DynamicEntity)source).set("self", source);
+                    sourceImpl._persistence_setPropertyChangeListener(listener);
+                }
             }
         });
         return marshaller;

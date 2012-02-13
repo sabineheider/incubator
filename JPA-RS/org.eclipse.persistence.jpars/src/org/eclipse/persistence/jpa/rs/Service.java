@@ -29,6 +29,8 @@ import java.util.logging.Logger;
 import javax.annotation.PreDestroy;
 import javax.ejb.EJB;
 import javax.ejb.Singleton;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -55,6 +57,7 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.rs.metadata.DatabaseMetadataStore;
@@ -135,18 +138,20 @@ public class Service {
     public Response bootstrap(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo uriInfo, InputStream in){
         ResponseBuilder rb = new ResponseBuilderImpl();
         String urlString = getURL(hh);
+
         PersistenceContext persistenceContext = null;
         boolean replace = false;
         List<String> replaceValues = hh.getRequestHeader("replace");
         if (replaceValues != null && replaceValues.size() > 0){
             replace = Boolean.getBoolean(replaceValues.get(0));
         }
+        Map<String, Object> properties = new HashMap<String, Object>();
         try{
             if (urlString != null){
                 URL url = new URL(urlString);
-                persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, url, new HashMap<String, Object>(), replace);
+                persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, url, properties, replace);
             } else {
-                persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, in, new HashMap<String, Object>(), replace);
+                persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, in, properties, replace);
             }
        } catch (Exception e){
             e.printStackTrace();
@@ -163,9 +168,9 @@ public class Service {
     @GET
     @Path("{context}")
     @Consumes({ MediaType.WILDCARD})
-    public Response getTypes(@PathParam("context") String persistenceUnit, @Context HttpHeaders hh) {
+    public Response getTypes(@PathParam("context") String persistenceUnit, @Context HttpHeaders hh, @Context UriInfo uriInfo) {
         ResponseBuilder rb = new ResponseBuilderImpl();
-        PersistenceContext app = get(persistenceUnit);
+        PersistenceContext app = get(persistenceUnit, uriInfo.getBaseUri());
         if (app == null){
             rb.status(Status.NOT_FOUND);
         } else {
@@ -199,7 +204,7 @@ public class Service {
     @GET
     @Path("{context}/entity/{type}")
     public Response find(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo ui) {
-        PersistenceContext app = get(persistenceUnit);
+        PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
         Object id = IdHelper.buildId(app, type, ui.getQueryParameters());
 
         Object entity = app.find(getTenantId(hh), type, id);
@@ -215,8 +220,8 @@ public class Service {
 
     @PUT
     @Path("{context}/entity/{type}")
-    public Response create(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, InputStream in) {
-        PersistenceContext app = get(persistenceUnit);
+    public Response create(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo uriInfo, InputStream in) {
+        PersistenceContext app = get(persistenceUnit, uriInfo.getBaseUri());
         DynamicEntity entity = unmarshalEntity(app, type, getTenantId(hh), mediaType(hh.getAcceptableMediaTypes()), in);
         app.create(getTenantId(hh), entity);
 
@@ -228,11 +233,11 @@ public class Service {
 
     @POST
     @Path("{context}/entity/{type}")
-    public StreamingOutput update(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, InputStream in) {
-        PersistenceContext app = get(persistenceUnit);
+    public StreamingOutput update(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo uriInfo, InputStream in) {
+        PersistenceContext app = get(persistenceUnit, uriInfo.getBaseUri());
         String tenantId = getTenantId(hh);
         MediaType contentType = mediaType(hh.getRequestHeader(HttpHeaders.CONTENT_TYPE)); 
-        DynamicEntity entity = unmarshalEntity(app, type, tenantId, contentType, in);
+        Object entity = unmarshalEntity(app, type, tenantId, contentType, in);
         entity = app.merge(type, tenantId, entity);
         return new StreamingOutputMarshaller(app, entity, hh.getAcceptableMediaTypes());
     }
@@ -240,8 +245,13 @@ public class Service {
     @GET
     @Path("{context}/query/{name}")
     public StreamingOutput namedQuery(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
-        PersistenceContext app = get(persistenceUnit);
-        Object result = app.query(name, Service.getParameterMap(ui), false);
+long millis = System.currentTimeMillis();
+        System.out.println("Start Named Query " + name);
+        PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
+        Object result = app.query(name, Service.getParameterMap(ui), Service.getHintMap(ui), false);
+
+
+        System.out.println("Named Query " + name + " Marshalling. time: " + (System.currentTimeMillis() - millis));
         return new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes());
     }
     
@@ -249,8 +259,8 @@ public class Service {
     @Path("{context}/singleResultQuery/{name}")
     @Produces(MediaType.WILDCARD)
     public StreamingOutput namedQuerySingleResult(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
-        PersistenceContext app = get(persistenceUnit);
-        Object result = app.query(name, Service.getParameterMap(ui), true);
+        PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
+        Object result = app.query(name, Service.getParameterMap(ui), Service.getHintMap(ui), true);
         return new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes());
     }
 
@@ -271,15 +281,35 @@ public class Service {
         return parameters;
     }
     
+    private static Map<String, Object> getHintMap(UriInfo info){
+        Map<String, Object> hints = new HashMap<String, Object>();
+         for(String key :  info.getQueryParameters().keySet()) { 
+            hints.put(key, info.getQueryParameters().getFirst(key));  
+        }
+        return hints;
+    }
+    
     @GET
     @Path("{context}/query")
     public StreamingOutput adhocQuery(@PathParam("context") String persistenceUnit, @Context HttpHeaders hh, @Context UriInfo ui) {
         throw new WebApplicationException(Status.SERVICE_UNAVAILABLE);
     }
 
-    private PersistenceContext get(String persistenceUnit) {
+    private PersistenceContext get(String persistenceUnit, URI defaultURI) {
         PersistenceContext app = getPersistenceFactory().getPersistenceContext(persistenceUnit);
 
+        if (app == null){
+            try{
+                DynamicClassLoader dcl = new DynamicClassLoader(Thread.currentThread().getContextClassLoader());
+                Map<String, Object> properties = new HashMap<String, Object>();
+                properties.put(PersistenceUnitProperties.CLASSLOADER, dcl);
+                EntityManagerFactory factory = Persistence.createEntityManagerFactory(persistenceUnit, properties);
+                if (factory != null){
+                    app = getPersistenceFactory().bootstrapPersistenceContext(persistenceUnit, factory, defaultURI, true);
+                }
+            } catch (Exception e){}
+        }
+        
         if (app == null) {
             throw new WebApplicationException(Status.NOT_FOUND);
         }
@@ -309,6 +339,7 @@ public class Service {
             throw new WebApplicationException(Status.BAD_REQUEST);
         }
     }
+
     
     private String getURL(HttpHeaders hh){
         List<String> persistenceXmlURLs = hh.getRequestHeader("persistenceXmlURL");
@@ -320,7 +351,7 @@ public class Service {
         }
         return persistenceXmlURLs.get(0);
     }
-    
+
     @PreDestroy
     public void close() {
         factory.close();
