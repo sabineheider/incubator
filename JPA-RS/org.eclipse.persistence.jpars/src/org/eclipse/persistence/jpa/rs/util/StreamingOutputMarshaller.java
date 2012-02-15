@@ -164,7 +164,7 @@ long millis = System.currentTimeMillis();
     public static Marshaller createMarshaller(PersistenceContext context, MediaType mediaType) throws JAXBException{
         Marshaller marshaller = context.getJAXBContext().createMarshaller();
         marshaller.setProperty(MEDIA_TYPE, mediaType.toString());
-        marshaller.setProperty(org.eclipse.persistence.jaxb.JAXBContext.INCLUDE_ROOT, false);
+        marshaller.setProperty(org.eclipse.persistence.jaxb.JAXBContext.JSON_INCLUDE_ROOT, false);
         marshaller.setAdapter(new LinkAdapter(context.getBaseURI().toString(), context));
         marshaller.setListener(new Marshaller.Listener() {
             @Override

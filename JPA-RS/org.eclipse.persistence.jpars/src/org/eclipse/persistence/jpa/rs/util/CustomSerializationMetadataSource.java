@@ -20,8 +20,10 @@ import org.eclipse.persistence.jaxb.xmlmodel.JavaType;
 import org.eclipse.persistence.jaxb.xmlmodel.ObjectFactory;
 import org.eclipse.persistence.jaxb.xmlmodel.XmlBindings;
 import org.eclipse.persistence.jaxb.xmlmodel.XmlElement;
+import org.eclipse.persistence.jaxb.xmlmodel.XmlSchema;
 import org.eclipse.persistence.jaxb.xmlmodel.JavaType.JavaAttributes;
 import org.eclipse.persistence.jaxb.xmlmodel.XmlBindings.JavaTypes;
+import org.eclipse.persistence.jaxb.xmlmodel.XmlSchema.XmlNs;
 import org.eclipse.persistence.sessions.server.Server;
 
 /**
@@ -39,6 +41,11 @@ import org.eclipse.persistence.sessions.server.Server;
  *
  */
 public class CustomSerializationMetadataSource implements MetadataSource {
+    
+    private static final String LINK_NAMESPACE_URI = "http://www.w3.org/2005/Atom";
+    private static final String LINK_PREFIX = "atom";
+    private static final String LINK_LOCAL_NAME = "link";
+    
     private XmlBindings xmlBindings;
 
     public CustomSerializationMetadataSource(String persistenceUnitName, Server session, String packageName) {
@@ -48,7 +55,14 @@ public class CustomSerializationMetadataSource implements MetadataSource {
 
         JavaTypes javaTypes = new JavaTypes();
         xmlBindings.setJavaTypes(javaTypes);
-  
+
+        XmlSchema xmlSchema = new XmlSchema();
+        XmlNs atomNs = new XmlNs();
+        atomNs.setPrefix(LINK_PREFIX);
+        atomNs.setNamespaceUri(LINK_NAMESPACE_URI);
+        xmlSchema.getXmlNs().add(atomNs);
+        xmlBindings.setXmlSchema(xmlSchema);
+        
         addSerializationTypes(persistenceUnitName, session, objectFactory, javaTypes, packageName);
     }
     

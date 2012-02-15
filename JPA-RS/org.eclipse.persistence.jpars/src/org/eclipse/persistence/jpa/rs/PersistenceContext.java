@@ -118,21 +118,10 @@ public class PersistenceContext {
     public PersistenceContext(String emfName, EntityManagerFactoryImpl emf, URI defaultURI){
         super();
         this.emf = emf;
-        
-        boolean createStaticContext = true;
-        if (!emf.getServerSession().getDescriptors().isEmpty()){
-            ClassDescriptor descriptor = emf.getServerSession().getDescriptors().entrySet().iterator().next().getValue();
-            if (DynamicEntity.class.isAssignableFrom(descriptor.getJavaClass())){
-                createStaticContext = false;
-            }
-        }
+
         try{
             JAXBContext jaxbContext = null;
-            if (createStaticContext){
-                jaxbContext = createStaticJAXBContext(emfName, emf.getServerSession());
-            } else {
-                jaxbContext = createDynamicJAXBContext(emfName, emf.getServerSession());
-            }
+            jaxbContext = createDynamicJAXBContext(emfName, emf.getServerSession());
            this.context = jaxbContext;
         } catch (Exception e){
             throw new RuntimeException("JAXB Creation Exception", e);
@@ -163,30 +152,7 @@ public class PersistenceContext {
 
         ClassLoader cl = session.getPlatform().getConversionManager().getLoader();
         jaxbContext = DynamicJAXBContextFactory.createContextFromOXM(cl, properties);
-
-        session.setProperty(JAXBContext.class.getName(), jaxbContext);
-
-        return jaxbContext;
-    }
-    
-    /**
-     * @param session
-     * @return
-     */
-    protected JAXBContext createStaticJAXBContext(String persistenceUnitName, Server session) throws JAXBException, IOException {
-        JAXBContext jaxbContext = (JAXBContext) session.getProperty(JAXBContext.class.getName());
-        if (jaxbContext != null) {
-            return jaxbContext;
-        }
-        Map<String, Object> properties = createJAXBProperties(persistenceUnitName, session, null);
-
-        Object[] classes = session.getDescriptors().keySet().toArray();
-        Class[] classesToBeBound = new Class[classes.length];
-        for (int i=0;i<classes.length;i++){
-            classesToBeBound[i] = (Class)classes[i];
-        }
-        jaxbContext = (JAXBContext)JAXBContextFactory.createContext(classesToBeBound, properties);
-
+        
         session.setProperty(JAXBContext.class.getName(), jaxbContext);
 
         return jaxbContext;
@@ -207,7 +173,6 @@ public class PersistenceContext {
     }
     
     public void addDynamicXMLMetadataSources(List<Object> metadataSources, String persistenceUnitName, Server session){
-        //   metadataLocation = new DynamicXMLMetadataSource(persistenceUnitName, session, dynamicPackageName);
         Set<String> packages = new HashSet<String>();
         Iterator<Class> i = session.getDescriptors().keySet().iterator();
         while (i.hasNext()){
