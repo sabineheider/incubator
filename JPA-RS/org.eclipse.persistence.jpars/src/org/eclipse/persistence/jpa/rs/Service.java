@@ -48,7 +48,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
-import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
@@ -59,11 +58,16 @@ import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.internal.queries.MapContainerPolicy;
+import org.eclipse.persistence.jaxb.JAXBContext;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.rs.metadata.DatabaseMetadataStore;
 import org.eclipse.persistence.jpa.rs.util.IdHelper;
 import org.eclipse.persistence.jpa.rs.util.LinkAdapter;
 import org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller;
+import org.eclipse.persistence.mappings.CollectionMapping;
+import org.eclipse.persistence.mappings.DatabaseMapping;
+import org.eclipse.persistence.mappings.ForeignReferenceMapping;
 
 import com.sun.jersey.core.spi.factory.ResponseBuilderImpl;
 
@@ -168,6 +172,7 @@ public class Service {
     @GET
     @Path("{context}")
     @Consumes({ MediaType.WILDCARD})
+    @Produces({MediaType.APPLICATION_JSON})
     public Response getTypes(@PathParam("context") String persistenceUnit, @Context HttpHeaders hh, @Context UriInfo uriInfo) {
         ResponseBuilder rb = new ResponseBuilderImpl();
         PersistenceContext app = get(persistenceUnit, uriInfo.getBaseUri());
@@ -180,7 +185,8 @@ public class Service {
             buffer.append("[");
             Iterator<Class> contextIterator = descriptors.keySet().iterator();
             while (contextIterator.hasNext()){
-                buffer.append("\"" + descriptors.get(contextIterator.next()).getAlias() + "\"");
+                ClassDescriptor descriptor = descriptors.get(contextIterator.next());
+                appendDescriptor(buffer, descriptor);
                 if (contextIterator.hasNext()){
                     buffer.append(", ");
                 }
@@ -222,7 +228,7 @@ public class Service {
     @Path("{context}/entity/{type}")
     public Response create(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo uriInfo, InputStream in) {
         PersistenceContext app = get(persistenceUnit, uriInfo.getBaseUri());
-        DynamicEntity entity = unmarshalEntity(app, type, getTenantId(hh), mediaType(hh.getAcceptableMediaTypes()), in);
+        Object entity = unmarshalEntity(app, type, getTenantId(hh), mediaType(hh.getAcceptableMediaTypes()), in);
         app.create(getTenantId(hh), entity);
 
         ResponseBuilder rb = new ResponseBuilderImpl();
@@ -264,6 +270,61 @@ long millis = System.currentTimeMillis();
         return new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes());
     }
 
+    @PUT
+    @Path("{context}/subscribe/{name}")
+    public Response subscribe(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context UriInfo ui) {
+        ResponseBuilder rb = new ResponseBuilderImpl();
+        System.out.println("Subscribe " + name);
+        PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
+        if (app == null){
+            rb.status(Status.NOT_FOUND);
+        }
+        app.subscribeToEventNotification(name);
+
+        rb.status(Status.OK);
+        return rb.build();
+    }
+    
+    protected void appendDescriptor(StringBuffer buffer, ClassDescriptor descriptor){
+        buffer.append("{\"name\": ");
+        buffer.append("\"" + descriptor.getAlias() + "\"");
+        buffer.append(", \"type\":\"" + descriptor.getJavaClassName() + "\"");
+        if (!descriptor.getMappings().isEmpty()){
+            buffer.append(", \"attributes\":[");
+            Iterator<DatabaseMapping> mappingIterator = descriptor.getMappings().iterator();
+            while (mappingIterator.hasNext()){
+                DatabaseMapping mapping = mappingIterator.next();
+                appendMapping(buffer, mapping);
+                if (mappingIterator.hasNext()){
+                    buffer.append(", ");
+                }
+            }
+            buffer.append("]");
+        }
+        buffer.append("}");
+    }
+    
+    protected void appendMapping(StringBuffer buffer, DatabaseMapping mapping){
+        buffer.append("{\"name\": \"" + mapping.getAttributeName() + "\", ");
+        String target = null;
+        if (mapping.isCollectionMapping()){
+            CollectionMapping collectionMapping = (CollectionMapping)mapping;
+            String collectionType = collectionMapping.getContainerPolicy().getContainerClassName();
+            if (collectionMapping.getContainerPolicy().isMapPolicy()){
+                String mapKeyType = ((MapContainerPolicy)collectionMapping.getContainerPolicy()).getKeyType().toString();
+                target = collectionType + "<" +  mapKeyType + ", " + collectionMapping.getReferenceClassName() + ">";
+            } else {
+                target = collectionType + "<" + collectionMapping.getReferenceClassName() + ">";
+            }
+        } else if (mapping.isForeignReferenceMapping()){
+            target = ((ForeignReferenceMapping)mapping).getReferenceClass().getName();
+        } else {
+            target = mapping.getAttributeClassification().getName();
+        }
+        buffer.append("\"type\": \"" + target + "\"");
+        buffer.append("}");
+    }
+    
     /**
      * This method has been temporarily added to allow processing of either query or matrix parameters
      * When the final protocol is worked out, it should be removed or altered.
@@ -327,14 +388,15 @@ long millis = System.currentTimeMillis();
         return tenantIdValues.get(0);
     }
 
-    private DynamicEntity unmarshalEntity(PersistenceContext app, String type, String tenantId, MediaType acceptedMedia, InputStream in) {
+    private Object unmarshalEntity(PersistenceContext app, String type, String tenantId, MediaType acceptedMedia, InputStream in) {
         Unmarshaller unmarshaller;
         try {
             unmarshaller = app.getJAXBContext().createUnmarshaller();
+            unmarshaller.setProperty(JAXBContext.JSON_INCLUDE_ROOT, Boolean.FALSE);
             unmarshaller.setProperty(MEDIA_TYPE, acceptedMedia.toString());
             unmarshaller.setAdapter(new LinkAdapter(app.getBaseURI().toString(), app));
             JAXBElement<?> element = unmarshaller.unmarshal(new StreamSource(in), app.getClass(type));
-            return (DynamicEntity) element.getValue();
+            return element.getValue();
         } catch (JAXBException e) {
             throw new WebApplicationException(Status.BAD_REQUEST);
         }

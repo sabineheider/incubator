@@ -14,9 +14,13 @@ package org.eclipse.persistence.jpa.rs.util;
 
 public interface ChangeListener {
 
-    void objectUpdated(Object object); 
+    void objectUpdated(String entityName, String transactionId, String rowId); 
 
-    void objectInserted(Object object);
+    void objectInserted(String entityName, String transactionId, String rowId);
+    
+    void register();
+    
+    void unregister();
 
 }
 

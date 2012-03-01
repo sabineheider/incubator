@@ -22,8 +22,6 @@ import javax.xml.bind.annotation.adapters.XmlAdapter;
 import org.eclipse.persistence.config.CacheUsage;
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.exceptions.DynamicException;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.internal.helper.ConversionManager;
 import org.eclipse.persistence.internal.queries.EntityFetchGroup;
@@ -52,9 +50,10 @@ public class LinkAdapter extends XmlAdapter<String, Object> {
         if (v.equals("")){
             return null;
         }
-        int lastSlash = v.lastIndexOf('/');
-        String entityType = v.substring((baseURI + context.getName() + "/" ).length(), lastSlash);
-        String entityId = v.substring(lastSlash + 1);
+        String fixedString = v.replace("\\/", "/");
+        int lastSlash = fixedString.lastIndexOf('/');
+        String entityType = fixedString.substring((baseURI + context.getName() + "/" ).length(), lastSlash);
+        String entityId = fixedString.substring(lastSlash + 1);
         ClassDescriptor descriptor = context.getDescriptor(entityType);
         DatabaseMapping idMapping = getIdMapping(descriptor);
         String idField = idMapping.getAttributeName();;
