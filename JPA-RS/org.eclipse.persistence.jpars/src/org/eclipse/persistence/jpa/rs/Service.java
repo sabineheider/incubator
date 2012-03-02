@@ -266,6 +266,18 @@ public class Service {
         return new StreamingOutputMarshaller(app, entity, hh.getAcceptableMediaTypes());
     }
 
+    @DELETE
+    @Path("{context}/entity/{type}")
+    public Response delete(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo ui) {
+        ResponseBuilder rb = new ResponseBuilderImpl();
+        PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
+        String tenantId = getTenantId(hh);
+        Object id = IdHelper.buildId(app, type, ui.getQueryParameters());
+        app.delete(tenantId, type, id);
+        rb.status(com.sun.jersey.api.client.ClientResponse.Status.OK);
+        return rb.build();
+    }
+    
     @GET
     @Path("{context}/query")
     public StreamingOutput adhocQuery(@PathParam("context") String persistenceUnit, @Context HttpHeaders hh, @Context UriInfo ui) {
@@ -278,10 +290,18 @@ public class Service {
         long millis = System.currentTimeMillis();
         System.out.println("Start Named Query " + name);
         PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
-        Object result = app.query(name, Service.getParameterMap(ui), Service.getHintMap(ui), false);
+        Object result = app.query(name, Service.getParameterMap(ui), Service.getHintMap(ui), false, false);
 
 
         System.out.println("Named Query " + name + " Marshalling. time: " + (System.currentTimeMillis() - millis));
+        return new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes());
+    }
+    
+    @POST
+    @Path("{context}/query/{name}")
+    public StreamingOutput namedQueryUpdate(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
+        PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
+        Object result = app.query(name, Service.getParameterMap(ui), Service.getHintMap(ui), false, true);
         return new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes());
     }
     
@@ -290,7 +310,7 @@ public class Service {
     @Produces(MediaType.WILDCARD)
     public StreamingOutput namedQuerySingleResult(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
         PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
-        Object result = app.query(name, Service.getParameterMap(ui), Service.getHintMap(ui), true);
+        Object result = app.query(name, Service.getParameterMap(ui), Service.getHintMap(ui), true, false);
         return new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes());
     }
     

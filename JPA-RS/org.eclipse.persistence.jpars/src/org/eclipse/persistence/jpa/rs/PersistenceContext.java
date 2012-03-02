@@ -461,7 +461,7 @@ public class PersistenceContext {
      * @return
      */
     public Object query(String name, Map<?, ?> parameters) {
-        return query(name, parameters, null, false);
+        return query(name, parameters, null, false, false);
     }
     
     /**
@@ -474,7 +474,7 @@ public class PersistenceContext {
      * @return
      */
     @SuppressWarnings("rawtypes")
-    public Object query(String name, Map<?, ?> parameters, Map<String, ?> hints, boolean returnSingleResult) {
+    public Object query(String name, Map<?, ?> parameters, Map<String, ?> hints, boolean returnSingleResult, boolean executeUpdate) {
         EntityManager em = getEmf().createEntityManager();
         try{
             Query query = em.createNamedQuery(name);
@@ -500,7 +500,9 @@ public class PersistenceContext {
                     query.setHint(key, hints.get(key));
                 }
             }
-            if (returnSingleResult){
+            if (executeUpdate){
+                return query.executeUpdate();
+            } else if (returnSingleResult){
                 return query.getSingleResult();
             } else {
                 return query.getResultList();

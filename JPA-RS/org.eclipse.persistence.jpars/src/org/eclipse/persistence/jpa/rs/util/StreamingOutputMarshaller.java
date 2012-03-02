@@ -64,7 +64,7 @@ public class StreamingOutputMarshaller implements StreamingOutput {
     public void write(OutputStream output) throws IOException, WebApplicationException {
         long millis = System.currentTimeMillis();
         System.out.println("StreamingOutputMarshaller About to write ");
-        if (this.context != null && this.context.getJAXBContext() != null && this.result != null && !this.mediaType.equals(MediaType.WILDCARD_TYPE)) {
+        if (this.context != null && this.context.getJAXBContext() != null && this.result != null && !(this.result instanceof Integer) &&  !this.mediaType.equals(MediaType.WILDCARD_TYPE)) {
             try {
                 Marshaller marshaller = createMarshaller(context, mediaType);
                 if (result instanceof Collection) {
