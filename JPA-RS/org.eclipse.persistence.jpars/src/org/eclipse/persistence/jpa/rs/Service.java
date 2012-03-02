@@ -299,10 +299,11 @@ public class Service {
     
     @POST
     @Path("{context}/query/{name}")
+    @Produces({ MediaType.APPLICATION_OCTET_STREAM })
     public StreamingOutput namedQueryUpdate(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
         PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
         Object result = app.query(name, Service.getParameterMap(ui), Service.getHintMap(ui), false, true);
-        return new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes());
+        return new StreamingOutputMarshaller(app, result.toString(), hh.getAcceptableMediaTypes());
     }
     
     @GET

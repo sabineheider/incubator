@@ -501,18 +501,21 @@ public class PersistenceContext {
                 }
             }
             if (executeUpdate){
-                return query.executeUpdate();
+                em.getTransaction().begin();
+                Object result = query.executeUpdate();
+                em.getTransaction().commit();
+                return result;
             } else if (returnSingleResult){
                 return query.getSingleResult();
             } else {
                 return query.getResultList();
             }
         } catch (Exception e){
-            e.printStackTrace();
+            // TODO proper exception
+            throw new RuntimeException("Error running query " + name, e);
         } finally {
             em.close();
         }
-        return null;
     }
     
     /**
