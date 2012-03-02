@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011 Oracle. All rights reserved.
+ * Copyright (c) 2011, 2012 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
  * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0 
  * which accompanies this distribution. 
@@ -9,7 +9,6 @@
  *
  * Contributors:
  * 		dclarke/tware - initial 
- *      tware
  ******************************************************************************/
 package org.eclipse.persistence.jpa.rs;
 
@@ -54,40 +53,73 @@ import org.eclipse.persistence.jpa.Archive;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.PersistenceProvider;
 import org.eclipse.persistence.jpa.dynamic.JPADynamicHelper;
+import org.eclipse.persistence.jpa.rs.eventlistener.ChangeListener;
 import org.eclipse.persistence.jpa.rs.eventlistener.DatabaseEventListenerFactory;
 import org.eclipse.persistence.jpa.rs.eventlistener.DescriptorBasedDatabaseEventListener;
-import org.eclipse.persistence.jpa.rs.util.DatabaseListener;
 import org.eclipse.persistence.jpa.rs.util.DynamicXMLMetadataSource;
+import org.eclipse.persistence.jpa.rs.util.LinkAdapter;
 import org.eclipse.persistence.platform.database.events.DatabaseEventListener;
 import org.eclipse.persistence.queries.DatabaseQuery;
 import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.sessions.server.ServerSession;
 
-import org.eclipse.persistence.jpa.rs.util.ChangeListener;
 import org.eclipse.persistence.jpa.rs.PersistenceFactory;
 
 /**
- * A wrapper around the JPA and JAXB artifacts used to persist an application
+ * A wrapper around the JPA and JAXB artifacts used to persist an application.
+ * 
+ * A PersistenceContext provides the capability of using the same persistence unit in JPA to
+ * to interact with a Database or other JPA-capable data source and in JAXB to interact with either 
+ * XML or JSON.
+ * 
+ * A PersistenceContext can wrap either an existing persistence unit (EntityManagerFactory), or it can be used to bootstrap a 
+ * fully dynamic persistence unit.
  * 
  * @author douglas.clarke, tom.ware
  */
 public class PersistenceContext {
     
-    private static final String PACKAGE_ROOT = "jpars.app.";
-    private static final String MODEL_PACKAGE = ".model";   
+    /** A factory class that will provide listeners for events provided by the database
+     *  Setting this provides a hook to allow applications that are capable of receiving
+     *  events from the database to do so.
+     */
     public static DatabaseEventListenerFactory EVENT_LISTENER_FACTORY = null;
     
+    /** This internal property is used to save a change listener on the session for later retreival.**/
+    public static final String CHANGE_NOTIFICATION_LISTENER = "jpars.change-notification-listener";
+
+
+    /**
+     * Static setter for the EVENT_LISTENER_FACTORY
+     * Part of the mechanism for plugging in code that can react to database events
+     * @param eventListenerFactory
+     */
+    public static void setEventListenerFactory(
+            DatabaseEventListenerFactory eventListenerFactory) {
+        EVENT_LISTENER_FACTORY = eventListenerFactory;
+    }
+    
+    /**
+     * The name of the persistence context is used to look it up. By default it will be the
+     * persistence unit name of the JPA persistence unit.
+     */
     private String name = null;
     
+    /** The EntityManagerFactory used to interact using JPA **/
     private EntityManagerFactory emf;
     
+    /** The JAXBConext used to produce JSON or XML **/
     private JAXBContext context = null;
     
+    /** The URI of the Persistence context.  This is used to build Links in JSON and XML **/
     private URI baseURI = null;
     
+    /** 
+     * An application provided listener that can be used if the application has a framework
+     * to listen to database events.
+     */
     private DescriptorBasedDatabaseEventListener databaseEventListener = null;
-
 
     public PersistenceContext(Archive archive, Map<String, Object> properties, ClassLoader classLoader){
         super();
@@ -99,7 +131,7 @@ public class PersistenceContext {
         if (!persistenceUnitInfo.getProperties().containsKey(PersistenceUnitProperties.JDBC_DRIVER) && !properties.containsKey(PersistenceUnitProperties.JDBC_DRIVER)) {
             properties.put(PersistenceUnitProperties.NON_JTA_DATASOURCE, "jdbc/jpa-rs");
         }
-        EntityManagerFactoryImpl emf = createDynamicEMF(persistenceUnitInfo, properties);
+        EntityManagerFactoryImpl emf = createEntityManagerFactory(persistenceUnitInfo, properties);
         this.emf = emf;
        
         try{
@@ -123,49 +155,18 @@ public class PersistenceContext {
             throw new RuntimeException("JAXB Creation Exception", e);
         }
     }
-    
-    protected EntityManagerFactoryImpl createDynamicEMF(PersistenceUnitInfo info, Map<String, ?> properties){
-        PersistenceProvider provider = new PersistenceProvider();
-        EntityManagerFactory emf = provider.createContainerEntityManagerFactory(info, properties);
-        return (EntityManagerFactoryImpl)emf;
-    }
-    
+ 
     /**
+     * This method is used to help construct a JAXBContext from an existing EntityManagerFactory.
+     * 
+     * For each package in the EntityManagerFactory, a MetadataSource that is capable of building a JAXBContext
+     * that creates the same mappings in JAXB is created.  These MetadataSources are used to constuct the JAXContext
+     * that is used for JSON and XML translation
+     * @param metadataSources
+     * @param persistenceUnitName
      * @param session
-     * @return
      */
-    protected JAXBContext createDynamicJAXBContext(String persistenceUnitName, Server session) throws JAXBException, IOException {
-        JAXBContext jaxbContext = (JAXBContext) session.getProperty(JAXBContext.class.getName());
-        if (jaxbContext != null) {
-            return jaxbContext;
-        }
-        String packageName = PACKAGE_ROOT + persistenceUnitName + MODEL_PACKAGE;
-
-        Map<String, Object> properties = createJAXBProperties(persistenceUnitName, session, packageName);      
-
-        ClassLoader cl = session.getPlatform().getConversionManager().getLoader();
-        jaxbContext = DynamicJAXBContextFactory.createContextFromOXM(cl, properties);
-        
-        session.setProperty(JAXBContext.class.getName(), jaxbContext);
-
-        return jaxbContext;
-    }
-    
-    public Map<String, Object> createJAXBProperties(String persistenceUnitName, Server session, String dynamicPackageName) throws IOException{
-        String oxmLocation = (String) emf.getProperties().get("eclipselink.jpa-rs.oxm");
-        
-        Map<String, Object> properties = new HashMap<String, Object>(1);
-        List<Object> metadataLocations = new ArrayList<Object>();
-
-        addDynamicXMLMetadataSources(metadataLocations, persistenceUnitName, session);
-        if (oxmLocation != null){
-            metadataLocations.add(new org.eclipse.persistence.jaxb.metadata.XMLMetadataSource((new URL(oxmLocation)).openStream()));
-        }
-        properties.put(JAXBContextFactory.ECLIPSELINK_OXM_XML_KEY, metadataLocations);
-        return properties;
-    }
-    
-    public void addDynamicXMLMetadataSources(List<Object> metadataSources, String persistenceUnitName, Server session){
+    protected void addDynamicXMLMetadataSources(List<Object> metadataSources, String persistenceUnitName, Server session){
         Set<String> packages = new HashSet<String>();
         Iterator<Class> i = session.getDescriptors().keySet().iterator();
         while (i.hasNext()){
@@ -184,29 +185,25 @@ public class PersistenceContext {
         }
     }
     
-    public String getName() {
-        return name;
+    /**
+     * Add a listener that can react to DatabaseChange notifications
+     */
+    public void addListener(ChangeListener listener) {
+        DescriptorBasedDatabaseEventListener changeListener = (DescriptorBasedDatabaseEventListener) JpaHelper.getDatabaseSession(getEmf()).getProperty(CHANGE_NOTIFICATION_LISTENER);
+        if (changeListener == null) {
+            throw new RuntimeException("Change Listener not registered properly");
+        }
+        changeListener.addChangeListener(listener);
     }
-
-    public EntityManagerFactory getEmf() {
-        return emf;
-    }
-
-    public JAXBContext getJAXBContext() {
-        return context;
-    }
-
-    public URI getBaseURI() {
-        return baseURI;
-    }
-
-    public void setBaseURI(URI baseURI) {
-        this.baseURI = baseURI;
-    }
-
+    
+    /**
+     * A part of the facade over the JPA API
+     * Persist an entity in JPA and commit
+     * @param tenantId
+     * @param entity
+     */
     public void create(String tenantId, Object entity) {
         EntityManager em = getEmf().createEntityManager();
-
         try {
             em.getTransaction().begin();
             em.persist(entity);
@@ -215,8 +212,194 @@ public class PersistenceContext {
             em.close();
         }
     }
+    
+    /**
+     * Create a JAXBConext based on the EntityManagerFactory for this PersistenceContext
+     * @param session
+     * @return
+     */
+    protected JAXBContext createDynamicJAXBContext(String persistenceUnitName, Server session) throws JAXBException, IOException {
+        JAXBContext jaxbContext = (JAXBContext) session.getProperty(JAXBContext.class.getName());
+        if (jaxbContext != null) {
+            return jaxbContext;
+        }
 
-    public Object merge(String type, String tenantId, Object entity) {
+        Map<String, Object> properties = createJAXBProperties(persistenceUnitName, session);      
+
+        ClassLoader cl = session.getPlatform().getConversionManager().getLoader();
+        jaxbContext = DynamicJAXBContextFactory.createContextFromOXM(cl, properties);
+        
+        session.setProperty(JAXBContext.class.getName(), jaxbContext);
+
+        return jaxbContext;
+    }
+    
+    /**
+     * A part of the facade over the JPA API
+     * Create an EntityManagerFactory using the given PersistenceUnitInfo and properties
+     * @param info
+     * @param properties
+     * @return
+     */
+    protected EntityManagerFactoryImpl createEntityManagerFactory(PersistenceUnitInfo info, Map<String, ?> properties){
+        PersistenceProvider provider = new PersistenceProvider();
+        EntityManagerFactory emf = provider.createContainerEntityManagerFactory(info, properties);
+        return (EntityManagerFactoryImpl)emf;
+    }
+    
+    /**
+     * A part of the facade over the JPA API
+     * Create an EntityManager from the EntityManagerFactory wrapped by this persistence context
+     * @param tenantId
+     * @return
+     */
+    protected EntityManager createEntityManager(String tenantId) {
+        return getEmf().createEntityManager();
+    }
+    
+    /**
+     * Build the set of properties used to create the JAXBContext based on the EntityManagerFactory that
+     * this PersistenceContext wraps
+     * @param persistenceUnitName
+     * @param session
+     * @return
+     * @throws IOException
+     */
+    protected Map<String, Object> createJAXBProperties(String persistenceUnitName, Server session) throws IOException{
+        String oxmLocation = (String) emf.getProperties().get("eclipselink.jpa-rs.oxm");
+        
+        Map<String, Object> properties = new HashMap<String, Object>(1);
+        List<Object> metadataLocations = new ArrayList<Object>();
+
+        addDynamicXMLMetadataSources(metadataLocations, persistenceUnitName, session);
+        if (oxmLocation != null){
+            metadataLocations.add(new org.eclipse.persistence.jaxb.metadata.XMLMetadataSource((new URL(oxmLocation)).openStream()));
+        }
+        properties.put(JAXBContextFactory.ECLIPSELINK_OXM_XML_KEY, metadataLocations);
+        return properties;
+    }
+    
+    /**
+     *  A part of the facade over the JPA API
+     *  Delete the given entity in JPA and commit the changes
+     */
+    public void delete(String tenantId, String type, Object id) {
+        EntityManager em = getEmf().createEntityManager();
+
+        try {
+            em.getTransaction().begin();
+            Object entity = em.find(getClass(type), id);
+            em.remove(entity);
+            em.getTransaction().commit();
+        } finally {
+            em.close();
+        }
+    }
+    
+    /**
+     * A part of the facade over the JPA API
+     * Find an entity with the given name and id in JPA
+     * @param entityName
+     * @param id
+     * @return
+     */
+    public Object find(String entityName, Object id) {
+        return find(null, entityName, id);
+    }
+
+    /**
+     * A part of the facade over the JPA API
+     * Find an entity with the given name and id in JPA
+     * @param tenantId
+     * @param entityName
+     * @param id
+     * @return
+     */
+    public Object find(String tenantId, String entityName, Object id) {
+        return find(tenantId, entityName, id, null);
+    }
+    
+    /**
+     * A part of the facade over the JPA API
+     * Find an entity with the given name and id in JPA
+     * @param tenantId
+     * @param entityName
+     * @param id
+     * @param properties - query hints used on the find
+     * @return
+     */
+    public Object find(String tenantId, String entityName, Object id, Map<String, Object> properties) {
+        EntityManager em = getEmf().createEntityManager();
+
+        try {
+            return em.find(getClass(entityName), id, properties);
+        } finally {
+            em.close();
+        }
+    }
+
+    public URI getBaseURI() {
+        return baseURI;
+    }
+    
+    /**
+     * Look-up the given entity name in the EntityManagerFactory and return the class
+     * is describes
+     * @param entityName
+     * @return
+     */
+    public Class<?> getClass(String entityName) {
+        ClassDescriptor descriptor = getDescriptor(entityName);
+        if (descriptor == null){
+            return null;
+        }
+        return descriptor.getJavaClass();
+    }
+    
+    /**
+     * Lookup the descriptor for the given entity name.
+     * This method will look first in the EntityManagerFactory wrapped by this persistence context
+     * and return that descriptor.  If one does not exist, it search the JAXBContext and return
+     * a descriptor from there.
+     * @param entityName
+     * @return
+     */
+    public ClassDescriptor getDescriptor(String entityName){
+        Server session = JpaHelper.getServerSession(getEmf());
+        ClassDescriptor descriptor = session.getDescriptorForAlias(entityName);
+        if (descriptor == null){
+            for (Object ajaxBSession:((JAXBContext)getJAXBContext()).getXMLContext().getSessions() ){
+                descriptor = ((Session)ajaxBSession).getClassDescriptorForAlias(entityName);
+                if (descriptor != null){
+                    break;
+                }
+            }
+        }
+        return descriptor;
+    }
+    
+    public EntityManagerFactory getEmf() {
+        return emf;
+    }
+
+    public JAXBContext getJAXBContext() {
+        return context;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    /**
+     * A part of the facade over the JPA API
+     * Call jpa merge on the given object and commit
+     * If the passed object is a list, we will iterate through the
+     * list and merge each member
+     * @param tenantId
+     * @param entity
+     * @return
+     */
+    public Object merge(String tenantId, Object entity) {
         EntityManager em = getEmf().createEntityManager();
         Object mergedEntity = null;
         try {
@@ -236,23 +419,22 @@ public class PersistenceContext {
             em.close();
         }
     }
-
-    public boolean isList(String type){
-        Server session = JpaHelper.getServerSession(getEmf());
-        ClassDescriptor descriptor = session.getDescriptorForAlias(type);
-        if (descriptor == null && getDescriptor(type) != null){
-            return true;
-        }
-        return false;
-    }
     
     /**
-     * TODO
+     * A convenience method to create a new dynamic entity of the given type
+     * @param type
+     * @return
      */
     public DynamicEntity newEntity(String type) {
         return newEntity(null, type);
     }
-
+    
+    /**
+     * A convenience method to create a new dynamic entity of the given type
+     * @param tenantId
+     * @param type
+     * @return
+     */
     public DynamicEntity newEntity(String tenantId, String type) {
         JPADynamicHelper helper = new JPADynamicHelper(getEmf());
         DynamicEntity entity = null;
@@ -270,91 +452,27 @@ public class PersistenceContext {
         }
         return entity;
     }
-
-    /**
-     * TODO
-     */
-    public void save(String tenantId, Object entity) {
-        EntityManager em = getEmf().createEntityManager();
-
-        try {
-            em.getTransaction().begin();
-            em.merge(entity);
-            em.getTransaction().commit();
-        } finally {
-            em.close();
-        }
-    }
-
-    /**
-     * TODO
-     */
-    public void delete(String tenantId, String type, Object id) {
-        EntityManager em = getEmf().createEntityManager();
-
-        try {
-            em.getTransaction().begin();
-            Object entity = em.find(getClass(type), id);
-            em.remove(entity);
-            em.getTransaction().commit();
-        } finally {
-            em.close();
-        }
-    }
-
-    /**
-     * Stop the current application instance
-     */
-    protected void stop() {
-        emf.close();
-        this.emf = null;
-        this.context = null;
-    }
-
-    public Object find(String entityName, Object id) {
-        return find(null, entityName, id);
-    }
-
-    public Object find(String tenantId, String entityName, Object id) {
-        return find(tenantId, entityName, id, null);
-    }
     
-    public Object find(String tenantId, String entityName, Object id, Map<String, Object> properties) {
-        EntityManager em = getEmf().createEntityManager();
-
-        try {
-            return em.find(getClass(entityName), id, properties);
-        } finally {
-            em.close();
-        }
-    }
-
-    public String toString() {
-        return "Application(" + getName() + ")::" + System.identityHashCode(this);
-    }
-
-    public ClassDescriptor getDescriptor(String entityName){
-        Server session = JpaHelper.getServerSession(getEmf());
-        ClassDescriptor descriptor = session.getDescriptorForAlias(entityName);
-        if (descriptor == null){
-            for (Object ajaxBSession:((JAXBContext)getJAXBContext()).getXMLContext().getSessions() ){
-                descriptor = ((Session)ajaxBSession).getClassDescriptorForAlias(entityName);
-                if (descriptor != null){
-                    break;
-                }
-            }
-        }
-        return descriptor;
-    }
-    
-    public Class<?> getClass(String entityName) {
-        return getDescriptor(entityName).getJavaClass();
-    }
-
+    /**
+     * A part of the facade over the JPA API
+     * Run a query with the given name in JPA and return the result
+     * @param name
+     * @param parameters
+     * @return
+     */
     public Object query(String name, Map<?, ?> parameters) {
         return query(name, parameters, null, false);
     }
     
+    /**
+     * A part of the facade over the JPA API
+     * Run a query with the given name in JPA and return the result
+     * @param name
+     * @param parameters
+     * @param hints
+     * @param returnSingleResult
+     * @return
+     */
     @SuppressWarnings("rawtypes")
     public Object query(String name, Map<?, ?> parameters, Map<String, ?> hints, boolean returnSingleResult) {
         EntityManager em = getEmf().createEntityManager();
@@ -395,43 +513,36 @@ public class PersistenceContext {
         return null;
     }
     
-    public Object unmarshalEntity(String entityName, String tenantId, String acceptedMedia, InputStream in) throws JAXBException {
-        Unmarshaller unmarshaller = getJAXBContext().createUnmarshaller();
-        if (acceptedMedia == null || acceptedMedia.indexOf(MediaType.APPLICATION_JSON) < 0) {
-            unmarshaller.setProperty(MEDIA_TYPE, MediaType.APPLICATION_JSON);
-            // TODO - handle type
-        } else {
-            unmarshaller.setProperty(MEDIA_TYPE, MediaType.APPLICATION_XML);
-        }
-        JAXBElement<?> element = unmarshaller.unmarshal(new StreamSource(in), getClass(entityName));
-		return element.getValue();
-    }
-
-    protected EntityManager createEntityManager(String tenantId) {
-        return getEmf().createEntityManager();
-    }
-    
     /**
-     * TODO
-     */
-    public void addListener(ChangeListener listener) {
-        DatabaseListener changeListener = (DatabaseListener) JpaHelper.getDatabaseSession(getEmf()).getProperty(PersistenceFactory.CHANGE_NOTIFICATION_LISTENER);
-        if (changeListener == null) {
-            throw new RuntimeException("Change Listener not registered properly");
-        }
-        changeListener.addChangeListener(listener);
-    }
-
-    /**
-     * TODO
+     * Remove a given change listener.  Used in interacting with an application-provided mechanism for listenig
+     * to database events.
+     * @param listener
      */
     public void remove(ChangeListener listener) {
-        DatabaseListener changeListener = (DatabaseListener) JpaHelper.getDatabaseSession(getEmf()).getProperty(PersistenceFactory.CHANGE_NOTIFICATION_LISTENER);
+        DescriptorBasedDatabaseEventListener changeListener = (DescriptorBasedDatabaseEventListener) JpaHelper.getDatabaseSession(getEmf()).getProperty(CHANGE_NOTIFICATION_LISTENER);
         if (changeListener != null) {
             changeListener.removeChangeListener(listener);
         }
     }
     
+    public void setBaseURI(URI baseURI) {
+        this.baseURI = baseURI;
+    }
+    
+    /**
+     * Stop the current application instance
+     */
+    protected void stop() {
+        emf.close();
+        this.emf = null;
+        this.context = null;
+    }
+    
+    /**
+     * Trigger the mechanism to allow persistence context to react to database change events.
+     * @param descriptorAlias
+     * @return
+     */
     public DatabaseEventListener subscribeToEventNotification(String descriptorAlias) {
         ServerSession session = (ServerSession) JpaHelper.getServerSession(emf);
         ClassDescriptor descriptor = session.getDescriptorForAlias(descriptorAlias);
@@ -441,26 +552,39 @@ public class PersistenceContext {
         return subscribeToEventNotification(emf, descriptor);
     }
     
+    /**
+     * Trigger the mechanism to allow persistence context to react to database change events.
+     * @param emf
+     * @param descriptor
+     * @return
+     */
     public DatabaseEventListener subscribeToEventNotification(EntityManagerFactory emf, ClassDescriptor descriptor) {
         ServerSession session = (ServerSession) JpaHelper.getServerSession(emf);
         if (databaseEventListener == null){
             if (EVENT_LISTENER_FACTORY != null){
                 databaseEventListener = EVENT_LISTENER_FACTORY.createDatabaseEventListener();
                 session.setDatabaseEventListener(databaseEventListener);
-                session.setProperty(PersistenceFactory.CHANGE_NOTIFICATION_LISTENER, databaseEventListener);
+                session.setProperty(CHANGE_NOTIFICATION_LISTENER, databaseEventListener);
             } else {
                 throw new RuntimeException("Could not subscribe to change notification for " + descriptor.getAlias());
             }
         }
-       System.out.println("--- Subscribe set Listener " + databaseEventListener + " descriptor " + descriptor.getAlias());
-       databaseEventListener.initialize(descriptor, session);
-       databaseEventListener.register(session, descriptor);
+        databaseEventListener.initialize(descriptor, session);
+        databaseEventListener.register(session, descriptor);
         return databaseEventListener;
     }
 
-    public static void setEventListenerFactory(
-            DatabaseEventListenerFactory eventListenerFactory) {
-        EVENT_LISTENER_FACTORY = eventListenerFactory;
+    public String toString() {
+        return "Application(" + getName() + ")::" + System.identityHashCode(this);
+    }
+    
+    public Object unmarshalEntity(String type, String tenantId, MediaType acceptedMedia, InputStream in) throws JAXBException {
+        Unmarshaller unmarshaller = getJAXBContext().createUnmarshaller();
+        unmarshaller.setProperty(JAXBContext.JSON_INCLUDE_ROOT, Boolean.FALSE);
+        unmarshaller.setProperty(MEDIA_TYPE, acceptedMedia.toString());
+        unmarshaller.setAdapter(new LinkAdapter(getBaseURI().toString(), this));
+        JAXBElement<?> element = unmarshaller.unmarshal(new StreamSource(in), getClass(type));
+        return element.getValue();
     }
 
 }

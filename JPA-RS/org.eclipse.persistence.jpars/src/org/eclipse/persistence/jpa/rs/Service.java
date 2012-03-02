@@ -12,7 +12,6 @@
  ******************************************************************************/
 package org.eclipse.persistence.jpa.rs;
 
-import static org.eclipse.persistence.jaxb.JAXBContext.MEDIA_TYPE;
 import static org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller.mediaType;
 
 import java.io.InputStream;
@@ -49,21 +48,15 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriInfo;
-import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.transform.stream.StreamSource;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicClassLoader;
-import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.internal.queries.MapContainerPolicy;
-import org.eclipse.persistence.jaxb.JAXBContext;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.rs.metadata.DatabaseMetadataStore;
 import org.eclipse.persistence.jpa.rs.util.IdHelper;
-import org.eclipse.persistence.jpa.rs.util.LinkAdapter;
 import org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller;
 import org.eclipse.persistence.mappings.CollectionMapping;
 import org.eclipse.persistence.mappings.DatabaseMapping;
@@ -206,6 +199,21 @@ public class Service {
         rb.status(Status.OK);
         return rb.build();
     }
+
+    @PUT
+    @Path("{context}/subscribe/{name}")
+    public Response subscribe(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context UriInfo ui) {
+        ResponseBuilder rb = new ResponseBuilderImpl();
+        System.out.println("Subscribe " + name);
+        PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
+        if (app == null){
+            rb.status(Status.NOT_FOUND);
+        }
+        app.subscribeToEventNotification(name);
+
+        rb.status(Status.OK);
+        return rb.build();
+    }
     
     @GET
     @Path("{context}/entity/{type}")
@@ -228,7 +236,12 @@ public class Service {
     @Path("{context}/entity/{type}")
     public Response create(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo uriInfo, InputStream in) {
         PersistenceContext app = get(persistenceUnit, uriInfo.getBaseUri());
-        Object entity = unmarshalEntity(app, type, getTenantId(hh), mediaType(hh.getAcceptableMediaTypes()), in);
+        Object entity = null;
+        try {
+            entity = app.unmarshalEntity(type, getTenantId(hh), mediaType(hh.getAcceptableMediaTypes()), in);
+        } catch (JAXBException e){
+            throw new WebApplicationException(e);
+        }
         app.create(getTenantId(hh), entity);
 
         ResponseBuilder rb = new ResponseBuilderImpl();
@@ -243,15 +256,26 @@ public class Service {
         PersistenceContext app = get(persistenceUnit, uriInfo.getBaseUri());
         String tenantId = getTenantId(hh);
         MediaType contentType = mediaType(hh.getRequestHeader(HttpHeaders.CONTENT_TYPE)); 
-        Object entity = unmarshalEntity(app, type, tenantId, contentType, in);
-        entity = app.merge(type, tenantId, entity);
+        Object entity = null;
+        try {
+            entity = app.unmarshalEntity(type, tenantId, contentType, in);
+        } catch (JAXBException e){
+            throw new WebApplicationException(e);
+        }
+        entity = app.merge(tenantId, entity);
         return new StreamingOutputMarshaller(app, entity, hh.getAcceptableMediaTypes());
     }
 
     @GET
+    @Path("{context}/query")
+    public StreamingOutput adhocQuery(@PathParam("context") String persistenceUnit, @Context HttpHeaders hh, @Context UriInfo ui) {
+        throw new WebApplicationException(Status.SERVICE_UNAVAILABLE);
+    }
+    
+    @GET
     @Path("{context}/query/{name}")
     public StreamingOutput namedQuery(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
-long millis = System.currentTimeMillis();
+        long millis = System.currentTimeMillis();
         System.out.println("Start Named Query " + name);
         PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
         Object result = app.query(name, Service.getParameterMap(ui), Service.getHintMap(ui), false);
@@ -268,21 +292,6 @@ long millis = System.currentTimeMillis();
         PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
         Object result = app.query(name, Service.getParameterMap(ui), Service.getHintMap(ui), true);
         return new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes());
-    }
-
-    @PUT
-    @Path("{context}/subscribe/{name}")
-    public Response subscribe(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context UriInfo ui) {
-        ResponseBuilder rb = new ResponseBuilderImpl();
-        System.out.println("Subscribe " + name);
-        PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
-        if (app == null){
-            rb.status(Status.NOT_FOUND);
-        }
-        app.subscribeToEventNotification(name);
-
-        rb.status(Status.OK);
-        return rb.build();
     }
     
     protected void appendDescriptor(StringBuffer buffer, ClassDescriptor descriptor){
@@ -325,35 +334,9 @@ long millis = System.currentTimeMillis();
         buffer.append("}");
     }
     
-    /**
-     * This method has been temporarily added to allow processing of either query or matrix parameters
-     * When the final protocol is worked out, it should be removed or altered.
-     * 
-     * Here we check for query parameters and if they don't exist, we get the matrix parameters.
-     * @param info
-     * @return
-     */
-    private static Map<String, Object> getParameterMap(UriInfo info){
-        Map<String, Object> parameters = new HashMap<String, Object>();
-        PathSegment pathSegment = info.getPathSegments().get(info.getPathSegments().size() - 1); 
-        for(Entry<String, List<String>> entry : pathSegment.getMatrixParameters().entrySet()) { 
-            parameters.put(entry.getKey(), entry.getValue().get(0)); 
-        }
-        return parameters;
-    }
-    
-    private static Map<String, Object> getHintMap(UriInfo info){
-        Map<String, Object> hints = new HashMap<String, Object>();
-         for(String key :  info.getQueryParameters().keySet()) { 
-            hints.put(key, info.getQueryParameters().getFirst(key));  
-        }
-        return hints;
-    }
-    
-    @GET
-    @Path("{context}/query")
-    public StreamingOutput adhocQuery(@PathParam("context") String persistenceUnit, @Context HttpHeaders hh, @Context UriInfo ui) {
-        throw new WebApplicationException(Status.SERVICE_UNAVAILABLE);
+    @PreDestroy
+    public void close() {
+        factory.close();
     }
 
     private PersistenceContext get(String persistenceUnit, URI defaultURI) {
@@ -376,6 +359,31 @@ long millis = System.currentTimeMillis();
         }
         return app;
     }
+    
+    private static Map<String, Object> getHintMap(UriInfo info){
+        Map<String, Object> hints = new HashMap<String, Object>();
+         for(String key :  info.getQueryParameters().keySet()) { 
+            hints.put(key, info.getQueryParameters().getFirst(key));  
+        }
+        return hints;
+    }
+    
+    /**
+     * This method has been temporarily added to allow processing of either query or matrix parameters
+     * When the final protocol is worked out, it should be removed or altered.
+     * 
+     * Here we check for query parameters and if they don't exist, we get the matrix parameters.
+     * @param info
+     * @return
+     */
+    private static Map<String, Object> getParameterMap(UriInfo info){
+        Map<String, Object> parameters = new HashMap<String, Object>();
+        PathSegment pathSegment = info.getPathSegments().get(info.getPathSegments().size() - 1); 
+        for(Entry<String, List<String>> entry : pathSegment.getMatrixParameters().entrySet()) { 
+            parameters.put(entry.getKey(), entry.getValue().get(0)); 
+        }
+        return parameters;
+    }
 
     private String getTenantId(HttpHeaders hh) {
         List<String> tenantIdValues = hh.getRequestHeader("tenant-id");
@@ -387,21 +395,6 @@ long millis = System.currentTimeMillis();
         }
         return tenantIdValues.get(0);
     }
-
-    private Object unmarshalEntity(PersistenceContext app, String type, String tenantId, MediaType acceptedMedia, InputStream in) {
-        Unmarshaller unmarshaller;
-        try {
-            unmarshaller = app.getJAXBContext().createUnmarshaller();
-            unmarshaller.setProperty(JAXBContext.JSON_INCLUDE_ROOT, Boolean.FALSE);
-            unmarshaller.setProperty(MEDIA_TYPE, acceptedMedia.toString());
-            unmarshaller.setAdapter(new LinkAdapter(app.getBaseURI().toString(), app));
-            JAXBElement<?> element = unmarshaller.unmarshal(new StreamSource(in), app.getClass(type));
-            return element.getValue();
-        } catch (JAXBException e) {
-            throw new WebApplicationException(Status.BAD_REQUEST);
-        }
-    }
-
     
     private String getURL(HttpHeaders hh){
         List<String> persistenceXmlURLs = hh.getRequestHeader("persistenceXmlURL");
@@ -412,11 +405,6 @@ long millis = System.currentTimeMillis();
             throw new WebApplicationException(Status.BAD_REQUEST);
         }
         return persistenceXmlURLs.get(0);
-    }
-
-    @PreDestroy
-    public void close() {
-        factory.close();
     }
 
 }

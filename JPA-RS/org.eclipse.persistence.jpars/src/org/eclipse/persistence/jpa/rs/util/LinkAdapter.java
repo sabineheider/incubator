@@ -30,6 +30,18 @@ import org.eclipse.persistence.jpa.rs.PersistenceContext;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.queries.FetchGroup;
 
+/**
+ * Used with JAXB to convert from a URL representing an relationship to an object
+ * It provides functionality at marshall and unmarshall time
+ * 
+ * At marshall time, the target of a relationship will be marshalled as a URL that could be
+ * used to find the object through a REST service
+ * 
+ * At unmarsall time, the URL will be deconstructed and used to find the object in JPA.
+ * 
+ * @author tware
+ *
+ */
 public class LinkAdapter extends XmlAdapter<String, Object> {
 
     private String baseURI = null;

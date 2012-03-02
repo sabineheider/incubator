@@ -15,6 +15,11 @@ package org.eclipse.persistence.jpa.rs.metadata;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Implementers are capable of storing information about a PersistenceContext in some kind of a persistent store
+ * @author tware
+ *
+ */
 public interface MetadataStore {
 
     public void persistMetadata(String name, String url);

@@ -12,8 +12,15 @@
  ******************************************************************************/
 package org.eclipse.persistence.jpa.rs.metadata;
 
+/**
+ * Used to persist information about the location of an application
+ * @author tware
+ *
+ */
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
+
 
 @Entity
 public class Application {

@@ -22,6 +22,11 @@ import javax.persistence.Persistence;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 
+/**
+ * A metadata store that stores information about existing applications in a database
+ * @author tware
+ *
+ */
 public class DatabaseMetadataStore implements MetadataStore {
     
     protected EntityManagerFactory factory = null;
