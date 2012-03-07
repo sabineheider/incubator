@@ -10,20 +10,21 @@
  * Contributors:
  *      tware - initial 
  ******************************************************************************/
-package jpars.test.bootstrap;
+package org.eclipse.persistence.jpars.test.bootstrap;
 
 import static org.junit.Assert.*;
 
+import java.io.FileInputStream;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-import jpars.test.util.ExamplePropertiesLoader;
 
 import org.eclipse.persistence.jaxb.JAXBContext;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.rs.PersistenceContext;
 import org.eclipse.persistence.jpa.rs.PersistenceFactory;
+import org.eclipse.persistence.jpars.test.util.ExamplePropertiesLoader;
 import org.eclipse.persistence.sessions.DatabaseSession;
 import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.sessions.server.ServerSession;
@@ -43,7 +44,8 @@ public class TestBootstrap {
 		PersistenceFactory factory = null;
 		try{
 		    factory = new PersistenceFactory();
-			factory.bootstrapPersistenceContext("auction", new URL("file:///C:/EclipseLinkView2/incubator/JPA-RS Incubator/tests/JPA-RS Tests/src/xmldocs/auction-persistence.xml"), properties, true);
+		    FileInputStream xmlStream = new FileInputStream("classes/xmldocs/auction-persistence.xml");
+			factory.bootstrapPersistenceContext("auction", xmlStream, properties, true);
 		} catch (Exception e){
 			fail(e.toString());
 		}
@@ -62,9 +64,6 @@ public class TestBootstrap {
         assertTrue("JAXB Session did not contain Auction.", session.getProject().getAliasDescriptors().containsKey("Auction"));
         assertTrue("JAXB Session did not contain Bid.", session.getProject().getAliasDescriptors().containsKey("Bid"));
         assertTrue("JAXB Session did not contain User.", session.getProject().getAliasDescriptors().containsKey("User"));
-        assertTrue("JAXB Session did not contain Auction.", session.getProject().getAliasDescriptors().containsKey("AuctionListWrapper"));
-        assertTrue("JAXB Session did not contain Bid.", session.getProject().getAliasDescriptors().containsKey("BidListWrapper"));
-        assertTrue("JAXB Session did not contain User.", session.getProject().getAliasDescriptors().containsKey("UserListWrapper"));
 	
 	}
 

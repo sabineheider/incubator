@@ -14,8 +14,10 @@ package org.eclipse.persistence.jpa.rs;
 
 import static org.eclipse.persistence.jaxb.JAXBContext.MEDIA_TYPE;
 
+import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
@@ -35,6 +37,7 @@ import javax.ws.rs.core.MediaType;
 import org.eclipse.persistence.jaxb.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.stream.StreamSource;
 
@@ -42,6 +45,7 @@ import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicType;
+import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.internal.helper.ConversionManager;
 import org.eclipse.persistence.internal.jpa.EJBQueryImpl;
 import org.eclipse.persistence.internal.jpa.EntityManagerFactoryImpl;
@@ -590,6 +594,26 @@ public class PersistenceContext {
         unmarshaller.setAdapter(new LinkAdapter(getBaseURI().toString(), this));
         JAXBElement<?> element = unmarshaller.unmarshal(new StreamSource(in), getClass(type));
         return element.getValue();
+    }
+    
+    public void marshallEntity(Object object, MediaType mediaType, OutputStream output) throws JAXBException {
+        Marshaller marshaller = getJAXBContext().createMarshaller();
+        marshaller.setProperty(MEDIA_TYPE, mediaType.toString());
+        marshaller.setProperty(org.eclipse.persistence.jaxb.JAXBContext.JSON_INCLUDE_ROOT, false);
+        marshaller.setAdapter(new LinkAdapter(getBaseURI().toString(), this));
+        marshaller.setListener(new Marshaller.Listener() {
+            @Override
+            public void beforeMarshal(Object source) {   
+                if (source instanceof DynamicEntity){
+                    DynamicEntityImpl sourceImpl = (DynamicEntityImpl)source;
+                    PropertyChangeListener listener = sourceImpl._persistence_getPropertyChangeListener();
+                    sourceImpl._persistence_setPropertyChangeListener(null);
+                    ((DynamicEntity)source).set("self", source);
+                    sourceImpl._persistence_setPropertyChangeListener(listener);
+                }
+            }
+        });
+        marshaller.marshal(object, output);       
     }
 
 }

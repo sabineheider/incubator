@@ -10,7 +10,7 @@
  * Contributors:
  *      tware - 
  ******************************************************************************/
-package jpars.test.util;
+package org.eclipse.persistence.jpars.test.util;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -22,10 +22,12 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import com.sun.jersey.core.util.MultivaluedMapImpl;
+import com.sun.jersey.core.util.StringKeyIgnoreCaseMultivaluedMap;
 
 public class TestURIInfo implements UriInfo {
 
     protected List<PathSegment> pathSegments = new ArrayList<PathSegment>();
+    protected MultivaluedMap<String, String> queryParameters = new StringKeyIgnoreCaseMultivaluedMap<String>();
     
     public TestURIInfo(){
         PathSegment segment = new PathSegment() {
@@ -128,13 +130,13 @@ public class TestURIInfo implements UriInfo {
     @Override
     public MultivaluedMap<String, String> getQueryParameters() {
         // TODO Auto-generated method stub
-        return null;
+        return queryParameters;
     }
 
     @Override
     public MultivaluedMap<String, String> getQueryParameters(boolean arg0) {
         // TODO Auto-generated method stub
-        return null;
+        return queryParameters;
     }
 
     @Override

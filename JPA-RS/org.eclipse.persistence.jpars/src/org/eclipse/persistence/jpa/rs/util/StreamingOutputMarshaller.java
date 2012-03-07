@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.ws.rs.WebApplicationException;
@@ -49,8 +47,6 @@ public class StreamingOutputMarshaller implements StreamingOutput {
     private Object result;
     private MediaType mediaType;
 
-    private static final String COLLECTION_ELEMENT_NAME = "collection";
-
     public StreamingOutputMarshaller(PersistenceContext context, Object result, MediaType acceptedType) {
         this.context = context;
         this.result = result;
@@ -64,44 +60,9 @@ public class StreamingOutputMarshaller implements StreamingOutput {
     public void write(OutputStream output) throws IOException, WebApplicationException {
         long millis = System.currentTimeMillis();
         System.out.println("StreamingOutputMarshaller About to write ");
-        if (this.context != null && this.context.getJAXBContext() != null && this.result != null && !(this.result instanceof Integer) &&  !this.mediaType.equals(MediaType.WILDCARD_TYPE)) {
+        if (this.context != null && this.context.getJAXBContext() != null && this.result != null && !this.mediaType.equals(MediaType.WILDCARD_TYPE)) {
             try {
-                Marshaller marshaller = createMarshaller(context, mediaType);
-                if (result instanceof Collection) {
-                    @SuppressWarnings("unchecked")
-                    Collection<Object> objs = (Collection<Object>) result;
-
-                    if (this.mediaType.equals(MediaType.APPLICATION_JSON_TYPE)) {
-                        OutputStreamWriter writer = new OutputStreamWriter(output);
-                        Iterator<Object> i = objs.iterator();
-                        writer.write("[");
-                        if (i.hasNext()) {
-                            Object element = i.next();
-                            //JAXBElement jaxbElement = new JAXBElement(new QName(null, "data"), element.getClass(), element);
-                            marshaller.marshal(element, writer);
-                            while (i.hasNext()) {
-                                writer.write(",");
-                                marshaller.marshal(i.next(), writer);
-                            }
-                        }
-                        writer.write("]");
-                        writer.flush();
-                    } else { // XML
-                        OutputStreamWriter writer = new OutputStreamWriter(output);
-                        writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n");
-                        writer.write("<" + COLLECTION_ELEMENT_NAME + ">");
-                        marshaller.setProperty(Marshaller.JAXB_FRAGMENT, true);
-                        for (Object o : objs) {
-                            marshaller.marshal(o, writer);
-                        }
-                        writer.write("</" + COLLECTION_ELEMENT_NAME + ">");
-                        writer.flush();
-                    }
-
-                } else {
-                    marshaller.marshal(this.result, output);
-                }
-
+                context.marshallEntity(result, mediaType, output);
             } catch (JAXBException e) {
                 throw new RuntimeException("JAXB Failure to marshal: " + this.result, e);
             }

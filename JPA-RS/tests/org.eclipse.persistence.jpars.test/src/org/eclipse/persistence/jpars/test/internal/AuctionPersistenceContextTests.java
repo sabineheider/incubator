@@ -10,7 +10,7 @@
  * Contributors:
  *      dclarke - JPA-RS Incubator (Bug 362900)  
  ******************************************************************************/
-package jpars.test.internal;
+package org.eclipse.persistence.jpars.test.internal;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -19,12 +19,12 @@ import java.util.Map;
 import javax.persistence.EntityManagerFactory;
 import javax.xml.bind.JAXBContext;
 
-import jpars.test.util.ExamplePropertiesLoader;
 import junit.framework.Assert;
 
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.rs.PersistenceContext;
 import org.eclipse.persistence.jpa.rs.PersistenceFactory;
+import org.eclipse.persistence.jpars.test.util.ExamplePropertiesLoader;
 import org.eclipse.persistence.sessions.server.Server;
 import org.junit.BeforeClass;
 import org.junit.Test;

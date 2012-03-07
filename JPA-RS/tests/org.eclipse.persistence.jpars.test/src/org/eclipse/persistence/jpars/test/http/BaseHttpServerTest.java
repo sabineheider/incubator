@@ -1,7 +1,7 @@
 /**
  * 
  */
-package jpars.test.http;
+package org.eclipse.persistence.jpars.test.http;
 
 import java.io.IOException;
 

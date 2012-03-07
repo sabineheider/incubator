@@ -10,7 +10,7 @@
  * Contributors:
  *      tware - initial 
  ******************************************************************************/
-package jpars.test.crud;
+package org.eclipse.persistence.jpars.test.crud;
 
 import static org.junit.Assert.*;
 
@@ -21,11 +21,11 @@ import java.util.Map;
 
 import javax.persistence.EntityManager;
 
-import jpars.test.util.ExamplePropertiesLoader;
 
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.jpa.rs.PersistenceContext;
 import org.eclipse.persistence.jpa.rs.PersistenceFactory;
+import org.eclipse.persistence.jpars.test.util.ExamplePropertiesLoader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -74,17 +74,17 @@ public class CRUDTests {
     
     @Test
     public void testCreateAndDelete() {
-        DynamicEntity entity = persistenceContext.newEntity("User");
+        DynamicEntity entity = (DynamicEntity)persistenceContext.newEntity("User");
         entity.set("name", "Jim");
         persistenceContext.create(null, entity);
-        entity = persistenceContext.find("User", entity.get("id"));
+        entity = (DynamicEntity)persistenceContext.find("User", entity.get("id"));
         
         assertNotNull("Entity was note persisted", entity);
         assertTrue("Entity Name was incorrect", entity.get("name").equals("Jim"));
         
         persistenceContext.delete(null, "User", entity.get("id"));
         
-        entity = persistenceContext.find("User", entity.get("id"));
+        entity = (DynamicEntity)persistenceContext.find("User", entity.get("id"));
         
         assertNull("Entity was not deleted", entity);
     }
@@ -93,15 +93,15 @@ public class CRUDTests {
     @Test
     @SuppressWarnings("unchecked")
     public void testQuery(){
-        DynamicEntity entity = persistenceContext.newEntity("User");
+        DynamicEntity entity = (DynamicEntity)persistenceContext.newEntity("User");
         entity.set("name", "Jill");
         persistenceContext.create(null, entity);
         
-        entity = persistenceContext.newEntity("User");
+        entity = (DynamicEntity)persistenceContext.newEntity("User");
         entity.set("name", "Arthur");
         persistenceContext.create(null, entity);
         
-        entity = persistenceContext.newEntity("User");
+        entity = (DynamicEntity)persistenceContext.newEntity("User");
         entity.set("name", "Judy");
         persistenceContext.create(null, entity);
         
@@ -111,13 +111,13 @@ public class CRUDTests {
     
     @Test
     public void testUpdate(){
-        DynamicEntity entity = persistenceContext.newEntity("User");
+        DynamicEntity entity = (DynamicEntity)persistenceContext.newEntity("User");
         entity.set("name", "Tom");
         persistenceContext.create(null, entity);
-        entity = persistenceContext.find("User", entity.get("id"));
+        entity = (DynamicEntity)persistenceContext.find("User", entity.get("id"));
         entity.set("name", "Thomas");
-        persistenceContext.merge("User", null, entity);
-        entity = persistenceContext.find("User", entity.get("id"));
+        persistenceContext.merge(null, entity);
+        entity = (DynamicEntity)persistenceContext.find("User", entity.get("id"));
         assertTrue("Entity name was not correctly updated.", entity.get("name").equals("Thomas"));
         
     }

@@ -10,18 +10,19 @@
  * Contributors:
  *      tware - 
  ******************************************************************************/
-package jpars.test;
+package org.eclipse.persistence.jpars.test;
 
-import jpars.test.bootstrap.TestBootstrap;
-import jpars.test.crud.CRUDTests;
-import jpars.test.service.TestService;
 
+import org.eclipse.persistence.jpars.test.bootstrap.TestBootstrap;
+import org.eclipse.persistence.jpars.test.crud.CRUDTests;
+import org.eclipse.persistence.jpars.test.crud.StaticCrudTests;
+import org.eclipse.persistence.jpars.test.service.TestService;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
-@SuiteClasses({TestBootstrap.class, CRUDTests.class, TestService.class})
+@SuiteClasses({TestBootstrap.class, CRUDTests.class, TestService.class, StaticCrudTests.class})
 public class AllJavaSETests {
 
 }

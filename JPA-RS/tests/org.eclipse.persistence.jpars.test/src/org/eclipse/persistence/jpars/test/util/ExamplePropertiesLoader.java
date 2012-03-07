@@ -10,7 +10,7 @@
  * Contributors:
  *      dclarke - initial 
  ******************************************************************************/
-package jpars.test.util;
+package org.eclipse.persistence.jpars.test.util;
 
 import java.io.File;
 import java.io.FileInputStream;

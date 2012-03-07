@@ -10,7 +10,7 @@
  * Contributors:
  *      tware - 
  ******************************************************************************/
-package jpars.test.util;
+package org.eclipse.persistence.jpars.test.util;
 
 import java.util.ArrayList;
 import java.util.List;
