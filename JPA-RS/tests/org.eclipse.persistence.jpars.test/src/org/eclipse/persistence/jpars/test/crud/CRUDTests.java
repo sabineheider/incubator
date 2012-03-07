@@ -14,6 +14,7 @@ package org.eclipse.persistence.jpars.test.crud;
 
 import static org.junit.Assert.*;
 
+import java.io.FileInputStream;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +48,8 @@ public class CRUDTests {
         factory = null;
         try{
             factory = new PersistenceFactory();
-            persistenceContext = factory.bootstrapPersistenceContext("auction", new URL("file:///C:/EclipseLinkView2/incubator/JPA-RS Incubator/tests/JPA-RS Tests/src/xmldocs/auction-persistence.xml"), properties, true);
+            FileInputStream xmlStream = new FileInputStream("classes/xmldocs/auction-persistence.xml");
+            persistenceContext = factory.bootstrapPersistenceContext("auction", xmlStream, properties, true);
         } catch (Exception e){
             fail(e.toString());
         }
