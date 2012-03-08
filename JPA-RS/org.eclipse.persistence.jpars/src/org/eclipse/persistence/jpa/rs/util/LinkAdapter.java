@@ -108,6 +108,10 @@ public class LinkAdapter extends XmlAdapter<String, Object> {
             return null;
         }
         DynamicEntityImpl de = (DynamicEntityImpl) v;
+        System.out.println("---- Trying to marshall " + de);
+        System.out.println("---- Trying to marshall type " + de.getType());
+        System.out.println("---- Trying to marshall type name " + de.getType().getName());
+        System.out.println("---- Trying to marshall descriptor " + context.getDescriptor(de.getType().getName()));
         DatabaseMapping idMapping = getIdMapping(context.getDescriptor(de.getType().getName()));
         if (idMapping == null){
             return "";

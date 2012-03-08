@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +29,8 @@ import javax.persistence.EntityManagerFactory;
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.dynamic.DynamicClassLoader;
 import org.eclipse.persistence.internal.jpa.EntityManagerFactoryImpl;
+import org.eclipse.persistence.internal.jpa.deployment.PersistenceUnitProcessor;
+import org.eclipse.persistence.internal.jpa.deployment.SEPersistenceUnitInfo;
 import org.eclipse.persistence.jpa.Archive;
 import org.eclipse.persistence.jpa.rs.metadata.Application;
 import org.eclipse.persistence.jpa.rs.metadata.MetadataStore;
@@ -202,7 +205,22 @@ public class PersistenceFactory {
     }
     
     public Set<String> getPersistenceContextNames(){
-        return persistenceContexts.keySet();
+        Set<String> contextNames = new HashSet<String>();
+        contextNames.addAll(persistenceContexts.keySet());
+        try{
+            Set<Archive> archives = PersistenceUnitProcessor.findPersistenceArchives();
+            for (Archive archive : archives){
+                List<SEPersistenceUnitInfo> infos = PersistenceUnitProcessor.processPersistenceArchive(archive, Thread.currentThread().getContextClassLoader());
+                for (SEPersistenceUnitInfo info: infos){
+                    if (!info.getPersistenceUnitName().equals("jpa-rs")){
+                        contextNames.add(info.getPersistenceUnitName());
+                    }
+                }
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        return contextNames;
     }
 
     public MetadataStore getMetadataStore() {

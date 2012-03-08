@@ -274,7 +274,7 @@ public class Service {
         String tenantId = getTenantId(hh);
         Object id = IdHelper.buildId(app, type, ui.getQueryParameters());
         app.delete(tenantId, type, id);
-        rb.status(com.sun.jersey.api.client.ClientResponse.Status.OK);
+        rb.status(Status.OK);
         return rb.build();
     }
     

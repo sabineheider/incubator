@@ -68,8 +68,6 @@ import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.sessions.server.Server;
 import org.eclipse.persistence.sessions.server.ServerSession;
 
-import org.eclipse.persistence.jpa.rs.PersistenceFactory;
-
 /**
  * A wrapper around the JPA and JAXB artifacts used to persist an application.
  * 
