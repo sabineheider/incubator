@@ -1,1 +1,0 @@
-The contents of this library are provided as part of the EclipseLink Incubator component and should only be used for testing 
