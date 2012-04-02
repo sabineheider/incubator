@@ -17,6 +17,7 @@ import static org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller.medi
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -53,6 +54,7 @@ import javax.xml.bind.JAXBException;
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicClassLoader;
+import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.internal.queries.MapContainerPolicy;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.rs.metadata.DatabaseMetadataStore;
@@ -61,6 +63,7 @@ import org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller;
 import org.eclipse.persistence.mappings.CollectionMapping;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.mappings.ForeignReferenceMapping;
+import org.eclipse.persistence.queries.DatabaseQuery;
 
 import com.sun.jersey.core.spi.factory.ResponseBuilderImpl;
 
@@ -112,14 +115,18 @@ public class Service {
    @GET
    @Path("/")
    @Consumes({ MediaType.WILDCARD})
-   public Response getContexts(@Context HttpHeaders hh) {
+   public Response getContexts(@Context HttpHeaders hh, @Context UriInfo uriInfo) {
        ResponseBuilder rb = new ResponseBuilderImpl();
        Set<String> contexts = factory.getPersistenceContextNames();
        StringBuffer buffer = new StringBuffer();
        buffer.append("[");
        Iterator<String> contextIterator = contexts.iterator();
        while (contextIterator.hasNext()){
-           buffer.append("\"" + contextIterator.next() + "\"");
+           String context = contextIterator.next();
+           buffer.append("{");
+           buffer.append("\"name\": \"" + context + "\", ");
+           buffer.append("\"link\": \"" + uriInfo.getBaseUri() + context + "/metadata\"");
+           buffer.append("} ");
            if (contextIterator.hasNext()){
                buffer.append(", ");
            }
@@ -155,6 +162,7 @@ public class Service {
             rb.status(Status.NOT_FOUND);
         }
         if (persistenceContext != null){
+            System.out.println("--- Setting baseURI for " + persistenceUnit + " to " + uriInfo.getBaseUri());
             persistenceContext.setBaseURI(uriInfo.getBaseUri());
             rb.status(Status.CREATED);
         }
@@ -163,7 +171,7 @@ public class Service {
     }
     
     @GET
-    @Path("{context}")
+    @Path("{context}/metadata")
     @Consumes({ MediaType.WILDCARD})
     @Produces({MediaType.APPLICATION_JSON})
     public Response getTypes(@PathParam("context") String persistenceUnit, @Context HttpHeaders hh, @Context UriInfo uriInfo) {
@@ -174,17 +182,24 @@ public class Service {
         } else {
             Map<Class, ClassDescriptor> descriptors = JpaHelper.getServerSession(app.getEmf()).getDescriptors();
             StringBuffer buffer = new StringBuffer();
-            
+            buffer.append("{");
+            buffer.append("\"persistence-unit-name\": \"" + persistenceUnit + "\", ");
+            buffer.append("\"types\": ");
             buffer.append("[");
             Iterator<Class> contextIterator = descriptors.keySet().iterator();
             while (contextIterator.hasNext()){
                 ClassDescriptor descriptor = descriptors.get(contextIterator.next());
-                appendDescriptor(buffer, descriptor);
+                buffer.append("{");
+                buffer.append("\"descriptor\": \"" + descriptor.getAlias() + "\", ");
+                buffer.append("\"link\": \"" + uriInfo.getBaseUri() + persistenceUnit + "/metadata/entity/" + descriptor.getAlias() + "\"");
+                buffer.append("}");
+               // appendDescriptor(buffer, descriptor);
                 if (contextIterator.hasNext()){
                     buffer.append(", ");
                 }
             }           
             buffer.append("]");
+            buffer.append("}");
             rb.status(Status.OK);
             rb.entity(new StreamingOutputMarshaller(null , buffer.toString(), hh.getAcceptableMediaTypes()));
         }
@@ -216,10 +231,52 @@ public class Service {
     }
     
     @GET
-    @Path("{context}/entity/{type}")
-    public Response find(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo ui) {
+    @Path("{context}/metadata/entity/{descriptorAlias}")
+    @Consumes({ MediaType.WILDCARD})
+    @Produces({MediaType.APPLICATION_JSON})
+    public Response getDescriptorMetadata(@PathParam("context") String persistenceUnit, @PathParam("descriptorAlias") String descriptorAlias, @Context HttpHeaders hh, @Context UriInfo uriInfo) {
+        ResponseBuilder rb = new ResponseBuilderImpl();
+        PersistenceContext app = get(persistenceUnit, uriInfo.getBaseUri());
+        if (app == null){
+            rb.status(Status.NOT_FOUND);
+        } else {
+            ClassDescriptor descriptor = JpaHelper.getServerSession(app.getEmf()).getDescriptorForAlias(descriptorAlias);
+            if (descriptor == null){
+                rb.status(Status.NOT_FOUND);
+            } else {
+                StringBuffer buffer = new StringBuffer();
+                appendDescriptor(app, buffer, persistenceUnit, descriptor, uriInfo.getBaseUri().toString());
+                rb.status(Status.OK);
+                rb.entity(new StreamingOutputMarshaller(null , buffer.toString(), hh.getAcceptableMediaTypes()));
+            }
+        }
+        return rb.build();
+    }
+    
+    @GET
+    @Path("{context}/metadata/query/")
+    @Consumes({ MediaType.WILDCARD})
+    @Produces({MediaType.APPLICATION_JSON})
+    public Response getDescriptorMetadata(@PathParam("context") String persistenceUnit, @Context HttpHeaders hh, @Context UriInfo uriInfo) {
+        ResponseBuilder rb = new ResponseBuilderImpl();
+        PersistenceContext app = get(persistenceUnit, uriInfo.getBaseUri());
+        if (app == null){
+            rb.status(Status.NOT_FOUND);
+        } else {
+            StringBuffer buffer = new StringBuffer();
+            appendQueries(buffer, app, null);
+            rb.status(Status.OK);
+            rb.entity(new StreamingOutputMarshaller(null , buffer.toString(), hh.getAcceptableMediaTypes()));
+
+        }
+        return rb.build();
+    }
+    
+    @GET
+    @Path("{context}/entity/{type}/{key}")
+    public Response find(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @PathParam("key") String key, @Context HttpHeaders hh, @Context UriInfo ui) {
         PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
-        Object id = IdHelper.buildId(app, type, ui.getQueryParameters());
+        Object id = IdHelper.buildId(app, type, key);
 
         Object entity = app.find(getTenantId(hh), type, id);
         ResponseBuilder rb = new ResponseBuilderImpl();
@@ -267,12 +324,12 @@ public class Service {
     }
 
     @DELETE
-    @Path("{context}/entity/{type}")
-    public Response delete(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo ui) {
+    @Path("{context}/entity/{type}/{key}")
+    public Response delete(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @PathParam("key") String key, @Context HttpHeaders hh, @Context UriInfo ui) {
         ResponseBuilder rb = new ResponseBuilderImpl();
         PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
         String tenantId = getTenantId(hh);
-        Object id = IdHelper.buildId(app, type, ui.getQueryParameters());
+        Object id = IdHelper.buildId(app, type, key);
         app.delete(tenantId, type, id);
         rb.status(Status.OK);
         return rb.build();
@@ -315,10 +372,14 @@ public class Service {
         return new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes());
     }
     
-    protected void appendDescriptor(StringBuffer buffer, ClassDescriptor descriptor){
+    protected void appendDescriptor(PersistenceContext app, StringBuffer buffer, String persistenceUnit, ClassDescriptor descriptor, String baseUri){
         buffer.append("{\"name\": ");
         buffer.append("\"" + descriptor.getAlias() + "\"");
         buffer.append(", \"type\":\"" + descriptor.getJavaClassName() + "\"");
+        buffer.append(", \"find\":\"GET " + baseUri + persistenceUnit + "/entity/" + descriptor.getAlias() + "/<primaryKey>\"");
+        buffer.append(", \"persist\":\"PUT " + baseUri + persistenceUnit + "/entity/" + descriptor.getAlias() + " payload: <entity>\"");
+        buffer.append(", \"update\":\"POST " + baseUri + persistenceUnit + "/entity/" + descriptor.getAlias() + " payload: <entity>\"");
+        buffer.append(", \"delete\":\"DELETE " + baseUri + persistenceUnit + "/entity/" + descriptor.getAlias() + "/<primaryKey>\"");
         if (!descriptor.getMappings().isEmpty()){
             buffer.append(", \"attributes\":[");
             Iterator<DatabaseMapping> mappingIterator = descriptor.getMappings().iterator();
@@ -331,6 +392,9 @@ public class Service {
             }
             buffer.append("]");
         }
+        buffer.append(", \"queries\": ");
+        appendQueries(buffer, app, descriptor.getJavaClassName());
+        
         buffer.append("}");
     }
     
@@ -353,6 +417,39 @@ public class Service {
         }
         buffer.append("\"type\": \"" + target + "\"");
         buffer.append("}");
+    }
+    
+    protected void appendQueries(StringBuffer buffer, PersistenceContext app, String javaClassName){
+        Map<String, List<DatabaseQuery>> queries = JpaHelper.getServerSession(app.getEmf()).getQueries();
+        List<DatabaseQuery> returnQueries = new ArrayList<DatabaseQuery>();
+        for (String key: queries.keySet()){
+            List<DatabaseQuery> keyQueries = queries.get(key);
+            Iterator<DatabaseQuery> queryIterator = keyQueries.iterator();
+            while (queryIterator.hasNext()){
+                DatabaseQuery query= queryIterator.next();
+                if (javaClassName == null || query.getReferenceClassName().equals(javaClassName)){
+                    returnQueries.add(query);
+                }
+            }
+         }
+        buffer.append("[");
+        Iterator<DatabaseQuery> queryIterator = returnQueries.iterator();
+        while(queryIterator.hasNext()){
+            buffer.append("{");
+            DatabaseQuery query= queryIterator.next();
+            buffer.append("\"query-name\": \"" + query.getName() + "\", ");
+            String referenceClass = query.getReferenceClassName() == null ? "" : query.getReferenceClassName();
+            buffer.append("\"reference-type\": \"" +  referenceClass + "\", ");
+            String jpql = query.getJPQLString() == null? "" : query.getJPQLString();
+            buffer.append("\"jpql\": \"" + jpql + "\"");
+            System.out.println(query);
+            buffer.append("}");
+            if (queryIterator.hasNext()){
+                buffer.append(", ");
+            }
+        }
+        
+        buffer.append("]");
     }
     
     @PreDestroy

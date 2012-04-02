@@ -40,6 +40,10 @@
     <named-query name="User.all">
         <query>SELECT u from User u</query>
     </named-query>
+      
+    <named-query name="User.updateName">
+        <query>UPDATE User u SET u.name = :name WHERE u.id = :id</query>
+    </named-query>
  
     <entity class="User" access="VIRTUAL">
         <table name="AUCTION_USER" />

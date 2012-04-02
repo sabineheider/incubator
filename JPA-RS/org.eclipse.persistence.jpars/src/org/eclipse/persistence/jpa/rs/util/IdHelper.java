@@ -12,7 +12,11 @@
  ******************************************************************************/
 package org.eclipse.persistence.jpa.rs.util;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MultivaluedMap;
@@ -37,17 +41,24 @@ import org.eclipse.persistence.sessions.server.Server;
  */
 public class IdHelper {
 
-    public static Object buildId(PersistenceContext app, String entityName,MultivaluedMap<String, String> multivaluedMap) {
+    public static Object buildId(PersistenceContext app, String entityName, String idString) {
         Server session = JpaHelper.getServerSession(app.getEmf());
         ClassDescriptor descriptor = null;
 
         descriptor = app.getDescriptor(entityName);
         List<DatabaseMapping> pkMappings = descriptor.getObjectBuilder().getPrimaryKeyMappings();
-
+        List<SortableKey> pkIndices = new ArrayList<SortableKey>();
+        int index = 0;
+        for (DatabaseMapping mapping: pkMappings){
+            pkIndices.add(new SortableKey(mapping, index));
+            index++;
+        }
+        Collections.sort(pkIndices);
+        
         // Handle composite key in map
         int[] elementIndex = new int[pkMappings.size()];
         Object[] keyElements = new Object[pkMappings.size()];
-        for (int index = 0; index < pkMappings.size(); index++) {
+       /* for (int index = 0; index < pkMappings.size(); index++) {
             DatabaseMapping mapping = pkMappings.get(index);
             elementIndex[index] = index;
             List<String> idValues = multivaluedMap.get(mapping.getAttributeName());
@@ -58,6 +69,19 @@ public class IdHelper {
             idValue = session.getPlatform().getConversionManager().convertObject(idValue, mapping.getAttributeClassification());
             keyElements[index] = idValue;
 
+        }*/
+        StringTokenizer tokenizer = new StringTokenizer(idString, "+");
+        int tokens = tokenizer.countTokens();
+        if (tokens != pkMappings.size()){
+            throw new RuntimeException("Failed, incorrect number of keys values");
+        }
+        index = 0;
+        Iterator<SortableKey> iterator = pkIndices.iterator();
+        while (tokenizer.hasMoreTokens()){
+            SortableKey key = iterator.next();
+            Object idValue = session.getPlatform().getConversionManager().convertObject(tokenizer.nextToken(), key.getMapping().getAttributeClassification());
+            keyElements[key.getIndex()] = idValue;
+            index++;
         }
 
         if (descriptor.hasCMPPolicy()) {
@@ -69,5 +93,29 @@ public class IdHelper {
             return keyElements[0];
         }
         return keyElements;
+    }
+    
+    private static class SortableKey implements Comparable<SortableKey>{
+        
+        private DatabaseMapping mapping;
+        private int index;
+        
+        public SortableKey(DatabaseMapping mapping, int index){
+            this.mapping = mapping;
+            this.index = index;
+        }
+        
+        public int compareTo(SortableKey o){
+            return mapping.getAttributeName().compareTo(o.getMapping().getAttributeName());
+        }
+        
+        public DatabaseMapping getMapping(){
+            return mapping;
+        }
+        
+        public int getIndex(){
+            return index;
+        }
+
     }
 }

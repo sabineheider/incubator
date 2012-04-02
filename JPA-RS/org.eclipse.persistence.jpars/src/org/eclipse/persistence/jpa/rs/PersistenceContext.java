@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.management.RuntimeErrorException;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Query;
@@ -39,6 +40,8 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamWriter;
 import javax.xml.transform.stream.StreamSource;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
@@ -380,6 +383,20 @@ public class PersistenceContext {
         return descriptor;
     }
     
+    public ClassDescriptor getDescriptorForClass(Class clazz){
+        Server session = JpaHelper.getServerSession(getEmf());
+        ClassDescriptor descriptor = session.getDescriptor(clazz);
+        if (descriptor == null){
+            for (Object ajaxBSession:((JAXBContext)getJAXBContext()).getXMLContext().getSessions() ){
+                descriptor = ((Session)ajaxBSession).getClassDescriptor(clazz);
+                if (descriptor != null){
+                    break;
+                }
+            }
+        }
+        return descriptor;
+    }
+    
     public EntityManagerFactory getEmf() {
         return emf;
     }
@@ -594,10 +611,11 @@ public class PersistenceContext {
         return element.getValue();
     }
     
-    public void marshallEntity(Object object, MediaType mediaType, OutputStream output) throws JAXBException {
+    public void marshallEntity(Object object, MediaType mediaType, OutputStream output) throws JAXBException {              
         Marshaller marshaller = getJAXBContext().createMarshaller();
         marshaller.setProperty(MEDIA_TYPE, mediaType.toString());
         marshaller.setProperty(org.eclipse.persistence.jaxb.JAXBContext.JSON_INCLUDE_ROOT, false);
+System.out.println("--- marshallEntity - " + object + " baseURI" + getBaseURI());
         marshaller.setAdapter(new LinkAdapter(getBaseURI().toString(), this));
         marshaller.setListener(new Marshaller.Listener() {
             @Override
@@ -611,7 +629,28 @@ public class PersistenceContext {
                 }
             }
         });
-        marshaller.marshal(object, output);       
+        
+        if (mediaType == MediaType.APPLICATION_XML_TYPE && object instanceof List){
+            marshaller.setProperty(Marshaller.JAXB_FRAGMENT, true);
+            XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
+            XMLStreamWriter writer = null;
+            try{
+                writer = outputFactory.createXMLStreamWriter(output);
+                writer.writeStartDocument();
+                writer.writeStartElement("List");
+                for (Object o: (List<Object>)object){
+                    marshaller.marshal(o, writer);  
+                }
+                writer.writeEndDocument();
+            } catch (Exception e){
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+           
+        } else {
+        
+            marshaller.marshal(object, output);      
+        }
     }
 
 }

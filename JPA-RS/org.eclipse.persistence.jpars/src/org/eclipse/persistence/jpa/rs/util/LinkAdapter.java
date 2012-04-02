@@ -64,7 +64,7 @@ public class LinkAdapter extends XmlAdapter<String, Object> {
         }
         String fixedString = v.replace("\\/", "/");
         int lastSlash = fixedString.lastIndexOf('/');
-        String entityType = fixedString.substring((baseURI + context.getName() + "/" ).length(), lastSlash);
+        String entityType = fixedString.substring((baseURI + context.getName() + "/entity/" ).length(), lastSlash);
         String entityId = fixedString.substring(lastSlash + 1);
         ClassDescriptor descriptor = context.getDescriptor(entityType);
         DatabaseMapping idMapping = getIdMapping(descriptor);
@@ -81,6 +81,7 @@ public class LinkAdapter extends XmlAdapter<String, Object> {
             }
         }
         Object id = ConversionManager.getDefaultManager().convertObject(entityId, idType);
+        
         return constructObjectForId(entityType, idField, id);
     }
 
@@ -108,16 +109,12 @@ public class LinkAdapter extends XmlAdapter<String, Object> {
             return null;
         }
         DynamicEntityImpl de = (DynamicEntityImpl) v;
-        System.out.println("---- Trying to marshall " + de);
-        System.out.println("---- Trying to marshall type " + de.getType());
-        System.out.println("---- Trying to marshall type name " + de.getType().getName());
-        System.out.println("---- Trying to marshall descriptor " + context.getDescriptor(de.getType().getName()));
         DatabaseMapping idMapping = getIdMapping(context.getDescriptor(de.getType().getName()));
         if (idMapping == null){
             return "";
         }
         Object id = de.get(idMapping.getAttributeName());
-        String href = baseURI + context.getName() + "/"  + v.getClass().getSimpleName() + "/"
+        String href = baseURI + context.getName() + "/entity/"  + v.getClass().getSimpleName() + "/"
                 + id;
         return href;
     }

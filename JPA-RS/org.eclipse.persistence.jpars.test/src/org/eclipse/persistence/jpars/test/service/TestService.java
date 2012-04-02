@@ -353,7 +353,7 @@ public class TestService {
     public void testMetadataQuery(){
         Service service = new Service();
         service.setPersistenceFactory(factory);
-        StreamingOutput output = (StreamingOutput)service.getContexts(generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON)).getEntity();
+        StreamingOutput output = (StreamingOutput)service.getContexts(generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo()).getEntity();
         String result = stringifyResults(output);
         assertTrue("auction was not in the results", result.contains("auction"));
         assertTrue("phonebook was not in the results", result.contains("phonebook"));
@@ -365,6 +365,46 @@ public class TestService {
         assertTrue("Auction was not in the results", result.contains("Auction"));
         assertTrue("User was not in the results", result.contains("User"));
 
+    }
+    
+    @Test
+    public void testDelete(){
+        Service service = new Service();
+        service.setPersistenceFactory(factory);
+        PersistenceContext context = factory.getPersistenceContext("auction");
+        
+        DynamicEntity entity1 = (DynamicEntity)context.newEntity("Auction");
+        entity1.set("name", "Computer1");
+        context.create(null, entity1);
+
+        TestURIInfo ui = new TestURIInfo();
+        service.delete("auction", "Auction", entity1.get("id").toString(), generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), ui);
+
+        entity1 = (DynamicEntity)context.find("Auction", entity1.get("id"));
+        
+        assertTrue("Entity was not deleted.", entity1 == null);
+
+    }
+    
+    @Test
+    public void testWriteQuery(){
+        Service service = new Service();
+        service.setPersistenceFactory(factory);
+        PersistenceContext context = factory.getPersistenceContext("auction");
+        
+        DynamicEntity entity = (DynamicEntity)context.newEntity("User");
+        entity.set("name", "Bob");
+        context.create(null, entity);
+        
+        TestURIInfo ui = new TestURIInfo();
+        ui.addMatrixParameter("name", "Robert");
+        ui.addMatrixParameter("id", entity.get("id").toString());
+        
+        service.namedQueryUpdate("auction", "User.updateName", generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), ui);
+
+        entity = (DynamicEntity)context.find("User", entity.get("id"));
+        
+        assertTrue("Entity was not updated.", entity.get("name").equals("Robert"));
     }
     
     public static String stringifyResults(StreamingOutput output){

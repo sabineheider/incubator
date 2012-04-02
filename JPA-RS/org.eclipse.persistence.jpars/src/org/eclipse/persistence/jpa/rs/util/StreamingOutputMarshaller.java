@@ -59,14 +59,7 @@ public class StreamingOutputMarshaller implements StreamingOutput {
 
     public void write(OutputStream output) throws IOException, WebApplicationException {
         long millis = System.currentTimeMillis();
-        System.out.println("StreamingOutputMarshaller About to write ");
-        if (this.context != null && this.context.getJAXBContext() != null && this.result != null && !this.mediaType.equals(MediaType.WILDCARD_TYPE)) {
-            try {
-                context.marshallEntity(result, mediaType, output);
-            } catch (JAXBException e) {
-                throw new RuntimeException("JAXB Failure to marshal: " + this.result, e);
-            }
-        } else if (result instanceof byte[]){
+        if (result instanceof byte[]){
             output.write((byte[])result);
         } else if (result instanceof String){
             OutputStreamWriter writer = new OutputStreamWriter(output);
@@ -74,6 +67,18 @@ public class StreamingOutputMarshaller implements StreamingOutput {
             writer.flush();
             writer.close();
         } else {
+            if (this.context != null && this.context.getJAXBContext() != null && this.result != null ) {
+                try {
+                    context.marshallEntity(result, mediaType, output);
+                    System.out.println("SteamingOutputMarshaller done write. time: " + (System.currentTimeMillis() - millis));
+                    return;
+                } catch (JAXBException e) {
+                    // TODO: proper warning message
+                    e.printStackTrace();
+                    System.out.println("WARNING, could not marshall entity, serializing. " + e.toString());
+                }
+            }
+            // could not marshall, try serializing
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(result);
