@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.management.RuntimeErrorException;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Query;
@@ -64,7 +63,10 @@ import org.eclipse.persistence.jpa.rs.eventlistener.ChangeListener;
 import org.eclipse.persistence.jpa.rs.eventlistener.DatabaseEventListenerFactory;
 import org.eclipse.persistence.jpa.rs.eventlistener.DescriptorBasedDatabaseEventListener;
 import org.eclipse.persistence.jpa.rs.util.DynamicXMLMetadataSource;
+import org.eclipse.persistence.jpa.rs.util.JTATransactionWrapper;
 import org.eclipse.persistence.jpa.rs.util.LinkAdapter;
+import org.eclipse.persistence.jpa.rs.util.ResourceLocalTransactionWrapper;
+import org.eclipse.persistence.jpa.rs.util.TransactionWrapper;
 import org.eclipse.persistence.platform.database.events.DatabaseEventListener;
 import org.eclipse.persistence.queries.DatabaseQuery;
 import org.eclipse.persistence.sessions.Session;
@@ -125,6 +127,8 @@ public class PersistenceContext {
      * to listen to database events.
      */
     private DescriptorBasedDatabaseEventListener databaseEventListener = null;
+    
+    private TransactionWrapper transaction = null;
 
     public PersistenceContext(Archive archive, Map<String, Object> properties, ClassLoader classLoader){
         super();
@@ -133,12 +137,14 @@ public class PersistenceContext {
         
         this.name = persistenceUnitInfo.getPersistenceUnitName();
 
-        if (!persistenceUnitInfo.getProperties().containsKey(PersistenceUnitProperties.JDBC_DRIVER) && !properties.containsKey(PersistenceUnitProperties.JDBC_DRIVER)) {
-            properties.put(PersistenceUnitProperties.NON_JTA_DATASOURCE, "jdbc/jpa-rs");
-        }
         EntityManagerFactoryImpl emf = createEntityManagerFactory(persistenceUnitInfo, properties);
         this.emf = emf;
-       
+        
+        if (JpaHelper.getServerSession(emf).hasExternalTransactionController()){
+            transaction = new JTATransactionWrapper();
+        } else {
+            transaction = new ResourceLocalTransactionWrapper();
+        }
         try{
             JAXBContext jaxbContext = createDynamicJAXBContext(persistenceUnitInfo.getPersistenceUnitName(), emf.getServerSession());
            this.context = jaxbContext;
@@ -210,9 +216,9 @@ public class PersistenceContext {
     public void create(String tenantId, Object entity) {
         EntityManager em = getEmf().createEntityManager();
         try {
-            em.getTransaction().begin();
+            transaction.beginTransaction(em);
             em.persist(entity);
-            em.getTransaction().commit();
+            transaction.commitTransaction(em);
         } finally {
             em.close();
         }
@@ -292,10 +298,10 @@ public class PersistenceContext {
         EntityManager em = getEmf().createEntityManager();
 
         try {
-            em.getTransaction().begin();
+            transaction.beginTransaction(em);
             Object entity = em.find(getClass(type), id);
             em.remove(entity);
-            em.getTransaction().commit();
+            transaction.commitTransaction(em);
         } finally {
             em.close();
         }
@@ -422,7 +428,7 @@ public class PersistenceContext {
         EntityManager em = getEmf().createEntityManager();
         Object mergedEntity = null;
         try {
-            em.getTransaction().begin();
+            transaction.beginTransaction(em);
             if (entity instanceof List){
                 List<Object> mergeList = new ArrayList<Object>();
                 for (Object o: (List)entity){
@@ -432,7 +438,7 @@ public class PersistenceContext {
             } else {
                 mergedEntity = em.merge(entity);
             }
-            em.getTransaction().commit();
+            transaction.commitTransaction(em);
             return mergedEntity;
         } finally {
             em.close();
@@ -520,9 +526,9 @@ public class PersistenceContext {
                 }
             }
             if (executeUpdate){
-                em.getTransaction().begin();
+                transaction.beginTransaction(em);
                 Object result = query.executeUpdate();
-                em.getTransaction().commit();
+                transaction.commitTransaction(em);
                 return result;
             } else if (returnSingleResult){
                 return query.getSingleResult();
