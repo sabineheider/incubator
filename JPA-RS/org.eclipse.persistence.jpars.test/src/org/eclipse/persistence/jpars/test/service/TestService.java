@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2011 Oracle. All rights reserved.
+ * Copyright (c) 2011, 2012 Oracle. All rights reserved.
  * This program and the accompanying materials are made available under the 
  * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0 
  * which accompanies this distribution. 
@@ -20,24 +20,31 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import javax.xml.bind.JAXBException;
 
 
+import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.jpa.rs.PersistenceContext;
 import org.eclipse.persistence.jpa.rs.PersistenceFactory;
 import org.eclipse.persistence.jpa.rs.Service;
 import org.eclipse.persistence.jpa.rs.metadata.DatabaseMetadataStore;
+import org.eclipse.persistence.jpa.rs.util.LinkAdapter;
+import org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller;
+import org.eclipse.persistence.jpars.test.model.StaticAddress;
+import org.eclipse.persistence.jpars.test.model.StaticUser;
 import org.eclipse.persistence.jpars.test.util.ExamplePropertiesLoader;
 import org.eclipse.persistence.jpars.test.util.TestHttpHeaders;
 import org.eclipse.persistence.jpars.test.util.TestURIInfo;
@@ -66,16 +73,20 @@ public class TestService {
             factory.setMetadataStore(new DatabaseMetadataStore());
             factory.getMetadataStore().setProperties(properties);
             factory.getMetadataStore().clearMetadata();
-            FileInputStream xmlStream = new FileInputStream("classes/xmldocs/auction-persistence.xml");
+            FileInputStream xmlStream = new FileInputStream("classes/META-INF/xmldocs/auction-persistence.xml");
 
             PersistenceContext context = factory.bootstrapPersistenceContext("auction", xmlStream, properties, true);
             context.setBaseURI(new URI("http://localhost:8080/JPA-RS/"));
             
-            xmlStream = new FileInputStream("classes/xmldocs/phonebook-persistence.xml");
+            xmlStream = new FileInputStream("classes/META-INF/xmldocs/phonebook-persistence.xml");
             context = factory.bootstrapPersistenceContext("phonebook", xmlStream, properties, true);
             context.setBaseURI(new URI("http://localhost:8080/JPA-RS/"));
             
-            clearData();
+            properties.put(PersistenceUnitProperties.NON_JTA_DATASOURCE, null);
+            properties.put(PersistenceUnitProperties.DDL_GENERATION, PersistenceUnitProperties.DROP_AND_CREATE);
+            EntityManagerFactory emf = Persistence.createEntityManagerFactory("auction-static", properties);
+            context = factory.bootstrapPersistenceContext("auction-static", emf, new URI("http://localhost:8080/JPA-RS/"), false);
+
         } catch (Exception e){
             fail(e.toString());
         }
@@ -405,6 +416,86 @@ public class TestService {
         entity = (DynamicEntity)context.find("User", entity.get("id"));
         
         assertTrue("Entity was not updated.", entity.get("name").equals("Robert"));
+    }
+    
+    @Test 
+    public void testDynamicCompositeKey(){
+        Service service = new Service();
+        service.setPersistenceFactory(factory);
+        PersistenceContext context = factory.getPersistenceContext("auction");
+        DynamicEntity user = (DynamicEntity)context.newEntity("User");
+        user.set("name", "Wes");
+        DynamicEntity address = (DynamicEntity)context.newEntity("Address");
+        address.set("city", "Ottawa");
+        address.set("postalCode", "a1a1a1");
+        address.set("street", "Main Street");
+        address.set("type", "Home");
+        user.set("address", address);
+        context.create(null, user);
+
+        Response output = service.find("auction", "Address", address.get("id") + "+" + address.get("type"), generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo());
+
+        String result = stringifyResults((StreamingOutputMarshaller)output.getEntity());
+        assertTrue("Type was not in the result", result.contains("Home"));
+        assertTrue("Id was not in the result", result.contains(address.get("id").toString()));
+    }
+    
+    @Test 
+    public void testStaticCompositeKey(){
+        Service service = new Service();
+        service.setPersistenceFactory(factory);
+        PersistenceContext context = factory.getPersistenceContext("auction-static");
+        StaticUser user = new StaticUser();
+        user.setName("Wes");
+        StaticAddress address = new StaticAddress();
+        address.setCity("Ottawa");
+        address.setPostalCode("a1a1a1");
+        address.setStreet("Main Street");
+        address.setType("Home");
+        user.setAddress(address);
+        context.create(null, user);
+
+        Response output = service.find("auction-static", "StaticAddress", user.getAddress().getId() + "+" + user.getAddress().getType(), generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo());
+
+        String result = stringifyResults((StreamingOutputMarshaller)output.getEntity());
+        assertTrue("Type was not in the result", result.contains("Home"));
+        assertTrue("Id was not in the result", result.contains(Integer.toString(user.getAddress().getId())));
+    }
+    
+    @Test
+    public void testUnmarshallNonExistantLink(){
+        Service service = new Service();
+        service.setPersistenceFactory(factory);
+        PersistenceContext context = factory.getPersistenceContext("auction");
+        LinkAdapter adapter = new LinkAdapter("http://localhost:8080/JPA-RS/", context);
+        DynamicEntity entity1 = null;
+        DynamicEntity entity2 = null;
+        try{
+            entity1 = (DynamicEntity)adapter.unmarshal("http://localhost:8080/JPA-RS/auction/entity/Auction/1");
+        } catch (Exception e){
+            fail(e.toString());
+        }
+        assertTrue("id for Auction was missing", entity1.get("id").equals(1));
+        try{
+            entity2 = (DynamicEntity)adapter.unmarshal("http://localhost:8080/JPA-RS/auction/entity/Address/1+Home");
+        } catch (Exception e){
+            fail(e.toString());
+        }
+        assertTrue("id for Address was missing", entity2.get("id").equals(1));
+        assertTrue("type for Address was missing", entity2.get("type").equals("Home"));
+    }
+    
+    @Test
+    public void testMetadata(){
+        Service service = new Service();
+        service.setPersistenceFactory(factory);
+        Object result = service.getContexts(generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo());
+        
+        result = service.getTypes("auction", generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo());
+
+        result = service.getDescriptorMetadata("auction", "Bid", generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo());
+    
+        result = service.getQueryMetadata("auction", generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo());
     }
     
     public static String stringifyResults(StreamingOutput output){

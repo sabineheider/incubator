@@ -48,7 +48,7 @@ public class CRUDTests {
         factory = null;
         try{
             factory = new PersistenceFactory();
-            FileInputStream xmlStream = new FileInputStream("classes/xmldocs/auction-persistence.xml");
+            FileInputStream xmlStream = new FileInputStream("classes/META-INF/xmldocs/auction-persistence.xml");
             persistenceContext = factory.bootstrapPersistenceContext("auction", xmlStream, properties, true);
         } catch (Exception e){
             fail(e.toString());
@@ -67,9 +67,11 @@ public class CRUDTests {
     public static void tearDown(){
         EntityManager em = persistenceContext.getEmf().createEntityManager();
         em.getTransaction().begin();
-        em.createQuery("delete from Bid b").executeUpdate();
-        em.createQuery("delete from Auction a").executeUpdate();
-        em.createQuery("delete from User u").executeUpdate();
+        try{
+            em.createQuery("delete from Bid b").executeUpdate();
+            em.createQuery("delete from Auction a").executeUpdate();
+            em.createQuery("delete from User u").executeUpdate();
+        } catch (Exception e){};
         em.getTransaction().commit();
         factory.closePersistenceContext("auction");
     }

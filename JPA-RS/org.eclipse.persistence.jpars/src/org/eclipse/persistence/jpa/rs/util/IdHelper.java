@@ -14,20 +14,30 @@ package org.eclipse.persistence.jpa.rs.util;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response.Status;
 
+import org.eclipse.persistence.config.CacheUsage;
+import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.dynamic.DynamicEntity;
+import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.internal.jpa.CMP3Policy;
+import org.eclipse.persistence.internal.queries.EntityFetchGroup;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.rs.PersistenceContext;
 import org.eclipse.persistence.mappings.DatabaseMapping;
+import org.eclipse.persistence.queries.FetchGroup;
 import org.eclipse.persistence.sessions.server.Server;
 
 
@@ -41,11 +51,11 @@ import org.eclipse.persistence.sessions.server.Server;
  */
 public class IdHelper {
 
+    private static final String SEPARATOR_STRING = "+";
+    
     public static Object buildId(PersistenceContext app, String entityName, String idString) {
         Server session = JpaHelper.getServerSession(app.getEmf());
-        ClassDescriptor descriptor = null;
-
-        descriptor = app.getDescriptor(entityName);
+        ClassDescriptor descriptor = app.getDescriptor(entityName);
         List<DatabaseMapping> pkMappings = descriptor.getObjectBuilder().getPrimaryKeyMappings();
         List<SortableKey> pkIndices = new ArrayList<SortableKey>();
         int index = 0;
@@ -58,19 +68,7 @@ public class IdHelper {
         // Handle composite key in map
         int[] elementIndex = new int[pkMappings.size()];
         Object[] keyElements = new Object[pkMappings.size()];
-       /* for (int index = 0; index < pkMappings.size(); index++) {
-            DatabaseMapping mapping = pkMappings.get(index);
-            elementIndex[index] = index;
-            List<String> idValues = multivaluedMap.get(mapping.getAttributeName());
-            if (idValues == null || idValues.isEmpty() || idValues.size() != 1) {
-                throw new WebApplicationException(new RuntimeException("Missing or duplicate id values named: " + mapping.getAttributeName()), Status.BAD_REQUEST);
-            }
-            Object idValue = idValues.get(0);
-            idValue = session.getPlatform().getConversionManager().convertObject(idValue, mapping.getAttributeClassification());
-            keyElements[index] = idValue;
-
-        }*/
-        StringTokenizer tokenizer = new StringTokenizer(idString, "+");
+        StringTokenizer tokenizer = new StringTokenizer(idString, SEPARATOR_STRING);
         int tokens = tokenizer.countTokens();
         if (tokens != pkMappings.size()){
             throw new RuntimeException("Failed, incorrect number of keys values");
@@ -93,6 +91,73 @@ public class IdHelper {
             return keyElements[0];
         }
         return keyElements;
+    }
+    
+    public static String stringifyId(DynamicEntityImpl entity, PersistenceContext app){
+        ClassDescriptor descriptor = app.getDescriptor(entity.getType().getName());
+        List<DatabaseMapping> pkMappings = descriptor.getObjectBuilder().getPrimaryKeyMappings();
+        if (pkMappings.isEmpty()){
+            return "";
+        }
+        List<SortableKey> pkIndices = new ArrayList<SortableKey>();
+        int index = 0;
+        for (DatabaseMapping mapping: pkMappings){
+            pkIndices.add(new SortableKey(mapping, index));
+            index++;
+        }
+        Collections.sort(pkIndices);
+        StringBuffer key = new StringBuffer();
+        Iterator<SortableKey> sortableKeys = pkIndices.iterator();
+        while (sortableKeys.hasNext()){
+            key.append(entity.get(sortableKeys.next().getMapping().getAttributeName()).toString());
+            if (sortableKeys.hasNext()){
+                key.append(SEPARATOR_STRING);
+            }
+        }
+        return key.toString();
+    }
+    
+    /**
+     * build a shell of an object based on a primary key.  The object shell will be an instance of the object with
+     * only primary key populated
+     * @param context
+     * @param entityType
+     * @param id
+     * @return
+     */
+    public static Object buildObjectShell(PersistenceContext context, String entityType, Object id){
+        ClassDescriptor descriptor = context.getDescriptor(entityType);
+        List<DatabaseMapping> pkMappings = descriptor.getObjectBuilder().getPrimaryKeyMappings();
+        DynamicEntityImpl entity = null;
+        if (descriptor.hasCMPPolicy()) {
+            CMP3Policy policy = (CMP3Policy) descriptor.getCMPPolicy();
+            entity = (DynamicEntityImpl)policy.createBeanUsingKey(id, (AbstractSession)JpaHelper.getDatabaseSession(context.getEmf()));
+        } else { 
+            entity = (DynamicEntityImpl)context.newEntity(entityType);
+            // if there is only one PK mapping, we assume the id object represents the value of that mapping
+            if (pkMappings.size() == 1){
+                entity.set(pkMappings.get(0).getAttributeName(), id);
+            } else {
+                // If there are more that one PK, we assume an array as produced by buildId() above with the keys
+                // based on a sorted order of PK fields
+                List<SortableKey> pkIndices = new ArrayList<SortableKey>();
+                int index = 0;
+                for (DatabaseMapping mapping: pkMappings){
+                    pkIndices.add(new SortableKey(mapping, index));
+                    index++;
+                }
+                Collections.sort(pkIndices);
+                Object[] keyElements = (Object[])id;
+                for (SortableKey key: pkIndices){
+                    entity.set(key.getMapping().getAttributeName(), keyElements[key.getIndex()]);
+                }
+            }
+        }
+
+        entity._persistence_setId(id);
+        entity._persistence_setSession(JpaHelper.getDatabaseSession(context.getEmf()));
+
+        return entity;
     }
     
     private static class SortableKey implements Comparable<SortableKey>{

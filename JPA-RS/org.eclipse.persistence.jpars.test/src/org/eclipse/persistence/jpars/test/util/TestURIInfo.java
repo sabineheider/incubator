@@ -13,6 +13,7 @@
 package org.eclipse.persistence.jpars.test.util;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,7 +65,11 @@ public class TestURIInfo implements UriInfo {
     @Override
     public URI getBaseUri() {
         // TODO Auto-generated method stub
-        return null;
+        try{
+        return new URI("http://localhost:8080/app/jpa-rs/");
+        } catch (URISyntaxException e){
+            return null;
+        }
     }
 
     @Override

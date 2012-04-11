@@ -187,8 +187,6 @@ public class PersistenceFactory {
 
         properties.put(PersistenceUnitProperties.CLASSLOADER, dcl);
         properties.put(PersistenceUnitProperties.WEAVING, "static");
-        properties.put("eclipselink.ddl-generation", "create-tables");
-        properties.put(PersistenceUnitProperties.LOGGING_LEVEL, "FINEST");
 
         // For now we'll copy the connection info from admin PU
         for (Map.Entry<String, ?> entry : originalProperties.entrySet()) {

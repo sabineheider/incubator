@@ -11,7 +11,8 @@
         <class>jpars.app.phonebook.model.Person</class>
         <properties>
             <property name="eclipselink.metadata-source" value="XML"/>
-            <property name="eclipselink.metadata-source.xml.file" value="xmldocs/phonebook-orm.xml"/>
+            <property name="eclipselink.metadata-source.xml.file" value="META-INF/xmldocs/phonebook-orm.xml"/>
+            <property name="eclipselink.ddl-generation" value="drop-and-create-tables"/>
         </properties>
     </persistence-unit>
 </persistence>

@@ -18,6 +18,7 @@ import java.util.Map;
 import javax.xml.bind.JAXBElement;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.jaxb.metadata.MetadataSource;
 import org.eclipse.persistence.jaxb.xmlmodel.JavaType;
 import org.eclipse.persistence.jaxb.xmlmodel.JavaType.JavaAttributes;
@@ -71,16 +72,17 @@ public class DynamicXMLMetadataSource implements MetadataSource {
             }
         }
     }
-
     
     private JavaType createJAXBType(ClassDescriptor classDescriptor, ObjectFactory objectFactory) {
         JavaType javaType = new JavaType();
         javaType.setName(classDescriptor.getAlias());
-        javaType.setJavaAttributes(new JavaAttributes());
-        for (DatabaseMapping ormMapping : classDescriptor.getMappings()) {
-            javaType.getJavaAttributes().getJavaAttribute().add(createJAXBProperty(ormMapping, objectFactory));
+        if (DynamicEntity.class.isAssignableFrom(classDescriptor.getJavaClass())){
+            javaType.setJavaAttributes(new JavaAttributes());
+            for (DatabaseMapping ormMapping : classDescriptor.getMappings()) {
+                javaType.getJavaAttributes().getJavaAttribute().add(createJAXBProperty(ormMapping, objectFactory));
+            }
+            javaType.getJavaAttributes().getJavaAttribute().add(createSelfProperty(classDescriptor.getJavaClassName(), objectFactory));
         }
-        javaType.getJavaAttributes().getJavaAttribute().add(createSelfProperty(classDescriptor.getJavaClassName(), objectFactory));
         // Make them all root elements for now
         javaType.setXmlRootElement(new org.eclipse.persistence.jaxb.xmlmodel.XmlRootElement());
 

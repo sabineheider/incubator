@@ -23,6 +23,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.Persistence;
 
 
+import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.jpa.rs.PersistenceContext;
 import org.eclipse.persistence.jpa.rs.PersistenceFactory;
 import org.eclipse.persistence.jpars.test.model.StaticUser;
@@ -45,6 +46,8 @@ public class StaticCrudTests {
     public static void setup(){
         Map<String, Object> properties = new HashMap<String, Object>();
         ExamplePropertiesLoader.loadProperties(properties); 
+        properties.put(PersistenceUnitProperties.NON_JTA_DATASOURCE, null);
+        properties.put(PersistenceUnitProperties.DDL_GENERATION, PersistenceUnitProperties.DROP_AND_CREATE);
         factory = null;
         try{
             factory = new PersistenceFactory();

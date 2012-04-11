@@ -14,8 +14,11 @@
 package org.eclipse.persistence.jpa.rs.util;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 
@@ -24,7 +27,10 @@ import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.internal.dynamic.DynamicEntityImpl;
 import org.eclipse.persistence.internal.helper.ConversionManager;
+import org.eclipse.persistence.internal.helper.DatabaseField;
+import org.eclipse.persistence.internal.jpa.CMP3Policy;
 import org.eclipse.persistence.internal.queries.EntityFetchGroup;
+import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.jpa.JpaHelper;
 import org.eclipse.persistence.jpa.rs.PersistenceContext;
 import org.eclipse.persistence.mappings.DatabaseMapping;
@@ -67,38 +73,26 @@ public class LinkAdapter extends XmlAdapter<String, Object> {
         String entityType = fixedString.substring((baseURI + context.getName() + "/entity/" ).length(), lastSlash);
         String entityId = fixedString.substring(lastSlash + 1);
         ClassDescriptor descriptor = context.getDescriptor(entityType);
-        DatabaseMapping idMapping = getIdMapping(descriptor);
-        String idField = idMapping.getAttributeName();;
-        Class idType = idMapping.getAttributeClassification();;
-        Iterator<DatabaseMapping> i = descriptor.getMappings().iterator();
-
-        while (i.hasNext()){
-            DatabaseMapping mapping = i.next();
-            if (mapping.isPrimaryKeyMapping()){
-                idField = mapping.getAttributeName();
-                idType = mapping.getAttributeClassification();
-                break;
-            }
-        }
-        Object id = ConversionManager.getDefaultManager().convertObject(entityId, idType);
+        Object id = IdHelper.buildId(context, descriptor.getAlias(), entityId);
         
-        return constructObjectForId(entityType, idField, id);
+        return constructObjectForId(entityType, id);
     }
 
-    protected Object constructObjectForId(String entityType, String entityIdField, Object id){
+    protected Object constructObjectForId(String entityType, Object id){
+
         FetchGroup fetchGroup = new FetchGroup();
-        fetchGroup.addAttribute(entityIdField);
+        ClassDescriptor descriptor = context.getDescriptor(entityType);
+        List<DatabaseMapping> pkMappings = descriptor.getObjectBuilder().getPrimaryKeyMappings();
+        for (DatabaseMapping mapping: pkMappings){
+            fetchGroup.addAttribute(mapping.getAttributeName());
+        }
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put(QueryHints.FETCH_GROUP, fetchGroup);
         properties.put(QueryHints.CACHE_USAGE, CacheUsage.CheckCacheOnly);
         DynamicEntityImpl entity = (DynamicEntityImpl)context.find(null, entityType, id, properties);
+        
         if (entity == null){
-            entity = (DynamicEntityImpl)context.newEntity(entityType);
-            entity.set(entityIdField, id);
-            EntityFetchGroup group = new EntityFetchGroup(entityIdField);
-            entity._persistence_setFetchGroup(group);
-            entity._persistence_setId(id);
-            entity._persistence_setSession(JpaHelper.getDatabaseSession(context.getEmf()));
+            return IdHelper.buildObjectShell(context, entityType, id);
         }
         return entity;
     }
@@ -109,25 +103,10 @@ public class LinkAdapter extends XmlAdapter<String, Object> {
             return null;
         }
         DynamicEntityImpl de = (DynamicEntityImpl) v;
-        DatabaseMapping idMapping = getIdMapping(context.getDescriptor(de.getType().getName()));
-        if (idMapping == null){
-            return "";
-        }
-        Object id = de.get(idMapping.getAttributeName());
+
         String href = baseURI + context.getName() + "/entity/"  + v.getClass().getSimpleName() + "/"
-                + id;
+                + IdHelper.stringifyId(de, context);
         return href;
-    }
-    
-    protected DatabaseMapping getIdMapping(ClassDescriptor descriptor){
-        Iterator<DatabaseMapping> i = descriptor.getMappings().iterator();
-        while (i.hasNext()){
-            DatabaseMapping mapping = i.next();
-            if (mapping.isPrimaryKeyMapping()){
-                return mapping;
-            }
-        }
-        return null;
     }
 
 }

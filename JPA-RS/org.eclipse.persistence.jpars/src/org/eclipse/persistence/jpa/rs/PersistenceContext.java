@@ -158,6 +158,11 @@ public class PersistenceContext {
         super();
         this.emf = emf;
         this.name = emfName;
+        if (JpaHelper.getServerSession(emf).hasExternalTransactionController()){
+            transaction = new JTATransactionWrapper();
+        } else {
+            transaction = new ResourceLocalTransactionWrapper();
+        }
         try{
             JAXBContext jaxbContext = null;
             jaxbContext = createDynamicJAXBContext(emfName, emf.getServerSession());

@@ -44,7 +44,7 @@ public class TestBootstrap {
 		PersistenceFactory factory = null;
 		try{
 		    factory = new PersistenceFactory();
-		    FileInputStream xmlStream = new FileInputStream("classes/xmldocs/auction-persistence.xml");
+		    FileInputStream xmlStream = new FileInputStream("classes/META-INF/xmldocs/auction-persistence.xml");
 			factory.bootstrapPersistenceContext("auction", xmlStream, properties, true);
 		} catch (Exception e){
 			fail(e.toString());

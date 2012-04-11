@@ -11,9 +11,10 @@
 		<class>org.eclipse.persistence.jpars.test.model.StaticUser</class>
 		<class>org.eclipse.persistence.jpars.test.model.StaticAuction</class>
 		<class>org.eclipse.persistence.jpars.test.model.StaticBid</class>
+		<class>org.eclipse.persistence.jpars.test.model.StaticAddress</class>
 	    <properties>
-	
-	        <property name="eclipselink.ddl-generation" value="create-tables"/>
+	       <property name="javax.persistence.nonJtaDataSource" value="jdbc/jpa-rs"/>
+	       <property name="eclipselink.logging.level" value="FINEST"/>
 	    </properties>
 	</persistence-unit>
 </persistence>
