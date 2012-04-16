@@ -62,5 +62,4 @@ public class StaticAddress {
         this.user = user;
     }
     
-    
 }

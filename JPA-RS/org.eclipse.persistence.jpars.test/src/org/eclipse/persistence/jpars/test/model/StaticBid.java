@@ -13,8 +13,10 @@
 package org.eclipse.persistence.jpars.test.model;
 
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
@@ -32,8 +34,10 @@ public class StaticBid {
     
     private long time;
 
+    @OneToOne(fetch=FetchType.LAZY)
     private StaticUser user;
 
+    @OneToOne(fetch=FetchType.LAZY)
     private StaticAuction auction;
 
     public int getId() {

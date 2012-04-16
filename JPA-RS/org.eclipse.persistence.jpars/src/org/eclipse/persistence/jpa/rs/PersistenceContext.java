@@ -43,7 +43,6 @@ import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamWriter;
 import javax.xml.transform.stream.StreamSource;
 
-import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.dynamic.DynamicEntity;
 import org.eclipse.persistence.dynamic.DynamicType;
@@ -305,7 +304,9 @@ public class PersistenceContext {
         try {
             transaction.beginTransaction(em);
             Object entity = em.find(getClass(type), id);
-            em.remove(entity);
+            if (entity != null){
+                em.remove(entity);          
+            }
             transaction.commitTransaction(em);
         } finally {
             em.close();
@@ -540,9 +541,6 @@ public class PersistenceContext {
             } else {
                 return query.getResultList();
             }
-        } catch (Exception e){
-            // TODO proper exception
-            throw new RuntimeException("Error running query " + name, e);
         } finally {
             em.close();
         }
@@ -626,7 +624,6 @@ public class PersistenceContext {
         Marshaller marshaller = getJAXBContext().createMarshaller();
         marshaller.setProperty(MEDIA_TYPE, mediaType.toString());
         marshaller.setProperty(org.eclipse.persistence.jaxb.JAXBContext.JSON_INCLUDE_ROOT, false);
-System.out.println("--- marshallEntity - " + object + " baseURI" + getBaseURI());
         marshaller.setAdapter(new LinkAdapter(getBaseURI().toString(), this));
         marshaller.setListener(new Marshaller.Listener() {
             @Override
@@ -656,10 +653,8 @@ System.out.println("--- marshallEntity - " + object + " baseURI" + getBaseURI())
             } catch (Exception e){
                 e.printStackTrace();
                 throw new RuntimeException(e);
-            }
-           
-        } else {
-        
+            }          
+        } else {       
             marshaller.marshal(object, output);      
         }
     }

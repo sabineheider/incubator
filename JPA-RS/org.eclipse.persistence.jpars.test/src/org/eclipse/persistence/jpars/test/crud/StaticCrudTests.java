@@ -81,6 +81,7 @@ public class StaticCrudTests {
     public void testCreateAndDelete() {
         StaticUser user = new StaticUser();;
         user.setName("Jim");
+        user.setId(1);
         persistenceContext.create(null, user);
         user = (StaticUser)persistenceContext.find("StaticUser", user.getId());
         
@@ -100,14 +101,17 @@ public class StaticCrudTests {
     public void testQuery(){
         StaticUser user = new StaticUser();
         user.setName("Jill");
+        user.setId(2);
         persistenceContext.create(null, user);
         
         user = new StaticUser();
         user.setName("Arthur");
+        user.setId(3);
         persistenceContext.create(null, user);
         
         user = new StaticUser();
         user.setName("Judy");
+        user.setId(4);
         persistenceContext.create(null, user);
         
         List<StaticUser> users = (List<StaticUser>)persistenceContext.query("User.all", null);
@@ -118,6 +122,7 @@ public class StaticCrudTests {
     public void testUpdate(){
         StaticUser user = new StaticUser();
         user.setName("Tom");
+        user.setId(5);
         persistenceContext.create(null, user);
         user = (StaticUser)persistenceContext.find("StaticUser", user.getId());
         user.setName("Thomas");

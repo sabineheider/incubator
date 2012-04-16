@@ -15,11 +15,12 @@ package org.eclipse.persistence.jpa.rs;
 import static org.eclipse.persistence.jaxb.JAXBContext.MEDIA_TYPE;
 import static org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller.mediaType;
 
-import java.io.CharArrayReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
@@ -29,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PreDestroy;
@@ -55,7 +55,6 @@ import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriInfo;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
@@ -84,6 +83,7 @@ import org.eclipse.persistence.jpa.rs.util.StreamingOutputMarshaller;
 import org.eclipse.persistence.mappings.CollectionMapping;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.mappings.ForeignReferenceMapping;
+import org.eclipse.persistence.mappings.foundation.AbstractDirectMapping;
 import org.eclipse.persistence.queries.DatabaseQuery;
 
 import com.sun.jersey.core.spi.factory.ResponseBuilderImpl;
@@ -117,25 +117,20 @@ public class Service {
    @Consumes({ MediaType.WILDCARD})
    public Response start(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, InputStream in){
        ResponseBuilder rb = new ResponseBuilderImpl();
-       try{
-           factory.setMetadataStore(new DatabaseMetadataStore());
-           List<String> datasourceValues = hh.getRequestHeader("datasourceName");
-           Map<String, Object> properties = new HashMap<String, Object>();
-           if (datasourceValues != null && datasourceValues.size() > 0){
-               properties.put(PersistenceUnitProperties.NON_JTA_DATASOURCE, datasourceValues.get(0));
-           }
-           factory.getMetadataStore().setProperties(properties);
-       } catch (Exception e){
-           rb.status(Status.NOT_FOUND);
-           return rb.build();
+       factory.setMetadataStore(new DatabaseMetadataStore());
+       List<String> datasourceValues = hh.getRequestHeader("datasourceName");
+       Map<String, Object> properties = new HashMap<String, Object>();
+       if (datasourceValues != null && datasourceValues.size() > 0){
+           properties.put(PersistenceUnitProperties.NON_JTA_DATASOURCE, datasourceValues.get(0));
        }
+       factory.getMetadataStore().setProperties(properties);
        rb.status(Status.CREATED);
        return rb.build();
    }
    
    @GET
    @Path("/")
-   public Response getContexts(@Context HttpHeaders hh, @Context UriInfo uriInfo) {
+   public Response getContexts(@Context HttpHeaders hh, @Context UriInfo uriInfo) throws JAXBException {
        ResponseBuilder rb = new ResponseBuilderImpl();
        Set<String> contexts = factory.getPersistenceContextNames();
        Iterator<String> contextIterator = contexts.iterator();
@@ -146,12 +141,7 @@ public class Service {
            links.add(new Link(context, mediaType, "\"href\": \"" + uriInfo.getBaseUri() + context + "/metadata\""));
        }
        String result = null;
-       try {
-           result = marshallMetadata(links, mediaType);
-       } catch (JAXBException e){
-           rb.status(Status.INTERNAL_SERVER_ERROR);
-           return rb.build();
-       }
+       result = marshallMetadata(links, mediaType);
        rb.status(Status.OK);
        rb.entity(new StreamingOutputMarshaller(null, result, hh.getAcceptableMediaTypes()));
        return rb.build();
@@ -161,79 +151,58 @@ public class Service {
    @POST
    @Path("/")
    @Produces(MediaType.WILDCARD)
-   public Response callSessionBean(@Context HttpHeaders hh, @Context UriInfo ui, InputStream is) {
+   public Response callSessionBean(@Context HttpHeaders hh, @Context UriInfo ui, InputStream is) throws JAXBException, ClassNotFoundException, NamingException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
        ResponseBuilder rb = new ResponseBuilderImpl();
        SessionBeanCall call = null;
-       try {
-           call = unmarshallSessionBeanCall(is);
+       call = unmarshallSessionBeanCall(is);
 
-           String jndiName = call.getJndiName();
-           System.out.println("Lookup: " + jndiName);
-           javax.naming.Context ctx = new InitialContext();
-           System.out.println("Got context");
-           Object ans=ctx.lookup(jndiName);  
-           System.out.println("Got bean " + ans);
-           
-           PersistenceContext context = null;
-           if (call.getContext() != null){
-               context = factory.getPersistenceContext(call.getContext());
-           }
-           
-           Class[] parameters = new Class[call.getParameters().size()];
-           Object[] args = new Object[call.getParameters().size()];
-           int i = 0;
-           for (Parameter param: call.getParameters()){
-               System.out.println("Got paramter " + param.getValue());
-               Class parameterClass = null;
-               Object parameterValue = null;
-               if (context != null){
-                   parameterClass = context.getClass(param.getTypeName());
-               }
-               if (parameterClass != null){
-                   parameterValue = context.unmarshalEntity(param.getTypeName(), null, StreamingOutputMarshaller.mediaType(hh.getAcceptableMediaTypes()), is);
-               } else {
-                   parameterClass = Thread.currentThread().getContextClassLoader().loadClass(param.getTypeName());
-                   parameterValue = ConversionManager.getDefaultManager().convertObject(param.getValue(), parameterClass);
-               }
-               parameters[i] = parameterClass;
-               args[i] = parameterValue;
-               i++;
-           }
-           Method method = ans.getClass().getMethod(call.getMethodName(), parameters);
-           Object returnValue = method.invoke(ans, args);
-           rb.status(Status.OK);
-           rb.entity(new StreamingOutputMarshaller(null, returnValue, hh.getAcceptableMediaTypes()));
-           return rb.build();
-       } catch (JAXBException e){
-           logger.log(Level.SEVERE, "JAXBException. ", e);
-           rb.status(Status.INTERNAL_SERVER_ERROR);
-           return rb.build();
-       } catch (NamingException e){
-           logger.log(Level.SEVERE, "JNDIException ", e);
-           rb.status(Status.INTERNAL_SERVER_ERROR);
-           return rb.build();
-       } catch (ClassNotFoundException e){
-           logger.log(Level.SEVERE, "ClassNotFoundException. ", e);
-           rb.status(Status.INTERNAL_SERVER_ERROR);
-           return rb.build();
-       } catch (NoSuchMethodException e){
-           logger.log(Level.SEVERE, "NoSuchMethodException. ", e);
-           rb.status(Status.INTERNAL_SERVER_ERROR);
-           return rb.build();
-       } catch (IllegalAccessException e){
-           logger.log(Level.SEVERE, "IllegalAccessException. ", e);
-           rb.status(Status.INTERNAL_SERVER_ERROR);
-           return rb.build();
-       } catch (InvocationTargetException e){
-           logger.log(Level.SEVERE, "InvocationTargetException. ", e);
-           rb.status(Status.INTERNAL_SERVER_ERROR);
+       String jndiName = call.getJndiName();
+       javax.naming.Context ctx = new InitialContext();
+       Object ans=ctx.lookup(jndiName);  
+       if (ans == null){
+           rb.status(Status.NOT_FOUND);
            return rb.build();
        }
+           
+       PersistenceContext context = null;
+       if (call.getContext() != null){
+           context = factory.getPersistenceContext(call.getContext());
+           if (context == null){
+               rb.status(Status.NOT_FOUND);
+               return rb.build();
+           }
+       }
+           
+       Class[] parameters = new Class[call.getParameters().size()];
+       Object[] args = new Object[call.getParameters().size()];
+       int i = 0;
+       for (Parameter param: call.getParameters()){
+           System.out.println("Got paramter " + param.getValue());
+           Class parameterClass = null;
+           Object parameterValue = null;
+           if (context != null){
+               parameterClass = context.getClass(param.getTypeName());
+           }
+           if (parameterClass != null){
+               parameterValue = context.unmarshalEntity(param.getTypeName(), null, hh.getMediaType(), is);
+           } else {
+               parameterClass = Thread.currentThread().getContextClassLoader().loadClass(param.getTypeName());
+               parameterValue = ConversionManager.getDefaultManager().convertObject(param.getValue(), parameterClass);
+           }
+           parameters[i] = parameterClass;
+           args[i] = parameterValue;
+           i++;
+       }
+       Method method = ans.getClass().getMethod(call.getMethodName(), parameters);
+       Object returnValue = method.invoke(ans, args);
+       rb.status(Status.OK);
+       rb.entity(new StreamingOutputMarshaller(null, returnValue, hh.getAcceptableMediaTypes()));
+       return rb.build();
    }
    
     @PUT
     @Path("{context}")
-    public Response bootstrap(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo uriInfo, InputStream in){
+    public Response bootstrap(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo uriInfo, InputStream in) throws IOException, MalformedURLException{
         ResponseBuilder rb = new ResponseBuilderImpl();
         String urlString = getSingleHeader("persistenceXmlURL", hh);
 
@@ -244,16 +213,11 @@ public class Service {
             replace = Boolean.getBoolean(replaceValues.get(0));
         }
         Map<String, Object> properties = new HashMap<String, Object>();
-        try{
-            if (urlString != null){
-                URL url = new URL(urlString);
-                persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, url, properties, replace);
-            } else {
-                persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, in, properties, replace);
-            }
-       } catch (Exception e){
-            e.printStackTrace();
-            rb.status(Status.NOT_FOUND);
+        if (urlString != null){
+            URL url = new URL(urlString);
+            persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, url, properties, replace);
+        } else {
+            persistenceContext = factory.bootstrapPersistenceContext(persistenceUnit, in, properties, replace);
         }
         if (persistenceContext != null){
             persistenceContext.setBaseURI(uriInfo.getBaseUri());
@@ -307,7 +271,6 @@ public class Service {
     @Path("{context}/subscribe/{name}")
     public Response subscribe(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context UriInfo ui) {
         ResponseBuilder rb = new ResponseBuilderImpl();
-        System.out.println("Subscribe " + name);
         PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
         if (app == null){
             rb.status(Status.NOT_FOUND);
@@ -376,11 +339,16 @@ public class Service {
     @GET
     @Path("{context}/entity/{type}/{key}")
     public Response find(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @PathParam("key") String key, @Context HttpHeaders hh, @Context UriInfo ui) {
+        ResponseBuilder rb = new ResponseBuilderImpl();
         PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
+        if (app == null || app.getClass(type) == null){
+            rb.status(Status.NOT_FOUND);
+            return rb.build();
+        }
         Object id = IdHelper.buildId(app, type, key);
 
         Object entity = app.find(getTenantId(hh), type, id, Service.getHintMap(ui));
-        ResponseBuilder rb = new ResponseBuilderImpl();
+
         if (entity == null) {
             rb.status(Status.NOT_FOUND);
         } else {
@@ -392,17 +360,44 @@ public class Service {
 
     @PUT
     @Path("{context}/entity/{type}")
-    public Response create(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo uriInfo, InputStream in) {
+    public Response create(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo uriInfo, InputStream in) throws JAXBException {
         PersistenceContext app = get(persistenceUnit, uriInfo.getBaseUri());
+        ResponseBuilder rb = new ResponseBuilderImpl();
+        ClassDescriptor descriptor = app.getDescriptor(type);
+        if (app == null || descriptor == null){
+            rb.status(Status.NOT_FOUND);
+            return rb.build();
+        }
         Object entity = null;
-        try {
+        try{
             entity = app.unmarshalEntity(type, getTenantId(hh), mediaType(hh.getAcceptableMediaTypes()), in);
         } catch (JAXBException e){
-            throw new WebApplicationException(e);
+            throw e;
         }
-        app.create(getTenantId(hh), entity);
 
-        ResponseBuilder rb = new ResponseBuilderImpl();
+        // maintain itempotence on PUT by disallowing sequencing and cascade persist.
+        AbstractDirectMapping sequenceMapping = descriptor.getObjectBuilder().getSequenceMapping();
+        if (sequenceMapping != null){
+            Object value = sequenceMapping.getAttributeAccessor().getAttributeValueFromObject(entity);
+
+            if (descriptor.getObjectBuilder().isPrimaryKeyComponentInvalid(value, descriptor.getPrimaryKeyFields().indexOf(descriptor.getSequenceNumberField())) || descriptor.getSequence().shouldAlwaysOverrideExistingValue()){
+                rb.status(Status.BAD_REQUEST);
+                return rb.build();
+            }
+        }
+        for (DatabaseMapping mapping: descriptor.getObjectBuilder().getRelationshipMappings()){
+            if (mapping.isForeignReferenceMapping()){
+                if (((ForeignReferenceMapping)mapping).isCascadePersist()){
+                    Object value = mapping.getAttributeAccessor().getAttributeValueFromObject(entity);
+                    if (value != null){
+                        rb.status(Status.BAD_REQUEST);
+                        return rb.build();
+                    }
+                }
+            }
+        }
+
+        app.create(getTenantId(hh), entity);
         rb.status(Status.CREATED);
         rb.entity(new StreamingOutputMarshaller(app, entity, hh.getAcceptableMediaTypes()));
         return rb.build();
@@ -410,8 +405,13 @@ public class Service {
 
     @POST
     @Path("{context}/entity/{type}")
-    public StreamingOutput update(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo uriInfo, InputStream in) {
+    public Response update(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @Context HttpHeaders hh, @Context UriInfo uriInfo, InputStream in) {
         PersistenceContext app = get(persistenceUnit, uriInfo.getBaseUri());
+        ResponseBuilder rb = new ResponseBuilderImpl();
+        if (app == null || app.getClass(type) == null){
+            rb.status(Status.NOT_FOUND);
+            return rb.build();
+        }
         String tenantId = getTenantId(hh);
         MediaType contentType = mediaType(hh.getRequestHeader(HttpHeaders.CONTENT_TYPE)); 
         Object entity = null;
@@ -421,7 +421,8 @@ public class Service {
             throw new WebApplicationException(e);
         }
         entity = app.merge(tenantId, entity);
-        return new StreamingOutputMarshaller(app, entity, hh.getAcceptableMediaTypes());
+        rb.entity(new StreamingOutputMarshaller(app, entity, hh.getAcceptableMediaTypes()));
+        return rb.build();
     }
 
     @DELETE
@@ -429,6 +430,10 @@ public class Service {
     public Response delete(@PathParam("context") String persistenceUnit, @PathParam("type") String type, @PathParam("key") String key, @Context HttpHeaders hh, @Context UriInfo ui) {
         ResponseBuilder rb = new ResponseBuilderImpl();
         PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
+        if (app == null || app.getClass(type) == null){
+            rb.status(Status.NOT_FOUND);
+            return rb.build();
+        }
         String tenantId = getTenantId(hh);
         Object id = IdHelper.buildId(app, type, key);
         app.delete(tenantId, type, id);
@@ -437,40 +442,51 @@ public class Service {
     }
     
     @GET
-    @Path("{context}/query")
-    public StreamingOutput adhocQuery(@PathParam("context") String persistenceUnit, @Context HttpHeaders hh, @Context UriInfo ui) {
-        throw new WebApplicationException(Status.SERVICE_UNAVAILABLE);
-    }
-    
-    @GET
     @Path("{context}/query/{name}")
-    public StreamingOutput namedQuery(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
-        long millis = System.currentTimeMillis();
-        System.out.println("Start Named Query " + name);
+    public Response namedQuery(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
         PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
+        ResponseBuilder rb = new ResponseBuilderImpl();
+        if (app == null){
+            rb.status(Status.NOT_FOUND);
+            return rb.build();
+        }
         Object result = app.query(name, Service.getParameterMap(ui), Service.getHintMap(ui), false, false);
 
-
-        System.out.println("Named Query " + name + " Marshalling. time: " + (System.currentTimeMillis() - millis));
-        return new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes());
+        rb.status(Status.OK);
+        rb.entity(new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes()));
+        return rb.build();
     }
     
     @POST
     @Path("{context}/query/{name}")
-    @Produces({ MediaType.APPLICATION_OCTET_STREAM })
-    public StreamingOutput namedQueryUpdate(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
+    @Produces({ MediaType.APPLICATION_OCTET_STREAM})
+    public Response namedQueryUpdate(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
         PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
+        ResponseBuilder rb = new ResponseBuilderImpl();
+        if (app == null){
+            rb.status(Status.NOT_FOUND);
+            return rb.build();
+        }
         Object result = app.query(name, Service.getParameterMap(ui), Service.getHintMap(ui), false, true);
-        return new StreamingOutputMarshaller(app, result.toString(), hh.getAcceptableMediaTypes());
+        rb.status(Status.OK);
+        rb.entity(new StreamingOutputMarshaller(app, result.toString(), hh.getAcceptableMediaTypes()));
+        return rb.build();
     }
     
     @GET
     @Path("{context}/singleResultQuery/{name}")
     @Produces(MediaType.WILDCARD)
-    public StreamingOutput namedQuerySingleResult(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
+    public Response namedQuerySingleResult(@PathParam("context") String persistenceUnit, @PathParam("name") String name, @Context HttpHeaders hh, @Context UriInfo ui) {
         PersistenceContext app = get(persistenceUnit, ui.getBaseUri());
+        ResponseBuilder rb = new ResponseBuilderImpl();
+        if (app == null){
+            rb.status(Status.NOT_FOUND);
+            return rb.build();
+        }
         Object result = app.query(name, Service.getParameterMap(ui), Service.getHintMap(ui), true, false);
-        return new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes());
+        rb.status(Status.OK);
+        rb.entity(new StreamingOutputMarshaller(app, result, hh.getAcceptableMediaTypes()));
+        return rb.build();
     }
     
     protected Descriptor buildDescriptor(PersistenceContext app, String persistenceUnit, ClassDescriptor descriptor, String baseUri){

@@ -134,7 +134,7 @@ public class TestService {
         entities.add(entity);
         entities.add(entity2);
 
-        StreamingOutput output = service.update("auction", "User", generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo(), TestService.serializeListToStream(entities, context, MediaType.APPLICATION_JSON_TYPE));
+        StreamingOutput output = (StreamingOutput)service.update("auction", "User", generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo(), TestService.serializeListToStream(entities, context, MediaType.APPLICATION_JSON_TYPE)).getEntity();
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try{
@@ -187,7 +187,7 @@ public class TestService {
         entities.add(entity);
         entities.add(entity2);
 
-        StreamingOutput output = service.update("phonebook", "Person", generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo(), serializeListToStream(entities, context, MediaType.APPLICATION_JSON_TYPE));
+        StreamingOutput output = (StreamingOutput)service.update("phonebook", "Person", generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo(), serializeListToStream(entities, context, MediaType.APPLICATION_JSON_TYPE)).getEntity();
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try{
@@ -293,7 +293,7 @@ public class TestService {
         List<String> mediaTypes = new ArrayList<String>();
         mediaTypes.add(MediaType.APPLICATION_JSON);
         TestURIInfo ui = new TestURIInfo();
-        StreamingOutput output = service.namedQuery("auction", "Auction.all", headers, ui);
+        StreamingOutput output = (StreamingOutput)service.namedQuery("auction", "Auction.all", headers, ui).getEntity();
      
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try{
@@ -328,7 +328,7 @@ public class TestService {
         mediaTypes.add(MediaType.APPLICATION_JSON);
         TestURIInfo ui = new TestURIInfo();
         ui.addMatrixParameter("name", "Computer");
-        StreamingOutput output = service.namedQuerySingleResult("auction", "Auction.forName", headers, ui);
+        StreamingOutput output = (StreamingOutput)service.namedQuerySingleResult("auction", "Auction.forName", headers, ui).getEntity();
         
         String resultString = stringifyResults(output);
         
@@ -352,7 +352,7 @@ public class TestService {
 
         TestURIInfo ui = new TestURIInfo();
         ui.addMatrixParameter("name", "Computer");
-        StreamingOutput output = service.update("auction", "Auction", generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo(), serializeToStream(entity1, context, MediaType.APPLICATION_JSON_TYPE));
+        StreamingOutput output = (StreamingOutput)service.update("auction", "Auction", generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo(), serializeToStream(entity1, context, MediaType.APPLICATION_JSON_TYPE)).getEntity();
 
         String resultString = stringifyResults(output);
         
@@ -364,7 +364,12 @@ public class TestService {
     public void testMetadataQuery(){
         Service service = new Service();
         service.setPersistenceFactory(factory);
-        StreamingOutput output = (StreamingOutput)service.getContexts(generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo()).getEntity();
+        StreamingOutput output = null;
+        try{
+            output = (StreamingOutput)service.getContexts(generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo()).getEntity();
+        } catch (JAXBException e){
+            fail("Exception: " + e);
+        }
         String result = stringifyResults(output);
         assertTrue("auction was not in the results", result.contains("auction"));
         assertTrue("phonebook was not in the results", result.contains("phonebook"));
@@ -447,6 +452,7 @@ public class TestService {
         PersistenceContext context = factory.getPersistenceContext("auction-static");
         StaticUser user = new StaticUser();
         user.setName("Wes");
+        user.setId(7);
         StaticAddress address = new StaticAddress();
         address.setCity("Ottawa");
         address.setPostalCode("a1a1a1");
@@ -489,8 +495,12 @@ public class TestService {
     public void testMetadata(){
         Service service = new Service();
         service.setPersistenceFactory(factory);
-        Object result = service.getContexts(generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo());
-        
+        Object result = null;
+        try{
+            result = service.getContexts(generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo());
+        } catch (JAXBException e){
+            fail("Exception: " + e);
+        }
         result = service.getTypes("auction", generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo());
 
         result = service.getDescriptorMetadata("auction", "Bid", generateHTTPHeader(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON), new TestURIInfo());

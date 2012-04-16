@@ -16,4 +16,5 @@ Import-Package: com.sun.jersey.core.spi.factory,
  javax.persistence.metamodel;version="2.0.0",
  javax.persistence.spi;version="2.0.0",
  javax.ws.rs,
- javax.ws.rs.core
+ javax.ws.rs.core,
+ javax.ws.rs.ext

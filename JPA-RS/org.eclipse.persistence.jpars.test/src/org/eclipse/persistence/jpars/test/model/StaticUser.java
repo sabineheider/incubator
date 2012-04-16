@@ -18,15 +18,34 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinColumns;
-import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
-@NamedQuery(
+@NamedQueries({
+    @NamedQuery(
         name="User.all", 
         query="SELECT u FROM StaticUser u"
+    ),
+    @NamedQuery(
+            name="User.byId", 
+            query="SELECT u FROM StaticUser u where u.id = :id"
+    ),
+    @NamedQuery(
+        name="User.byName", 
+        query="SELECT u FROM StaticUser u where u.name = :name"
+    ),
+    @NamedQuery(
+        name="User.byNameOrId", 
+        query="SELECT u FROM StaticUser u where u.name = :name or u.id = :id"
     )
+    ,
+    @NamedQuery(
+        name="User.updateName", 
+        query="UPDATE StaticUser u SET u.name = :name where u.id = :id"
+    )
+})
 
 @Entity
 @Table(name="ST_AUC_USER")
@@ -67,6 +86,20 @@ public class StaticUser {
 
     public void setAddress(StaticAddress address) {
         this.address = address;
+    }
+    
+    public boolean equals(Object object){
+        if (object == null || !(object instanceof StaticUser)){
+            return false;
+        }
+        StaticUser user = (StaticUser)object;
+        if (address == null && user.getAddress() != null){
+            return false;
+        }
+        if (name == null && user.getName() != null){
+            return false;
+        }
+        return id == user.getId() && name.equals(user.getName()) && (address == null || address.getId() == user.getAddress().getId());
     }
 
     
