@@ -1,3 +1,6 @@
 
 /JPA-RS/org.eclipse.persistence.jpars/classes
 /JPA-RS/org.eclipse.persistence.jpars.test/classes
+/extensions/org.eclipse.persistence.platform.database.hana/classes
+/extensions/org.eclipse.persistence.platform.database.hana/*.zip
+/extensions/org.eclipse.persistence.platform.database.hana/*.jar

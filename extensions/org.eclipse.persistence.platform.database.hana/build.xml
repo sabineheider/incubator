@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<!-- *******************************************************************************
+ * Copyright (c) 2012 SAP. All rights reserved.
+ * This program and the accompanying materials are made available under the 
+ * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0 
+ * which accompanies this distribution. 
+ * The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+ * and the Eclipse Distribution License is available at 
+ * http://www.eclipse.org/org/documents/edl-v10.php.
+ *
+ * Contributors:
+ *     SAP AG - Initial implementation, enhancement bug 380226
+ *     
+ * This code is being developed under INCUBATION and is not currently included 
+ * in the automated EclipseLink build. The API in this code may change, or 
+ * may never be included in the product. Please provide feedback through mailing 
+ * lists or the bug database.
+ ****************************************************************************** -->
+<project name="extension.platform.hana" default="build" basedir=".">
+
+    <property file="./build.properties"/>
+    <property file="${trunk.dir}/antbuild.properties"/>
+	<property name="eclipselink.jar" value="eclipselink.jar"/>
+    <property name="hana.platform.jar" value="hana_platform.jar"/>
+    <property name="hana.platform.src.zip" value="hana_platform_src.zip"/>
+    <property name="hana.test.zip" value="hana_test.zip"/>
+	
+	
+    <!-- Set Compile Path-->
+	<property name="eclipselink-jar.file" value="${trunk.dir}/${eclipselink.jar}"/>
+    <path id="compile.path">
+        <pathelement path="${eclipselink-jar.file}"/>
+    </path>
+	
+	<target name="build" depends="clean,package" />
+	
+    <!-- clean -->
+    <target name="clean" description="Clean all generated content">
+        <delete includeEmptyDirs="true" failonerror="false">
+            <fileset dir="${classes.dir}"/>
+        </delete>
+        <delete file="${hana.platform.jar}"/>
+        <delete file="${hana.platform.src.zip}"/>
+        <delete file="${hana.test.zip}"/>
+    </target>
+
+    <!-- compile -->
+    <target name="compile" description="Compile HANAPlatform against eclipselink.jar">
+		<available file="${eclipselink-jar.file}" property="eclipselink-jar.available" />
+		<fail unless="eclipselink-jar.available" message="File '${eclipselink-jar.file}' doesn't exist. Build aborted." />
+        
+		<mkdir dir="${classes.dir}"/>
+        <javac srcdir="${src.dir}"
+               destdir="${classes.dir}"
+               includes="**/*.java"
+               debug="${javac.debug}"
+               optimize="${javac.optimize}"
+               source="${javac.version}"
+               target="${javac.version}"
+               deprecation="${javac.deprecation}"
+               failonerror="true"
+               memoryMaximumSize="512m"
+               fork="true"
+               classpathref="compile.path"
+        />
+    </target>
+
+    <target name="package" description="build jar file" depends="compile">
+        <jar jarfile="${hana.platform.jar}">
+           <fileset dir="${classes.dir}">
+               <include name="**/*.class"/>
+           </fileset>
+        </jar>
+		<zip destfile="${hana.platform.src.zip}">
+			<fileset dir="${src.dir}">
+				<include name="**/*.java"/>
+			</fileset>
+		</zip>
+		<zip destfile="${hana.test.zip}">
+			<fileset dir="test">
+				<include name="**/*"/>
+			</fileset>
+		</zip>
+    </target>
+	
+	<target name="merge-src" description="copy HANA platform and test sources into eclipselink trunk repository for testing purposes">
+		<unzip src="${hana.platform.src.zip}" dest="${trunk.dir}/foundation/org.eclipse.persistence.core/src" overwrite="yes"/>
+		<unzip src="${hana.test.zip}" dest="${trunk.dir}" overwrite="yes"/>
+	</target>
+	
+</project>
