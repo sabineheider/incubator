@@ -39,6 +39,7 @@ import org.eclipse.persistence.internal.expressions.ExpressionSQLPrinter;
 import org.eclipse.persistence.internal.expressions.FunctionExpression;
 import org.eclipse.persistence.internal.expressions.SQLSelectStatement;
 import org.eclipse.persistence.internal.helper.ClassConstants;
+import org.eclipse.persistence.internal.helper.DatabaseTable;
 import org.eclipse.persistence.internal.helper.Helper;
 import org.eclipse.persistence.internal.helper.NonSynchronizedVector;
 import org.eclipse.persistence.platform.database.DatabasePlatform;
@@ -380,9 +381,14 @@ public final class HANAPlatform extends DatabasePlatform {
 
     @Override
     protected final String getCreateTempTableSqlPrefix() {
-        return "CREATE TEMPORARY TABLE ";
+        return "CREATE LOCAL TEMPORARY TABLE ";
     }
 
+    @Override
+    public DatabaseTable getTempTableForTable(DatabaseTable table) {
+        return new DatabaseTable("#" + table.getName(), table.getTableQualifier(), table.shouldUseDelimiters(), getStartDelimiter(), getEndDelimiter());
+    }          
+    
     @Override
     protected boolean shouldTempTableSpecifyPrimaryKeys() {
         return false;
@@ -395,7 +401,7 @@ public final class HANAPlatform extends DatabasePlatform {
 
     @Override
     public final boolean supportsLocalTempTables() {
-        return false;
+        return true;
     }
 
     @Override

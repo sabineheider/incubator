@@ -82,6 +82,10 @@
 			</fileset>
 		</zip>
     </target>
+
+	<target name="merge-platform" description="merge the hana platform jar into the eclipselink jar in the trunk directory" depends="compile">
+		<jar jarfile="${eclipselink-jar.file}" basedir="${classes.dir}" update="true"/>
+	</target>
 	
 	<target name="merge-src" description="copy HANA platform and test sources into eclipselink trunk repository for testing purposes">
 		<unzip src="${hana.platform.src.zip}" dest="${trunk.dir}/foundation/org.eclipse.persistence.core/src" overwrite="yes"/>
