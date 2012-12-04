@@ -43,11 +43,33 @@ import org.eclipse.persistence.tools.schemaframework.FieldDefinition;
 import org.eclipse.persistence.queries.*;
 import org.eclipse.persistence.sessions.SessionProfiler;
 
-/**
- *    <p><b>Purpose</b>: Provides Pervasive DBMS specific behavior.
- *
- *  
- **/
+/** <p><b>Purpose</b>: Provides Pervasive SQL DBMS specific behavior.
+* 
+* </br></br> 
+* Pervasive SQL Platform file <br/>
+*  Contributed by: Pervasive Software, Inc.<br/>
+*  Contributed under bug: 392109
+*  <p/>
+* 
+* <u><b>Developed on Pervasive PSQL Server 11.30 </b></u>
+* <blockquote>
+* <li>Eclipselink Core SRG Test passes with known limitations.
+* <li>Eclipselink JPA SRG Test passes with known limitations.
+* <li>Eclipselink stored procedure tests "CustomSQLTestModel", "StoredProcedureGeneratorModel" pass with known limitations.
+* </blockquote>
+*  
+* <u><p/><b>Limitations</b></u>
+* <ul> 
+* <li> Updates are not supported on joined queries or queries with group by. 
+* <li> The platform method getSelectForUpdateString() currently returns an empty string. This is 
+* to avoid avoid joined queries with FOR UPDATE in them, which Pervasive does not support. 
+* <li> Columns used in indexes must total no more than 255 bytes in length. 
+* <li> Pervasive SQL does not support dynamic parameters in the SELECT list. 
+* <li> IDENTITY columns are either 2- or 4-byte integers. Foreign keys referencing such columns must use the same datatypes. 
+* 
+**/ 
+
+
 public class PervasivePlatform extends org.eclipse.persistence.platform.database.DatabasePlatform {
 
     public static final int DEFAULT_CHAR_SIZE = 80;
@@ -83,7 +105,7 @@ public class PervasivePlatform extends org.eclipse.persistence.platform.database
         fieldTypeMapping.put(java.sql.Time.class, new FieldTypeDefinition("TIME", false));              
         fieldTypeMapping.put(java.sql.Timestamp.class, new FieldTypeDefinition("TIMESTAMP", false));      
         fieldTypeMapping.put(byte[].class, new FieldTypeDefinition("BINARY", DEFAULT_CHAR_SIZE ));   
-        fieldTypeMapping.put(Byte[].class, new FieldTypeDefinition("BINARY", DEFAULT_CHAR_SIZE));   
+        fieldTypeMapping.put(Byte[].class, new FieldTypeDefinition("LONGVARBINARY", false));   
         fieldTypeMapping.put(Character[].class, new FieldTypeDefinition("CHAR", DEFAULT_CHAR_SIZE));
         fieldTypeMapping.put(Boolean.class, new FieldTypeDefinition("BIT", false));              
         fieldTypeMapping.put(java.sql.Blob.class, new FieldTypeDefinition("LONGVARBINARY", false));
