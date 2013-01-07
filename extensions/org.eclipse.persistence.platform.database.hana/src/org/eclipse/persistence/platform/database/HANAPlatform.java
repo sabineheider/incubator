@@ -42,10 +42,12 @@ import org.eclipse.persistence.internal.helper.ClassConstants;
 import org.eclipse.persistence.internal.helper.DatabaseTable;
 import org.eclipse.persistence.internal.helper.Helper;
 import org.eclipse.persistence.internal.helper.NonSynchronizedVector;
+import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.platform.database.DatabasePlatform;
 import org.eclipse.persistence.queries.ReadQuery;
 import org.eclipse.persistence.queries.ValueReadQuery;
 import org.eclipse.persistence.tools.schemaframework.FieldDefinition;
+import org.eclipse.persistence.tools.schemaframework.TableDefinition;
 
 /**
  * <b>Database Platform for SAP HANA</b> <br>
@@ -525,5 +527,12 @@ public final class HANAPlatform extends DatabasePlatform {
         writer.write("TO_TIMESTAMP('");
         writer.write(Helper.printCalendar(calendar));
         writer.write("')");
+    }
+    
+    @Override
+    public void writeAddColumnClause(Writer writer, AbstractSession session, TableDefinition table, FieldDefinition field) throws IOException {
+        writer.write("ADD (");
+        field.appendDBString(writer, session, table);
+        writer.write(")");
     }
 }
